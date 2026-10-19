@@ -1,0 +1,1 @@
+ALTER TABLE "workout" ADD CONSTRAINT "workout_user_id_date_unique" UNIQUE("user_id","date");

@@ -10,8 +10,9 @@ Joe is an intern learning web development. Always reply in Danish. Code, variabl
 
 - Explain why behind technical choices, not only how. Do not assume he knows the concept.
 - Work in small, reviewable steps. Stop after each step so he can check the result in the browser.
-- Do not hand over finished code blindly. For learning tasks, give structure and hints first and let Joe write the code, then review it together.
-- Ask before architecture decisions or changes that touch several files.
+- Division of roles: Claude writes most of the code. Joe makes architecture and infrastructure decisions (stack, database, hosting, auth, data model, folder structure, third-party services, deployment).
+- Implement the code yourself, but stop and ask Joe before any architecture or infrastructure decision, or any change that touches several files. Present 2 to 3 options with trade-offs and a recommendation, and let Joe choose.
+- When Joe asks to "see the proposals" or to "wait for his choice", write no code until he answers, not even small choices like date/text formats.
 - No unused code, dead imports or redundant CSS.
 - After each task: list what was created or changed, and suggest what can be removed (scratch files, unused functions).
 - Never paste secrets. The database URL lives in `.env.local` (git ignored). Never commit it.
@@ -22,7 +23,9 @@ Joe is an intern learning web development. Always reply in Danish. Code, variabl
 - Next.js (App Router) + TypeScript
 - Tailwind CSS v4
 - No `src/` directory. Code lives in `app/` and `lib/` in the project root. Import alias `@/*` points to the project root.
-- Planned later: Postgres on Neon (EU region), Drizzle ORM, login (Better Auth or Auth.js, decided at the login step), Recharts for dashboard charts.
+- Planned later: Postgres on Neon (EU region), Drizzle ORM, login (Better Auth or Auth.js, decided at the login step).
+- Charts: Recharts (used on the dashboard).
+- Icons: Phosphor (`@phosphor-icons/react`).
 
 ## Data model (core)
 
@@ -36,6 +39,15 @@ Exercises are stored as structured data, not free text. That is what makes recor
 
 In TypeScript, a workout entry is a discriminated union: `Entry = StrengthEntry | CardioEntry`, separated by a `kind` field (`"strength"` or `"cardio"`).
 
+## Conventions introduced while building
+
+- **Rendering:** any page that reads from the store or depends on "now" (today's date, the current user) uses `await connection()` plus `export const instant = false`, with a short comment explaining why. This is required because `cacheComponents` is enabled in `next.config.ts`, which prerenders pages statically by default.
+- **Data access:** all reads/writes go through `lib/workout-store.ts`. Pages fetch data and pass it down as props to "dumb" card/list components, the components themselves never import the store or mock data directly. Step 6 will change the internals of `lib/workout-store.ts` and make the pages `async`, the card components stay untouched.
+- **Ownership:** ownership checks live in the store (`getWorkoutById`, `assertOwnsWorkout`), never in a page. An unknown id and a foreign user's id must behave identically (`notFound()`), so a page can never be used to guess whether an id exists.
+- **Dates:** both helpers live in `lib/dates.ts`. `getTodayInCopenhagen()` answers "what is today" using the real Europe/Copenhagen timezone (the server may run in UTC). `formatDateDanish()` formats an already-stored "YYYY-MM-DD" string, pinned to UTC, since that string has no timezone of its own, pinning it elsewhere could shift the displayed day.
+- **Cardio display:** `formatCardio()` in `lib/format.ts`, the one place distance/duration gets turned into text (e.g. "5,2 km på 26 min 30 sek").
+- **Still temporary until step 6:** `exercises` still comes straight from `lib/mock-data.ts` (not user data, so it wasn't moved into the store). The store itself keeps its arrays on `globalThis` so they survive dev-mode hot reload, see the comment in `lib/workout-store.ts`.
+
 ## Dashboard goals
 
 - Latest workouts
@@ -47,12 +59,12 @@ In TypeScript, a workout entry is a discriminated union: `Entry = StrengthEntry 
 ## Plan (build order)
 
 0. Done: project created with Next.js, Tailwind v4 and TypeScript.
-1. Types and mock data (`lib/types.ts`, `lib/mock-data.ts`).
-2. App shell: layout and mobile navigation (bottom bar: Dashboard, Log, History), empty pages.
-3. Dashboard with mock data, one card at a time.
-4. Log a workout: form for strength and cardio, temporarily in memory.
-5. History: list and detail view.
-6. Database and Drizzle (Neon): replace mock data with real data.
+1. Done: Types and mock data (`lib/types.ts`, `lib/mock-data.ts`).
+2. Done: App shell: layout and mobile navigation (bottom bar: Dashboard, Log, History), empty pages.
+3. Done: Dashboard with mock data, one card at a time.
+4. Done: Log a workout: form for strength and cardio, temporarily in memory (`lib/workout-store.ts`).
+5. Done: History: list and detail view.
+6. **Next up:** Database and Drizzle (Neon): replace the in-memory store with real data.
 7. Login: each user gets their own data.
 8. Polish and deploy (for example Vercel).
 
