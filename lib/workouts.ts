@@ -1,0 +1,214 @@
+// lib/workouts.ts
+
+import { getTodayInCopenhagen } from "@/lib/dates";
+import type { CardioEntry, Entry, Exercise, StrengthEntry, Workout } from "@/lib/types";
+
+export type WorkoutSummary = {
+  workout: Workout;
+  exerciseNames: string[];
+  strengthSetCount: number;
+  cardioCount: number;
+};
+
+// limit = workouts.length gives every workout, newest first, which is what
+// the full /history list needs, not only the dashboard's "latest 5".
+export function getLatestWorkouts(
+  workouts: Workout[],
+  entries: Entry[],
+  exercises: Exercise[],
+  limit = 5,
+): WorkoutSummary[] {
+  const exerciseNameById = new Map(
+    exercises.map((exercise) => [exercise.id, exercise.name]),
+  );
+
+  return [...workouts]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit)
+    .map((workout) => {
+      const workoutEntries = entries.filter((entry) => entry.workout_id === workout.id);
+      const uniqueExerciseIds = [...new Set(workoutEntries.map((entry) => entry.exercise_id))];
+      const exerciseNames = uniqueExerciseIds.map(
+        (id) => exerciseNameById.get(id) ?? "Ukendt øvelse",
+      );
+      const strengthSetCount = workoutEntries.filter(
+        (entry) => entry.kind === "strength",
+      ).length;
+      const cardioCount = workoutEntries.filter((entry) => entry.kind === "cardio").length;
+
+      return { workout, exerciseNames, strengthSetCount, cardioCount };
+    });
+}
+
+export type WeeklyTrainingSummary = {
+  workoutCount: number;
+  totalVolumeKg: number;
+  cardio: {
+    totalDistanceKm: number;
+    totalDurationSec: number;
+  };
+};
+
+// Week starts on Monday (Danish/ISO convention). Uses UTC-based Date methods
+// throughout, since "YYYY-MM-DD" workout dates are parsed as UTC midnight
+// (new Date("2026-10-13") is midnight UTC, not midnight in the server's own
+// timezone). Mixing UTC-parsed dates with local-timezone methods like
+// getDay()/setDate() would silently shift the week boundary depending on
+// where the server happens to run.
+function getStartOfWeek(date: Date): Date {
+  const day = date.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
+  const daysSinceMonday = (day + 6) % 7;
+  const start = new Date(date);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - daysSinceMonday);
+  return start;
+}
+
+export function getWeeklyTrainingSummary(
+  workouts: Workout[],
+  entries: Entry[],
+  referenceDate: Date = new Date(getTodayInCopenhagen()),
+): WeeklyTrainingSummary {
+  const weekStart = getStartOfWeek(referenceDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+  const workoutsThisWeek = workouts.filter((workout) => {
+    const workoutDate = new Date(workout.date);
+    return workoutDate >= weekStart && workoutDate < weekEnd;
+  });
+
+  const workoutIdsThisWeek = new Set(workoutsThisWeek.map((workout) => workout.id));
+  const entriesThisWeek = entries.filter((entry) =>
+    workoutIdsThisWeek.has(entry.workout_id),
+  );
+
+  const strengthEntries = entriesThisWeek.filter(
+    (entry): entry is StrengthEntry => entry.kind === "strength",
+  );
+  const totalVolumeKg = strengthEntries.reduce(
+    (sum, entry) => sum + entry.reps * entry.weight_kg,
+    0,
+  );
+
+  const cardioEntries = entriesThisWeek.filter(
+    (entry): entry is CardioEntry => entry.kind === "cardio",
+  );
+  const totalDistanceKm = cardioEntries.reduce((sum, entry) => sum + entry.distance_km, 0);
+  const totalDurationSec = cardioEntries.reduce((sum, entry) => sum + entry.duration_sec, 0);
+
+  return {
+    workoutCount: workoutsThisWeek.length,
+    totalVolumeKg,
+    cardio: { totalDistanceKm, totalDurationSec },
+  };
+}
+
+// Counts consecutive weeks (Monday-start) with at least one workout, newest first.
+// The current, still-ongoing week is only counted if it already has a workout;
+// otherwise we start counting from the last fully-tracked week, so the streak
+// isn't broken just because you haven't trained yet this week.
+export function getTrainingStreakWeeks(
+  workouts: Workout[],
+  referenceDate: Date = new Date(getTodayInCopenhagen()),
+): number {
+  const weekStartTimestamps = new Set(
+    workouts.map((workout) => getStartOfWeek(new Date(workout.date)).getTime()),
+  );
+
+  const weekStart = getStartOfWeek(referenceDate);
+  if (!weekStartTimestamps.has(weekStart.getTime())) {
+    weekStart.setUTCDate(weekStart.getUTCDate() - 7);
+  }
+
+  let streak = 0;
+  while (weekStartTimestamps.has(weekStart.getTime())) {
+    streak += 1;
+    weekStart.setUTCDate(weekStart.getUTCDate() - 7);
+  }
+
+  return streak;
+}
+
+export type PersonalRecord = {
+  exerciseId: string;
+  exerciseName: string;
+  weightKg: number;
+  reps: number;
+  date: string;
+};
+
+// A record is the heaviest weight ever lifted for an exercise.
+// Ties (same weight) are broken by the set with the most reps.
+export function getPersonalRecords(
+  workouts: Workout[],
+  entries: Entry[],
+  exercises: Exercise[],
+): PersonalRecord[] {
+  const exerciseNameById = new Map(
+    exercises.map((exercise) => [exercise.id, exercise.name]),
+  );
+  const workoutDateById = new Map(
+    workouts.map((workout) => [workout.id, workout.date]),
+  );
+
+  const strengthEntries = entries.filter(
+    (entry): entry is StrengthEntry => entry.kind === "strength",
+  );
+
+  const bestEntryByExercise = new Map<string, StrengthEntry>();
+  for (const entry of strengthEntries) {
+    const current = bestEntryByExercise.get(entry.exercise_id);
+    const isBetter =
+      !current ||
+      entry.weight_kg > current.weight_kg ||
+      (entry.weight_kg === current.weight_kg && entry.reps > current.reps);
+
+    if (isBetter) {
+      bestEntryByExercise.set(entry.exercise_id, entry);
+    }
+  }
+
+  return [...bestEntryByExercise.entries()]
+    .map(([exerciseId, entry]) => ({
+      exerciseId,
+      exerciseName: exerciseNameById.get(exerciseId) ?? "Ukendt øvelse",
+      weightKg: entry.weight_kg,
+      reps: entry.reps,
+      date: workoutDateById.get(entry.workout_id) ?? "",
+    }))
+    .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+}
+
+export type WeightProgressionPoint = {
+  date: string;
+  weightKg: number;
+};
+
+// One point per training day: the heaviest weight lifted that day for the exercise.
+export function getWeightProgression(
+  workouts: Workout[],
+  entries: Entry[],
+  exerciseId: string,
+): WeightProgressionPoint[] {
+  const workoutDateById = new Map(
+    workouts.map((workout) => [workout.id, workout.date]),
+  );
+
+  const maxWeightByDate = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.kind !== "strength" || entry.exercise_id !== exerciseId) continue;
+
+    const date = workoutDateById.get(entry.workout_id);
+    if (!date) continue;
+
+    const current = maxWeightByDate.get(date);
+    if (current === undefined || entry.weight_kg > current) {
+      maxWeightByDate.set(date, entry.weight_kg);
+    }
+  }
+
+  return [...maxWeightByDate.entries()]
+    .map(([date, weightKg]) => ({ date, weightKg }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
