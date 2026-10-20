@@ -1,0 +1,35 @@
+.zet-dashboard {
+  max-width: 1056px;
+  margin: 0 auto;
+  padding: 32px 32px 24px;
+}
+.zet-header { border-bottom: 1px solid #dedee3; padding-bottom: 22px; }
+.zet-masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.zet-brand { margin-bottom: 14px; font-size: 13px; font-weight: 750; letter-spacing: .08em; color: var(--color-indigo-600); }
+.zet-masthead h1 { font-size: 28px; font-weight: 650; letter-spacing: -.045em; }
+.zet-headerAction { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: 5px; background: var(--color-indigo-600); color: white; font-size: 13px; font-weight: 550; }
+.zet-headerAction:hover { background: var(--color-indigo-700); }
+.zet-headerAction span { font-size: 20px; line-height: 1; }
+.zet-streak { margin-top: 10px; font-size: 13px; color: #71717a; }
+.zet-streak strong { font-weight: 600; color: #3f3f46; }
+.zet-content { padding-top: 24px; }
+.zet-weekly { margin-bottom: 20px; padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
+.zet-panel { min-width: 0; padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
+.zet-sectionTitle { font-size: 14px; font-weight: 600; }
+.zet-summaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; gap: 24px; }
+.zet-metric { min-width: 0; }
+.zet-metricValue { font-size: clamp(27px, 3vw, 36px); line-height: 1.2; font-weight: 600; letter-spacing: -.045em; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.zet-metricValue span { font-size: 14px; font-weight: 400; color: #71717a; letter-spacing: 0; }
+.zet-weeklyLabel { margin-top: 6px; font-size: 12px; color: #71717a; }
+.zet-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start; }
+@media (min-width: 700px) {
+  .zet-summaryGrid:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .zet-metric + .zet-metric { padding-left: 24px; border-left: 1px solid #dedee3; }
+}
+@media (max-width: 600px) {
+  .zet-dashboard { padding: 24px 20px; }
+  .zet-masthead h1 { font-size: 25px; }
+  .zet-headerAction { padding: 10px 12px; }
+  .zet-details { grid-template-columns: 1fr; }
+  .zet-weekly, .zet-panel { padding: 16px; }
+}

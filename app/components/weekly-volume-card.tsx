@@ -12,16 +12,28 @@ export function WeeklyVolumeCard({
   const hasCardio = summary.cardio.totalDistanceKm > 0 || summary.cardio.totalDurationSec > 0;
 
   return (
-    <section className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <h2 className="mb-3 font-semibold">Ugens træningsmængde</h2>
-      <div className="flex flex-col gap-1 text-sm">
-        <div>{summary.workoutCount} træninger denne uge</div>
-        <div>{summary.totalVolumeKg} kg samlet volumen (styrke)</div>
+    <section className="zet-weekly">
+      <h2 className="zet-sectionTitle">Denne uge</h2>
+      <div className="zet-summaryGrid">
+        <div className="zet-metric">
+          <p className="zet-metricValue">{summary.workoutCount}</p>
+          <p className="zet-weeklyLabel">træninger</p>
+        </div>
+        <div className="zet-metric">
+          <p className="zet-metricValue">{summary.totalVolumeKg.toLocaleString("da-DK")} <span>kg</span></p>
+          <p className="zet-weeklyLabel">styrkevolumen</p>
+        </div>
         {hasCardio && (
-          <div className="text-zinc-500 dark:text-zinc-400">
-            Cardio: {summary.cardio.totalDistanceKm} km,{" "}
-            {Math.round(summary.cardio.totalDurationSec / 60)} min
-          </div>
+          <>
+            <div className="zet-metric">
+              <p className="zet-metricValue">{summary.cardio.totalDistanceKm.toLocaleString("da-DK")} <span>km</span></p>
+              <p className="zet-weeklyLabel">cardiodistance</p>
+            </div>
+            <div className="zet-metric">
+              <p className="zet-metricValue">{Math.round(summary.cardio.totalDurationSec / 60)} <span>min</span></p>
+              <p className="zet-weeklyLabel">tid med cardio</p>
+            </div>
+          </>
         )}
       </div>
     </section>
