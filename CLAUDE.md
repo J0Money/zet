@@ -29,24 +29,27 @@ Joe is an intern learning web development. Always reply in Danish. Code, variabl
 
 ## Data model (core)
 
-- user: id, email, name
-- exercise: id, user_id (null for shared), name, type (strength or cardio), muscle group
-- workout: id, user_id, date, notes
-- workout_set: id, workout_id, exercise_id, reps, weight_kg (strength)
-- workout_cardio: id, workout_id, exercise_id, distance_km, duration_sec (cardio)
+- user: id (uuid), email, name
+- exercise: id (uuid), user_id (null for shared), name, type (strength or cardio), muscle group
+- workout: id (uuid), user_id, date, notes. Unique on (user_id, date), one workout per user per day.
+- workout_set: id (uuid), workout_id, exercise_id, reps, weight_kg (strength)
+- workout_cardio: id (uuid), workout_id, exercise_id, distance_km, duration_sec (cardio)
 
 Exercises are stored as structured data, not free text. That is what makes records, volume per muscle group and charts possible.
 
 In TypeScript, a workout entry is a discriminated union: `Entry = StrengthEntry | CardioEntry`, separated by a `kind` field (`"strength"` or `"cardio"`).
 
+Implemented in Postgres (Neon, EU region) via Drizzle. Schema in `lib/db/schema.ts`, migrations in `drizzle/`.
+
 ## Conventions introduced while building
 
 - **Rendering:** any page that reads from the store or depends on "now" (today's date, the current user) uses `await connection()` plus `export const instant = false`, with a short comment explaining why. This is required because `cacheComponents` is enabled in `next.config.ts`, which prerenders pages statically by default.
-- **Data access:** all reads/writes go through `lib/workout-store.ts`. Pages fetch data and pass it down as props to "dumb" card/list components, the components themselves never import the store or mock data directly. Step 6 will change the internals of `lib/workout-store.ts` and make the pages `async`, the card components stay untouched.
-- **Ownership:** ownership checks live in the store (`getWorkoutById`, `assertOwnsWorkout`), never in a page. An unknown id and a foreign user's id must behave identically (`notFound()`), so a page can never be used to guess whether an id exists.
+- **Data access:** all reads/writes go through `lib/workout-store.ts`, backed by Postgres (Neon) via Drizzle. Pages `await` the store's functions and pass the data down as props to "dumb" card/list components, the components themselves never import the store or the database client directly.
+- **One workout per day:** enforced by a unique constraint on `workout(user_id, date)`. `getOrCreateWorkoutForDate` uses a single upsert (`ON CONFLICT ... DO UPDATE` with a no-op update) instead of a separate check-then-insert, since Neon's HTTP driver doesn't support interactive transactions.
+- **Ownership:** ownership checks live in the store (`getWorkoutById`), never in a page. An unknown id and a foreign user's id must behave identically (`notFound()`), so a page can never be used to guess whether an id exists.
+- **Current user:** `CURRENT_USER_ID` in `lib/workout-store.ts` points at `SEEDED_USER_ID` (`lib/db/constants.ts`), a fixed id for the one seeded user. Stand-in until step 7 adds real login, only the source of this id changes then, not how the store uses it.
 - **Dates:** both helpers live in `lib/dates.ts`. `getTodayInCopenhagen()` answers "what is today" using the real Europe/Copenhagen timezone (the server may run in UTC). `formatDateDanish()` formats an already-stored "YYYY-MM-DD" string, pinned to UTC, since that string has no timezone of its own, pinning it elsewhere could shift the displayed day.
 - **Cardio display:** `formatCardio()` in `lib/format.ts`, the one place distance/duration gets turned into text (e.g. "5,2 km på 26 min 30 sek").
-- **Still temporary until step 6:** `exercises` still comes straight from `lib/mock-data.ts` (not user data, so it wasn't moved into the store). The store itself keeps its arrays on `globalThis` so they survive dev-mode hot reload, see the comment in `lib/workout-store.ts`.
 
 ## Dashboard goals
 
@@ -64,8 +67,8 @@ In TypeScript, a workout entry is a discriminated union: `Entry = StrengthEntry 
 3. Done: Dashboard with mock data, one card at a time.
 4. Done: Log a workout: form for strength and cardio, temporarily in memory (`lib/workout-store.ts`).
 5. Done: History: list and detail view.
-6. **Next up:** Database and Drizzle (Neon): replace the in-memory store with real data.
-7. Login: each user gets their own data.
+6. Done: Database and Drizzle (Neon): `lib/workout-store.ts` reads and writes Postgres, `lib/mock-data.ts` removed.
+7. **Next up:** Login: each user gets their own data.
 8. Polish and deploy (for example Vercel).
 
 ## Verification
