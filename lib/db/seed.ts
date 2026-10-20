@@ -79,7 +79,7 @@ async function seedDemoWorkouts(
   const today = new Date(getTodayInCopenhagen());
   const thisWeekStart = startOfWeek(today);
 
-  // Samme ugedag-afstand til ugestarten som de oprindelige mock-data havde:
+  // Samme ugedag-afstand til ugestarten som i det oprindelige demo-datasæt:
   // to træninger for to uger siden (tirsdag + fredag), én sidste uge
   // (tirsdag), én denne uge (tirsdag).
   const dateA = toDateString(addDays(thisWeekStart, -13));
