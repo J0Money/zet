@@ -4,10 +4,13 @@
 // `id: string` TypeScript types and crypto.randomUUID() usage, so nothing in
 // lib/types.ts needs to change.
 
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
+  boolean,
   date,
   doublePrecision,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -34,7 +37,123 @@ export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  // Added by Better Auth's generated schema (npx auth generate).
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
+
+// Better Auth's own tables, generated via `npx auth generate` (uuid ids
+// configured in lib/auth.ts to match our existing tables).
+export const session = pgTable(
+  "session",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
+// Invitationer hører til ZET og bruges ikke af Better Auth-adapteren.
+// Gem kun et SHA-256-hash af den tilfældige kode fra invitationslinket.
+export const invitation = pgTable("invitation", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // Adressen normaliseres på serveren og bestemmer den nye brugers e-mail.
+  email: text("email").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  // Ved accept skal brug af invitationen og kontooprettelse ske samlet.
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
+// Én fælles tæller pr. invitation, også når appen kører på flere servere.
+// Rækken slettes automatisk sammen med invitationen.
+export const invitationAttempt = pgTable("invitation_attempt", {
+  invitationId: uuid("invitation_id")
+    .primaryKey()
+    .references(() => invitation.id, { onDelete: "cascade" }),
+  attempts: integer("attempts").notNull(),
+  windowEndsAt: timestamp("window_ends_at", { withTimezone: true }).notNull(),
+});
+
+// Better Auths egen fælles tæller til HTTP-endpoints, herunder login.
+export const rateLimit = pgTable("rate_limit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
 
 export const exercise = pgTable("exercise", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -42,8 +161,23 @@ export const exercise = pgTable("exercise", {
   user_id: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: exerciseType("type").notNull(),
-  muscle_group: muscleGroup("muscle_group").notNull(),
 });
+
+// En øvelse kan ramme flere muskelgrupper (fx dips: bryst og triceps), derfor
+// en separat tabel i stedet for ét fast felt på exercise.
+export const exerciseMuscleGroup = pgTable(
+  "exercise_muscle_group",
+  {
+    exercise_id: uuid("exercise_id")
+      .notNull()
+      .references(() => exercise.id, { onDelete: "cascade" }),
+    muscle_group: muscleGroup("muscle_group").notNull(),
+  },
+  (table) => [
+    unique("exercise_muscle_group_exercise_id_muscle_group_unique")
+      .on(table.exercise_id, table.muscle_group),
+  ],
+);
 
 export const workout = pgTable(
   "workout",

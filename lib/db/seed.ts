@@ -17,7 +17,7 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { SEEDED_USER_ID } from "./constants";
-import { exercise, user, workout, workoutCardio, workoutSet } from "./schema";
+import { exercise, exerciseMuscleGroup, user, workout, workoutCardio, workoutSet } from "./schema";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import type { db as DbClient } from "./index";
 
@@ -53,17 +53,25 @@ async function seedUsersAndExercises(db: Db) {
   const insertedExercises = await db
     .insert(exercise)
     .values([
-      { user_id: null, name: "Bænkpres", type: "strength", muscle_group: "chest" },
-      { user_id: null, name: "Squat", type: "strength", muscle_group: "legs" },
-      { user_id: null, name: "Ro i maskine", type: "strength", muscle_group: "back" },
-      { user_id: null, name: "Skulderpres", type: "strength", muscle_group: "shoulders" },
-      { user_id: null, name: "Løb", type: "cardio", muscle_group: "full_body" },
+      { user_id: null, name: "Bænkpres", type: "strength" },
+      { user_id: null, name: "Squat", type: "strength" },
+      { user_id: null, name: "Ro i maskine", type: "strength" },
+      { user_id: null, name: "Skulderpres", type: "strength" },
+      { user_id: null, name: "Løb", type: "cardio" },
     ])
     .returning();
 
   const exerciseIdByName = new Map(
     insertedExercises.map((exercise) => [exercise.name, exercise.id]),
   );
+
+  await db.insert(exerciseMuscleGroup).values([
+    { exercise_id: exerciseIdByName.get("Bænkpres")!, muscle_group: "chest" },
+    { exercise_id: exerciseIdByName.get("Squat")!, muscle_group: "legs" },
+    { exercise_id: exerciseIdByName.get("Ro i maskine")!, muscle_group: "back" },
+    { exercise_id: exerciseIdByName.get("Skulderpres")!, muscle_group: "shoulders" },
+    { exercise_id: exerciseIdByName.get("Løb")!, muscle_group: "full_body" },
+  ]);
 
   console.log(`Seedet bruger "${joe.name}" og ${insertedExercises.length} øvelser.`);
   return { userId: joe.id, exerciseIdByName };

@@ -23,7 +23,7 @@ export type Exercise = {
   user_id: string | null; // null means shared across all users
   name: string;
   type: ExerciseType;
-  muscle_group: MuscleGroup;
+  muscle_groups: MuscleGroup[]; // e.g. dips is both chest and triceps
 };
 
 export type Workout = {

@@ -15,6 +15,41 @@
       "when": 1792409723231,
       "tag": "0001_sad_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792484562444,
+      "tag": "0002_lush_metal_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792488712454,
+      "tag": "0003_add_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792489776238,
+      "tag": "0004_invitation_attempts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792490330185,
+      "tag": "0005_auth_rate_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792501759024,
+      "tag": "0006_add_exercise_muscle_groups",
+      "breakpoints": true
     }
   ]
 }
