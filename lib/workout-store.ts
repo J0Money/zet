@@ -1,26 +1,33 @@
 // lib/workout-store.ts
 //
-// All reads and writes query the real database (Postgres/Drizzle). Every
-// function takes a userId so call sites don't change signature when real
-// login (step 7) replaces the hardcoded user id with a logged-in user's id.
+// Alle læsninger og skrivninger afgrænses til userId. Sider og Server Actions
+// henter dette id fra requireUser(), aldrig fra formularer eller URL-parametre.
 
+import "server-only";
 import { and, eq, or, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { SEEDED_USER_ID } from "@/lib/db/constants";
-import { exercise, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
-import type { CardioEntry, Entry, Exercise, StrengthEntry, Workout } from "@/lib/types";
-
-// Temporary stand-in for a logged-in user's id, until step 7 adds real login.
-// Matches the user row lib/db/seed.ts creates in the real database.
-export const CURRENT_USER_ID = SEEDED_USER_ID;
+import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
+import type { CardioEntry, Entry, Exercise, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
 
 // Shared or belonging to this user (user_id null means shared, see
-// CLAUDE.md's data model).
+// CLAUDE.md's data model). En øvelse kan have flere muskelgrupper, derfor en
+// left join: json_agg samler dem i én liste pr. øvelse, og filter udelader
+// null, når en øvelse (endnu) ikke har nogen tags. array_agg ville virke i
+// ren SQL, men neon-http-driveren parser ikke Postgres' array-tekstformat
+// til et JS-array, json_agg giver json, som driveren parser korrekt.
 export async function getExercises(userId: string): Promise<Exercise[]> {
   return db
-    .select()
+    .select({
+      id: exercise.id,
+      user_id: exercise.user_id,
+      name: exercise.name,
+      type: exercise.type,
+      muscle_groups: sql<MuscleGroup[]>`coalesce(json_agg(${exerciseMuscleGroup.muscle_group}) filter (where ${exerciseMuscleGroup.muscle_group} is not null), '[]'::json)`,
+    })
     .from(exercise)
-    .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId)));
+    .leftJoin(exerciseMuscleGroup, eq(exerciseMuscleGroup.exercise_id, exercise.id))
+    .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId)))
+    .groupBy(exercise.id);
 }
 
 export async function getWorkouts(userId: string): Promise<Workout[]> {
@@ -73,6 +80,9 @@ export async function getWorkoutById(
   userId: string,
   workoutId: string,
 ): Promise<Workout | undefined> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workoutId)) {
+    return undefined;
+  }
   const [row] = await db
     .select()
     .from(workoutTable)
@@ -113,6 +123,10 @@ export async function addStrengthEntry(
   if (!workout) {
     throw new Error("Workout findes ikke for denne bruger.");
   }
+  const exercises = await getExercises(userId);
+  if (!exercises.some((exercise) => exercise.id === data.exercise_id && exercise.type === "strength")) {
+    throw new Error("Styrkeøvelsen er ikke tilgængelig for denne bruger.");
+  }
 
   const [row] = await db
     .insert(workoutSet)
@@ -134,6 +148,10 @@ export async function addCardioEntry(
   const workout = await getWorkoutById(userId, data.workout_id);
   if (!workout) {
     throw new Error("Workout findes ikke for denne bruger.");
+  }
+  const exercises = await getExercises(userId);
+  if (!exercises.some((exercise) => exercise.id === data.exercise_id && exercise.type === "cardio")) {
+    throw new Error("Cardioøvelsen er ikke tilgængelig for denne bruger.");
   }
 
   const [row] = await db

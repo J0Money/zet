@@ -1,8 +1,9 @@
+import { requireUser } from "@/lib/session";
 import { connection } from "next/server";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { formatCardio } from "@/lib/format";
-import { CURRENT_USER_ID, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
+import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -12,17 +13,18 @@ export default async function LogPage() {
   // Siden viser "i dag" og dine egne loggede sæt, det kan ikke
   // forhåndsgenereres statisk. connection() gør siden dynamisk pr. besøg.
   await connection();
+  const currentUser = await requireUser();
 
-  const exercises = await getExercises(CURRENT_USER_ID);
+  const exercises = await getExercises(currentUser.id);
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
   const cardioExercises = exercises.filter((exercise) => exercise.type === "cardio");
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
 
   const today = getTodayInCopenhagen();
-  const workouts = await getWorkouts(CURRENT_USER_ID);
+  const workouts = await getWorkouts(currentUser.id);
   const todaysWorkout = workouts.find((workout) => workout.date === today);
   const todaysEntries = todaysWorkout
-    ? (await getEntries(CURRENT_USER_ID)).filter(
+    ? (await getEntries(currentUser.id)).filter(
         (entry) => entry.workout_id === todaysWorkout.id,
       )
     : [];

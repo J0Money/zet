@@ -1,10 +1,11 @@
+import { requireUser } from "@/lib/session";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatDateDanish } from "@/lib/dates";
 import { formatCardio } from "@/lib/format";
 import type { Entry } from "@/lib/types";
-import { CURRENT_USER_ID, getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
+import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -18,20 +19,21 @@ export default async function WorkoutDetailPage({
   // Siden viser din egen data, den kan ikke forhåndsgenereres statisk.
   // connection() gør siden dynamisk pr. besøg.
   await connection();
+  const currentUser = await requireUser();
 
   const { id } = await params;
 
   // getWorkoutById returnerer undefined både hvis id'et slet ikke findes, og
   // hvis workouten tilhører en anden bruger, begge tilfælde skal se ens ud
   // udefra (404), ellers kunne man gætte sig til at et id tilhører nogen.
-  const workout = await getWorkoutById(CURRENT_USER_ID, id);
+  const workout = await getWorkoutById(currentUser.id, id);
   if (!workout) {
     notFound();
   }
 
-  const entries = await getEntries(CURRENT_USER_ID);
+  const entries = await getEntries(currentUser.id);
   const workoutEntries = entries.filter((entry) => entry.workout_id === workout.id);
-  const exercises = await getExercises(CURRENT_USER_ID);
+  const exercises = await getExercises(currentUser.id);
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
 
   const entriesByExercise = new Map<string, Entry[]>();
