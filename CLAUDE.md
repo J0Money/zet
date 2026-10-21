@@ -14,6 +14,16 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - `BETTER_AUTH_TRUSTED_ORIGINS` (sat lokalt til telefontest med Joes WiFi-IP) blev formentlig importeret til Vercel sammen med de andre variabler via "Import .env". Den er ufarlig i produktion (peger på en lokal, uopnåelig adresse), men kan fjernes fra Vercel for ryddelighedens skyld, hvis Joe ønsker det.
 - **Resterende til fuld finpudsning (trin 8):** Better Auths IP-baserede rate limiting bag Vercels proxy er ikke eksplicit verificeret (bør tjekkes, at den rigtige klient-IP bruges, ikke Vercels interne adresse). Ellers er ingen yderligere ønsker noteret.
 
+### Flere sæt pr. styrkeøvelse (21. oktober 2026)
+
+- Joe ønskede at kunne tilføje flere sæt (hver med egen vægt/reps) af samme øvelse, før noget gemmes, i stedet for at skulle vælge øvelsen forfra for hvert sæt. Valgte "byg sæt op og gem samlet" frem for en hurtig-gentagelse-model eller et helt nyt øvelsespas-flow.
+- Databasen krævede ingen ændring: `workout_set` har altid understøttet flere rækker med forskellig vægt/reps pr. øvelse pr. træning.
+- `lib/workout-store.ts` har en ny `addStrengthEntries()` (flertal) ved siden af den eksisterende `addStrengthEntry()`, som gemmer flere sæt i ét bulk-insert, enten gemmes alle sæt, eller ingen af dem. Den gamle, entals-funktion er bevaret uændret, da både testene og den nye funktion har brug for den uafhængigt af hinanden.
+- `app/log/actions.ts`s `logStrengthSet` (samme eksportnavn som før, for bagudkompatibilitet med `tests/access.integration.test.ts`, der kalder den via Next's server-reference-manifest) læser nu `reps` og `weightKg` som lister via `formData.getAll()` i stedet for enkeltværdier, og validerer hvert sæt for sig.
+- `StrengthSetForm` har nu en dynamisk liste af sæt-rækker ("+ Tilføj sæt"/fjern-knap pr. række). Et nyt sæt arver reps/vægt fra det forrige som udgangspunkt, de fleste sæt i træk ligner hinanden. Efter et vellykket gem nulstilles listen til ét tomt sæt.
+- Vægt kan nu være 0 (fx kropsvægtsøvelser som dips uden ekstra vægt), ændret fra `min={0.5}`/`> 0` til `min={0}`/`>= 0` i både UI og serverside-validering. Reps skal stadig være mindst 1.
+- TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (alle 6 deltests) bestod uændret efter ændringen, kørt lokalt mod dev-serveren.
+
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
 - Joe har selv kørt adgangskodeopsætningen og bekræftet, at han er logget ind. Gentag ikke opsætningen.
