@@ -9,5 +9,5 @@ import { auth } from "@/lib/auth";
 export const requireUser = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
-  return { id: session.user.id, name: session.user.name, email: session.user.email };
+  return { id: session.user.id, name: session.user.name };
 });
