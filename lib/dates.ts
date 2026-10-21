@@ -33,3 +33,13 @@ export function formatDateDanish(date: string): string {
     year: "numeric",
   }).format(new Date(date));
 }
+
+// Som formatDateDanish, men uden årstal, fx "13. okt". Til steder med lidt
+// plads, som diagram-akser, hvor årstallet sjældent er nødvendigt.
+export function formatShortDateDanish(date: string): string {
+  return new Intl.DateTimeFormat("da-DK", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(date));
+}

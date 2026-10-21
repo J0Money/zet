@@ -6,6 +6,7 @@ import { LatestWorkoutsCard } from "@/app/components/latest-workouts-card";
 import { PersonalRecordsCard } from "@/app/components/personal-records-card";
 import { StreakCard } from "@/app/components/streak-card";
 import { WeeklyVolumeCard } from "@/app/components/weekly-volume-card";
+import { WeeklyVolumeHistoryCard } from "@/app/components/weekly-volume-history-card";
 import { WeightProgressionCard } from "@/app/components/weight-progression-card";
 import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
       </header>
       <div className="zet-content">
         <WeeklyVolumeCard workouts={workouts} entries={entries} />
+        <WeeklyVolumeHistoryCard workouts={workouts} entries={entries} />
         <WeightProgressionCard workouts={workouts} entries={entries} exercises={exercises} />
         <div className="zet-details">
           <PersonalRecordsCard workouts={workouts} entries={entries} exercises={exercises} />

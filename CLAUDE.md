@@ -60,6 +60,18 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - Testet: TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (6 deltests) bestod. Rettelse og sletning blev verificeret visuelt i browseren med en midlertidig testbruger (ret virker synligt og lukker korrekt igen; rækkefølgen er nu stabil). Selve slet-knappen kunne ikke fuldføres gennem det automatiserede browserværktøj, da det altid afviser browserens `confirm()`-dialog, så logikken (ejer kan slette, en anden bruger kan hverken rette eller slette) blev i stedet bekræftet direkte mod databasen med to midlertidige testbrugere, begge dele bestod, og testdata blev ryddet op bagefter.
 - Joe har nu selv bekræftet i browseren: både ret og slet virker, for både styrkesæt og cardio.
 
+### Udviklingsdiagram: styrkevolumen pr. uge (21. oktober 2026)
+
+- Fra brainstormen valgte Joe et diagram over styrkevolumen de seneste uger, så dashboardet ikke kun viser et øjebliksbillede af "denne uge".
+- `lib/workouts.ts`s nye `getWeeklyVolumeHistory()` returnerer ét punkt pr. uge (standard 8 uger, ældste først), genbruger samme ugedefinition (mandag-start) som de eksisterende uge-/streak-funktioner.
+- `lib/dates.ts` har en ny `formatShortDateDanish()` (fx "13. okt", uden årstal) til akseetiketter, hvor der er mindre plads.
+- Nyt kort `app/components/weekly-volume-history-card.tsx` viser det som søjler (Recharts), samme visuelle stil som `WeightProgressionCard`. Tilføjet på dashboardet mellem "Denne uge" og vægtprogressionen.
+- **Fandt og rettede to fejl under egen test, før de nåede Joe:**
+  1. Det nye kort manglede `"use client"`. Uden det fejlede selve produktionsbuilden med en kryptisk fejl ("createContext is not a function"), da Recharts' diagramkomponenter kræver en klientgrænse, selvom kortet ikke selv bruger `useState`.
+  2. Dashboardets mellemrum mellem kort var lavet med `margin` på enkelte elementer (`zet-weekly`, `zet-details`), ikke et generelt mellemrum. Med to kort i træk ved siden af hinanden (det nye diagram + vægtprogression) ville de støde sammen uden luft. Rettet til `gap: 20px` på `.zet-content` i `app/dashboard/dashboard.css`, robust uanset hvor mange kort der tilføjes senere.
+- Disken løb midlertidigt tør for plads under test (kun få MB fri), hvilket først gav en forvirrende buildfejl, der lignede en kodefejl. Ryddet op ved at slette npm's lokale cache (`%LOCALAPPDATA%\npm-cache`, 4,7 GB, ufarligt at slette), ikke en kodeændring. Disken har stadig kun ca. 4,8 GB fri plads, værd at holde øje med fremover.
+- Testet: TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (6 deltests) bestod. Verificeret visuelt i browseren med en midlertidig testbruger med træningsdata spredt over ca. 8 uger, diagrammet og mellemrummet til de andre kort ser korrekte ud.
+
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
 - Joe har selv kørt adgangskodeopsætningen og bekræftet, at han er logget ind. Gentag ikke opsætningen.

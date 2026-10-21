@@ -9,14 +9,16 @@
 .zet-headerAction span { font-size: 20px; line-height: 1; }
 .zet-streak { margin-top: 10px; font-size: 13px; color: #71717a; }
 .zet-streak strong { font-weight: 600; color: #3f3f46; }
-.zet-content { padding-top: 24px; }
-.zet-weekly { margin-bottom: 20px; padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
+/* gap i stedet for margin på de enkelte kort: robust uanset hvor mange
+   zet-panel/zet-weekly-kort der stables i rækkefølge. */
+.zet-content { display: flex; flex-direction: column; gap: 20px; padding-top: 24px; }
+.zet-weekly { padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
 .zet-summaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; gap: 24px; }
 .zet-metric { min-width: 0; }
 .zet-metricValue { font-size: clamp(27px, 3vw, 36px); line-height: 1.2; font-weight: 600; letter-spacing: -.045em; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .zet-metricValue span { font-size: 14px; font-weight: 400; color: #71717a; letter-spacing: 0; }
 .zet-weeklyLabel { margin-top: 6px; font-size: 12px; color: #71717a; }
-.zet-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start; }
+.zet-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (min-width: 700px) {
   .zet-summaryGrid:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .zet-metric + .zet-metric { padding-left: 24px; border-left: 1px solid #dedee3; }

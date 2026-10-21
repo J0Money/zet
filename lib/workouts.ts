@@ -104,6 +104,51 @@ export function getWeeklyTrainingSummary(
   };
 }
 
+export type WeeklyVolumePoint = {
+  weekStart: string; // "YYYY-MM-DD" (mandag)
+  totalVolumeKg: number;
+  workoutCount: number;
+};
+
+// En sum pr. uge for de seneste `weeks` uger (inklusive den igangværende),
+// ældste uge først, til et diagram der viser udviklingen over tid i stedet
+// for kun "denne uge". Genbruger samme ugedefinition som
+// getWeeklyTrainingSummary/getTrainingStreakWeeks ovenfor.
+export function getWeeklyVolumeHistory(
+  workouts: Workout[],
+  entries: Entry[],
+  weeks = 8,
+  referenceDate: Date = new Date(getTodayInCopenhagen()),
+): WeeklyVolumePoint[] {
+  const currentWeekStart = getStartOfWeek(referenceDate);
+  const points: WeeklyVolumePoint[] = [];
+
+  for (let weeksAgo = weeks - 1; weeksAgo >= 0; weeksAgo--) {
+    const weekStart = new Date(currentWeekStart);
+    weekStart.setUTCDate(weekStart.getUTCDate() - weeksAgo * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+    const workoutsInWeek = workouts.filter((workout) => {
+      const date = new Date(workout.date);
+      return date >= weekStart && date < weekEnd;
+    });
+    const workoutIdsInWeek = new Set(workoutsInWeek.map((workout) => workout.id));
+    const strengthEntries = entries.filter(
+      (entry): entry is StrengthEntry => entry.kind === "strength" && workoutIdsInWeek.has(entry.workout_id),
+    );
+    const totalVolumeKg = strengthEntries.reduce((sum, entry) => sum + entry.reps * entry.weight_kg, 0);
+
+    points.push({
+      weekStart: weekStart.toISOString().slice(0, 10),
+      totalVolumeKg,
+      workoutCount: workoutsInWeek.length,
+    });
+  }
+
+  return points;
+}
+
 // Counts consecutive weeks (Monday-start) with at least one workout, newest first.
 // The current, still-ongoing week is only counted if it already has a workout;
 // otherwise we start counting from the last fully-tracked week, so the streak
