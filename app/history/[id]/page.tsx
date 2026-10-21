@@ -2,8 +2,9 @@ import { requireUser } from "@/lib/session";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { CardioEntryRow } from "@/app/components/cardio-entry-row";
+import { StrengthEntryRow } from "@/app/components/strength-entry-row";
 import { formatDateDanish } from "@/lib/dates";
-import { formatCardio, formatPace } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
 
@@ -73,17 +74,9 @@ export default async function WorkoutDetailPage({
               <ul className="mt-1.5 flex flex-col gap-1">
                 {exerciseEntries.map((entry, index) =>
                   entry.kind === "strength" ? (
-                    <li key={entry.id} className="flex justify-between text-sm text-zinc-500">
-                      <span>Sæt {index + 1}</span>
-                      <span className="font-mono tabular-nums text-zinc-700">{entry.weight_kg} kg × {entry.reps}</span>
-                    </li>
+                    <StrengthEntryRow key={entry.id} entry={entry} label={`Sæt ${index + 1}`} />
                   ) : (
-                    <li key={entry.id} className="text-sm text-zinc-500">
-                      {formatCardio(entry.distance_km, entry.duration_sec)}
-                      {formatPace(entry.distance_km, entry.duration_sec) && (
-                        <> · {formatPace(entry.distance_km, entry.duration_sec)}</>
-                      )}
-                    </li>
+                    <CardioEntryRow key={entry.id} entry={entry} />
                   ),
                 )}
               </ul>

@@ -35,6 +35,9 @@ export async function getWorkouts(userId: string): Promise<Workout[]> {
 }
 
 export async function getEntries(userId: string): Promise<Entry[]> {
+  // Sorteret efter created_at: "Sæt 1, Sæt 2, ..." afspejler rækkefølgen,
+  // sættene blev logget i, og ændrer sig ikke, hvis et sæt rettes bagefter
+  // (en UPDATE kan ellers flytte rækkens fysiske plads i en usorteret SELECT).
   const strengthRows = await db
     .select({
       id: workoutSet.id,
@@ -45,7 +48,8 @@ export async function getEntries(userId: string): Promise<Entry[]> {
     })
     .from(workoutSet)
     .innerJoin(workoutTable, eq(workoutSet.workout_id, workoutTable.id))
-    .where(eq(workoutTable.user_id, userId));
+    .where(eq(workoutTable.user_id, userId))
+    .orderBy(workoutSet.created_at);
 
   const cardioRows = await db
     .select({
@@ -57,7 +61,8 @@ export async function getEntries(userId: string): Promise<Entry[]> {
     })
     .from(workoutCardio)
     .innerJoin(workoutTable, eq(workoutCardio.workout_id, workoutTable.id))
-    .where(eq(workoutTable.user_id, userId));
+    .where(eq(workoutTable.user_id, userId))
+    .orderBy(workoutCardio.created_at);
 
   const strengthEntries: StrengthEntry[] = strengthRows.map((row) => ({
     kind: "strength",
@@ -197,4 +202,62 @@ export async function addCardioEntry(
     .returning();
 
   return { kind: "cardio", ...row };
+}
+
+// Finder det workout_id, et sæt/en cardio-registrering hører til, så
+// ejerskab kan tjekkes via getWorkoutById, samme mønster som add*Entry.
+async function getStrengthEntryWorkoutId(entryId: string): Promise<string | undefined> {
+  const [row] = await db.select({ workout_id: workoutSet.workout_id }).from(workoutSet)
+    .where(eq(workoutSet.id, entryId)).limit(1);
+  return row?.workout_id;
+}
+
+async function getCardioEntryWorkoutId(entryId: string): Promise<string | undefined> {
+  const [row] = await db.select({ workout_id: workoutCardio.workout_id }).from(workoutCardio)
+    .where(eq(workoutCardio.id, entryId)).limit(1);
+  return row?.workout_id;
+}
+
+export async function updateStrengthEntry(
+  userId: string,
+  entryId: string,
+  data: { reps: number; weight_kg: number },
+): Promise<void> {
+  const workoutId = await getStrengthEntryWorkoutId(entryId);
+  if (!workoutId || !(await getWorkoutById(userId, workoutId))) {
+    throw new Error("Sættet findes ikke for denne bruger.");
+  }
+  await db.update(workoutSet)
+    .set({ reps: data.reps, weight_kg: data.weight_kg })
+    .where(eq(workoutSet.id, entryId));
+}
+
+export async function deleteStrengthEntry(userId: string, entryId: string): Promise<void> {
+  const workoutId = await getStrengthEntryWorkoutId(entryId);
+  if (!workoutId || !(await getWorkoutById(userId, workoutId))) {
+    throw new Error("Sættet findes ikke for denne bruger.");
+  }
+  await db.delete(workoutSet).where(eq(workoutSet.id, entryId));
+}
+
+export async function updateCardioEntry(
+  userId: string,
+  entryId: string,
+  data: { distance_km: number; duration_sec: number },
+): Promise<void> {
+  const workoutId = await getCardioEntryWorkoutId(entryId);
+  if (!workoutId || !(await getWorkoutById(userId, workoutId))) {
+    throw new Error("Cardio-registreringen findes ikke for denne bruger.");
+  }
+  await db.update(workoutCardio)
+    .set({ distance_km: data.distance_km, duration_sec: data.duration_sec })
+    .where(eq(workoutCardio.id, entryId));
+}
+
+export async function deleteCardioEntry(userId: string, entryId: string): Promise<void> {
+  const workoutId = await getCardioEntryWorkoutId(entryId);
+  if (!workoutId || !(await getWorkoutById(userId, workoutId))) {
+    throw new Error("Cardio-registreringen findes ikke for denne bruger.");
+  }
+  await db.delete(workoutCardio).where(eq(workoutCardio.id, entryId));
 }
