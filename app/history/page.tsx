@@ -32,7 +32,7 @@ export default async function HistoryPage() {
           <p className="text-sm text-zinc-500">Ingen træninger logget endnu.</p>
         </div>
       ) : (
-        <ul className="zet-panel divide-y divide-zinc-100">
+        <ul className="flex flex-col gap-3">
           {workoutSummaries.map(({ workout, exerciseNames, strengthSetCount, cardioCount }) => {
             const countParts = [
               strengthSetCount > 0 ? `${strengthSetCount} sæt` : null,
@@ -43,17 +43,21 @@ export default async function HistoryPage() {
               <li key={workout.id}>
                 <Link
                   href={`/history/${workout.id}`}
-                  className="group flex items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
+                  className="group zet-panel block transition-colors hover:border-indigo-200"
                 >
-                  <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-zinc-900 group-hover:text-indigo-600">
                       {formatDateDanish(workout.date)}
                     </p>
-                    <p className="mt-1 truncate text-sm text-zinc-500">
-                      {exerciseNames.join(", ")} · {countParts.join(", ")}
-                    </p>
+                    <span className="shrink-0 text-xs text-zinc-400">{countParts.join(" · ")}</span>
                   </div>
-                  <span aria-hidden="true" className="shrink-0 text-zinc-400 group-hover:text-indigo-600">→</span>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {exerciseNames.map((name) => (
+                      <span key={name} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                        {name}
+                      </span>
+                    ))}
+                  </div>
                 </Link>
               </li>
             );

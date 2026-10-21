@@ -46,6 +46,7 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - Historiksiderne (`app/history/page.tsx`, `app/history/[id]/page.tsx`) matcher nu dashboardets kort/liste-stil (`zet-panel`, delt liste med `divide-y`, hover-pil), samme mønster som "Seneste træninger" på dashboardet.
 - Verificeret visuelt med en midlertidig testbruger (oprettet og slettet igen efter testen, ingen rigtige brugeres data blev rørt): login, dashboard (bekræftede at "Admin"-linket korrekt IKKE vises for en member-bruger), log-siden (styrke- og cardio-fanen), historik-listen og en træningsdetalje, alle ser nu konsistente ud.
 - TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (6 deltests) bestod.
+- Opfølgning: Joe syntes historik-oversigten var uoverskuelig med rigtige data (mange øvelser på én dag blev til én lang, sammenhængende tekstlinje). Hver træningsdag har nu sin egen boks (`zet-panel`) i stedet for én delt liste med skillelinjer, og øvelserne vises som små runde mærker i stedet for en kommasepareret tekststreng. Verificeret visuelt med en midlertidig testbruger med flere tætpakkede træningsdage (7 øvelser på én dag), oprettet og slettet igen efter testen.
 
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
