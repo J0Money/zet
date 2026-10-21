@@ -141,6 +141,38 @@ export async function addStrengthEntry(
   return { kind: "strength", ...row };
 }
 
+// Flere sæt af samme øvelse i ét kald (fx 3 sæt med forskellig vægt/reps),
+// gemt i ét bulk-insert, så enten gemmes alle sæt, eller ingen af dem.
+export async function addStrengthEntries(
+  userId: string,
+  data: {
+    workout_id: string;
+    exercise_id: string;
+    sets: { reps: number; weight_kg: number }[];
+  },
+): Promise<StrengthEntry[]> {
+  const workout = await getWorkoutById(userId, data.workout_id);
+  if (!workout) {
+    throw new Error("Workout findes ikke for denne bruger.");
+  }
+  const exercises = await getExercises(userId);
+  if (!exercises.some((exercise) => exercise.id === data.exercise_id && exercise.type === "strength")) {
+    throw new Error("Styrkeøvelsen er ikke tilgængelig for denne bruger.");
+  }
+
+  const rows = await db
+    .insert(workoutSet)
+    .values(data.sets.map((set) => ({
+      workout_id: data.workout_id,
+      exercise_id: data.exercise_id,
+      reps: set.reps,
+      weight_kg: set.weight_kg,
+    })))
+    .returning();
+
+  return rows.map((row) => ({ kind: "strength" as const, ...row }));
+}
+
 export async function addCardioEntry(
   userId: string,
   data: Omit<CardioEntry, "id" | "kind">,
