@@ -2,11 +2,13 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
-## Overlevering til næste session (20. oktober 2026, slut på dagens arbejde)
+## Overlevering til næste session (21. oktober 2026, slut på dagens arbejde)
 
 - **Trin 7 er helt færdigt og testet:** login, sessionsbeskyttelse af alle sider, logout, beskyttet invitationsadministration, flere muskelgrupper pr. øvelse (40 øvelser) og tag-filter på log-siden. Alt er bekræftet af Joe i browseren og på mobilen.
-- **Git:** Arbejdet er nu fordelt på 6 commits på `master` (`Redesign dashboard...` → `Opdater CLAUDE.md med status efter trin 7`). Intet er pushet nogen steder endnu, der findes intet GitHub-repo eller Vercel-projekt for ZET (tjekket med `gh repo list`, ingen `zet` blandt Joes repos).
-- **Vi var i gang med trin 8 (udgivelse), men stoppede ved:** at skulle beslutte, om der skal oprettes et nyt GitHub-repo (privat/offentligt, navn, formentlig `zet`), og derefter et Vercel-projekt forbundet til det. Spørg Joe, hvordan han vil have det, før noget oprettes eller pushes.
+- **GitHub:** Koden ligger nu på [github.com/J0Money/zet](https://github.com/J0Money/zet) (privat, Joes personlige konto), lokal `origin` peger herpå. Alle 7 commits er pushet.
+  - Et første repo blev ved en fejl oprettet under Joes praktik-konto (`Joachim-SearchMind/zet`). En overførsel til `J0Money` blev sat i gang, men mailen med acceptlinket dukkede aldrig op i `J0Money`s indbakke (heller ikke i spam, inden for et par minutter). Løst i stedet ved at Joe selv kørte `gh auth login` og loggede ind som `J0Money`, hvorefter et nyt repo blev oprettet direkte under hans konto og koden pushet dertil.
+  - `Joachim-SearchMind/zet` findes stadig (med en nu overflødig, ventende overførsel) og er bevidst **ikke** slettet, Joe ville gemme den som backup. Ingen handling nødvendig her, medmindre Joe selv beder om det.
+- **Vercel:** Intet projekt oprettet endnu. Det er næste skridt i trin 8.
 - **Når vi når til Vercel-opsætningen**, skal disse miljøvariabler sættes der (værdierne findes kun i Joes `.env.local`, vis dem aldrig i chatten): `DATABASE_URL`, `DIRECT_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (skal opdateres til den rigtige produktions-URL, når Vercel har tildelt en), `ADMIN_EMAIL`. `BETTER_AUTH_TRUSTED_ORIGINS` (brugt lokalt til telefontest) skal ikke med i Vercel.
 - Husk at tjekke Better Auths IP-baserede rate limiting (`lib/auth.ts`) fungerer korrekt bag Vercels proxy, som en del af den samlede deploykontrol, se note i trin 7-afsnittet nedenfor.
 - Ingen nye ønsker til finpudsning er noteret endnu ud over selve udgivelsen.
