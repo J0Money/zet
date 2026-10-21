@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatDateDanish } from "@/lib/dates";
-import { formatCardio } from "@/lib/format";
+import { formatCardio, formatPace } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
 
@@ -73,7 +73,12 @@ export default async function WorkoutDetailPage({
                       Sæt {index + 1}: {entry.weight_kg} kg × {entry.reps}
                     </li>
                   ) : (
-                    <li key={entry.id}>{formatCardio(entry.distance_km, entry.duration_sec)}</li>
+                    <li key={entry.id}>
+                      {formatCardio(entry.distance_km, entry.duration_sec)}
+                      {formatPace(entry.distance_km, entry.duration_sec) && (
+                        <> · {formatPace(entry.distance_km, entry.duration_sec)}</>
+                      )}
+                    </li>
                   ),
                 )}
               </ul>
