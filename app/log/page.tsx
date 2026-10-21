@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/session";
 import { connection } from "next/server";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
 import { getTodayInCopenhagen } from "@/lib/dates";
-import { formatCardio } from "@/lib/format";
+import { formatCardio, formatPace } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 
@@ -78,7 +78,12 @@ export default async function LogPage() {
                           <span>{entry.weight_kg} kg × {entry.reps}</span>
                         </>
                       ) : (
-                        <span>{formatCardio(entry.distance_km, entry.duration_sec)}</span>
+                        <span>
+                          {formatCardio(entry.distance_km, entry.duration_sec)}
+                          {formatPace(entry.distance_km, entry.duration_sec) && (
+                            <> · {formatPace(entry.distance_km, entry.duration_sec)}</>
+                          )}
+                        </span>
                       )}
                     </li>
                   ))}
