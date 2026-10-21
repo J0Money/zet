@@ -23,6 +23,7 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - `StrengthSetForm` har nu en dynamisk liste af sæt-rækker ("+ Tilføj sæt"/fjern-knap pr. række). Et nyt sæt arver reps/vægt fra det forrige som udgangspunkt, de fleste sæt i træk ligner hinanden. Efter et vellykket gem nulstilles listen til ét tomt sæt.
 - Vægt kan nu være 0 (fx kropsvægtsøvelser som dips uden ekstra vægt), ændret fra `min={0.5}`/`> 0` til `min={0}`/`>= 0` i både UI og serverside-validering. Reps skal stadig være mindst 1.
 - TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (alle 6 deltests) bestod uændret efter ændringen, kørt lokalt mod dev-serveren.
+- Opfølgning: "Dagens sæt" på log-siden (`app/log/page.tsx`) viser nu sæt grupperet pr. øvelse (fx "Bænkpres" som overskrift med "Sæt 1", "Sæt 2" osv. under sig), i stedet for én flad linje pr. sæt. Kun log-siden, Joe valgte at lade historikken være uændret. Cardio-indtastninger grupperes også pr. øvelse, men uden "Sæt N"-nummerering, da det ikke er sæt-baseret.
 
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
