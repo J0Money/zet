@@ -2,6 +2,22 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+## Overlevering til næste session (21. oktober 2026, slut på dagens arbejde)
+
+- **ZET er udgivet og kører stabilt** på [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Alt arbejde i dag er pushet til `master` på [github.com/J0Money/zet](https://github.com/J0Money/zet), intet ligger uncommittet.
+- **Dagens arbejde (efter udgivelsen), alt sammen testet og bekræftet af Joe:**
+  1. Flere sæt pr. styrkeøvelse + tilladt 0 kg (kropsvægtsøvelser)
+  2. "Dagens sæt" grupperet pr. øvelse på log-siden
+  3. Rigtig admin-rolle i databasen (`user.role`), erstatter `ADMIN_EMAIL`-tjekket; synligt "Admin"-link i bundnavigationen, kun for admins
+  4. Styling af log- og historiksiderne til at matche dashboardet, samt historik-oversigten delt op i en boks pr. dag
+  5. Live pace-beregning ved cardio-logning, både under indtastning og i gemte træninger
+  6. Ret og slet for loggede sæt og cardio-registreringer, både på log-siden og i historikken
+  7. Udviklingsdiagram: styrkevolumen pr. uge på dashboardet (seneste 8 uger)
+- **Brainstorm-idéer, der stadig ikke er lavet** (fra en session-brainstorm): "Ny rekord!"-markering ved et nyt PR, noter pr. træning (feltet findes allerede i databasen, ingen UI endnu), simpelt gruppeoverblik mellem Joe og vennerne, gøre appen installerbar som PWA.
+- **Praktisk:** Disken på denne maskine havde kun ca. 4,8 GB fri plads ved dagens slutning (ryddede 4,7 GB npm-cache undervejs, da builden fejlede pga. pladsmangel). Værd at holde øje med, hvis builds begynder at fejle mystisk igen.
+- **Teknisk:** Dev-serveren blev genstartet mange gange i dag med `(npm run dev > logfil &)` i baggrunden, og enkelte gamle processer blev glemt og optog port 3000/3001. Ingen af dem kører længere nu, men tjek `netstat -ano | findstr :3000` først, hvis port 3000 virker optaget næste gang.
+- Ingen nye arkitekturbeslutninger afventer. Alt er småt, veldefineret opfølgningsarbejde eller nye idéer fra brainstormen ovenfor.
+
 ## ZET er udgivet (21. oktober 2026)
 
 - **Appen kører i produktion på [zet-wheat.vercel.app](https://zet-wheat.vercel.app).** Joe har bekræftet: login virker, dashboardet viser de rigtige tal, "Log ud" virker, og en ny træning kan logges og ses i historikken.
