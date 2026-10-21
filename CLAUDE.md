@@ -36,6 +36,8 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - **`ADMIN_EMAIL` er nu overflødig** og kan fjernes fra både `.env.local` og Vercels miljøvariabler, hvis Joe ønsker oprydning. Ikke gjort endnu, da den er harmløs at lade stå.
 - At gøre en anden bruger til admin kræver i dag en direkte rettelse i databasen (fx via `npx drizzle-kit studio`), ingen brugerflade til det, det var bevidst fravalgt.
 - TypeScript, ESLint og `npm run build` bestod.
+- Opfølgning: Joe ville have et synligt "Admin"-link i bundnavigationen, der kun vises for brugere med role "admin". Løsning: `lib/session.ts` har fået `getOptionalUser()` (som `requireUser()`, men omdirigerer ikke, returnerer `null`), og `lib/admin.ts` har fået `isCurrentUserAdmin()`. Den nye server-komponent `app/components/admin-nav-link.tsx` slår rollen op og viser kun "Admin"-linket, hvis den er `"admin"`. Pakket ind i `<Suspense>` i `app/layout.tsx` og sendt som prop til `BottomNav`, så kun denne lille del af bundnavigationen bliver "live" pr. besøg (Partial Prerendering), resten af siderne forbliver statiske. Forside (`/`) gik fra fuldt statisk (`○`) til delvist forudrenderet (`◐`) i buildoutputtet, det er forventet og korrekt, ikke en regression.
+- TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (6 deltests) bestod. Bemærkning: en forældet dev-server fra tidligere på dagen sad stadig på port 3000 og gav to falske testfejl ved første forsøg, løst ved at stoppe den og starte en frisk server.
 
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 

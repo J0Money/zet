@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChartBar, ClockCounterClockwise, PlusCircle, SignOut } from "@phosphor-icons/react";
@@ -18,7 +19,7 @@ const navItems: NavItem[] = [
   { href: "/history", label: "Historik", icon: ClockCounterClockwise },
 ];
 
-export function BottomNav() {
+export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
   const pathname = usePathname();
 
   // Oprettelsessiden har sit eget forløb uden træningsnavigation.
@@ -44,6 +45,7 @@ export function BottomNav() {
             </li>
           );
         })}
+        {adminLink}
         <li className="flex-1">
           <form action={logout}>
             <button
