@@ -39,6 +39,14 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - Opfølgning: Joe ville have et synligt "Admin"-link i bundnavigationen, der kun vises for brugere med role "admin". Løsning: `lib/session.ts` har fået `getOptionalUser()` (som `requireUser()`, men omdirigerer ikke, returnerer `null`), og `lib/admin.ts` har fået `isCurrentUserAdmin()`. Den nye server-komponent `app/components/admin-nav-link.tsx` slår rollen op og viser kun "Admin"-linket, hvis den er `"admin"`. Pakket ind i `<Suspense>` i `app/layout.tsx` og sendt som prop til `BottomNav`, så kun denne lille del af bundnavigationen bliver "live" pr. besøg (Partial Prerendering), resten af siderne forbliver statiske. Forside (`/`) gik fra fuldt statisk (`○`) til delvist forudrenderet (`◐`) i buildoutputtet, det er forventet og korrekt, ikke en regression.
 - TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (6 deltests) bestod. Bemærkning: en forældet dev-server fra tidligere på dagen sad stadig på port 3000 og gav to falske testfejl ved første forsøg, løst ved at stoppe den og starte en frisk server.
 
+### Styling af log- og historiksiderne (21. oktober 2026)
+
+- Log- og historiksiderne brugte stadig det gamle, enkle Tailwind-udseende, mens dashboardet tidligere er redesignet til et indigo/zinc "zet-panel"-udseende. Flyttede de delte klasser (`zet-page`, `zet-brand`, `zet-panel`, `zet-sectionTitle`) fra `app/dashboard/dashboard.css` til `app/globals.css`, så de ikke kun gælder for dashboardet. Dashboardets egne, specifikke klasser (`zet-header`, `zet-masthead`, `zet-weekly` m.fl.) blev i `dashboard.css`. `app/dashboard/page.tsx` bruger nu `zet-page` i stedet for det nu fjernede `zet-dashboard`.
+- Log-siden (`app/log/page.tsx`, `log-form-tabs.tsx`, `strength-set-form.tsx`, `cardio-entry-form.tsx`) matcher nu samme formular-stil som login/signup/admin-siderne (afrundede felter, indigo-accent, `rounded-xl`/`shadow-sm`), da den mest består af formularer. "Dagens sæt" er pakket i et `zet-panel`-kort.
+- Historiksiderne (`app/history/page.tsx`, `app/history/[id]/page.tsx`) matcher nu dashboardets kort/liste-stil (`zet-panel`, delt liste med `divide-y`, hover-pil), samme mønster som "Seneste træninger" på dashboardet.
+- Verificeret visuelt med en midlertidig testbruger (oprettet og slettet igen efter testen, ingen rigtige brugeres data blev rørt): login, dashboard (bekræftede at "Admin"-linket korrekt IKKE vises for en member-bruger), log-siden (styrke- og cardio-fanen), historik-listen og en træningsdetalje, alle ser nu konsistente ud.
+- TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (6 deltests) bestod.
+
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
 - Joe har selv kørt adgangskodeopsætningen og bekræftet, at han er logget ind. Gentag ikke opsætningen.

@@ -44,36 +44,41 @@ export default async function WorkoutDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <Link href="/history" className="text-sm text-zinc-500 dark:text-zinc-400">
-        ← Tilbage til historik
-      </Link>
+    <div className="zet-page flex flex-col gap-6">
+      <div>
+        <Link href="/history" className="text-sm text-zinc-500 hover:text-indigo-600">
+          ← Tilbage til historik
+        </Link>
+      </div>
 
-      <h1 className="text-xl font-semibold">{formatDateDanish(workout.date)}</h1>
-
-      {workout.notes && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">{workout.notes}</p>
-      )}
+      <header className="zet-pageHeader">
+        <p className="zet-brand">ZET</p>
+        <h1>{formatDateDanish(workout.date)}</h1>
+        {workout.notes && (
+          <p className="mt-2 text-sm text-zinc-500">{workout.notes}</p>
+        )}
+      </header>
 
       {entriesByExercise.size === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Ingen sæt registreret for denne træning.
-        </p>
+        <div className="zet-panel">
+          <p className="text-sm text-zinc-500">Ingen sæt registreret for denne træning.</p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-4">
+        <ul className="zet-panel divide-y divide-zinc-100">
           {[...entriesByExercise.entries()].map(([exerciseId, exerciseEntries]) => (
-            <li key={exerciseId}>
-              <div className="font-medium">
+            <li key={exerciseId} className="py-3 first:pt-0 last:pb-0">
+              <p className="font-medium text-zinc-900">
                 {exerciseNameById.get(exerciseId) ?? "Ukendt øvelse"}
-              </div>
-              <ul className="mt-1 flex flex-col gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+              </p>
+              <ul className="mt-1.5 flex flex-col gap-1">
                 {exerciseEntries.map((entry, index) =>
                   entry.kind === "strength" ? (
-                    <li key={entry.id}>
-                      Sæt {index + 1}: {entry.weight_kg} kg × {entry.reps}
+                    <li key={entry.id} className="flex justify-between text-sm text-zinc-500">
+                      <span>Sæt {index + 1}</span>
+                      <span className="font-mono tabular-nums text-zinc-700">{entry.weight_kg} kg × {entry.reps}</span>
                     </li>
                   ) : (
-                    <li key={entry.id}>
+                    <li key={entry.id} className="text-sm text-zinc-500">
                       {formatCardio(entry.distance_km, entry.duration_sec)}
                       {formatPace(entry.distance_km, entry.duration_sec) && (
                         <> · {formatPace(entry.distance_km, entry.duration_sec)}</>

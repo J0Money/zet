@@ -6,7 +6,8 @@ import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup } from "@/lib/types";
 
 const initialState: LogStrengthSetState = {};
-const inputClass = "rounded border border-zinc-300 bg-transparent p-3 text-base dark:border-zinc-700";
+const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
+const labelClass = "mb-2 block text-sm font-medium text-zinc-700";
 
 type SetRow = { id: number; reps: string; weightKg: string };
 
@@ -59,18 +60,18 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form action={formAction} className="flex flex-col gap-5">
       {availableTags.length > 0 && (
-        <div className="flex flex-col gap-1 text-sm">
-          Filtrér på muskelgruppe
+        <div>
+          <p className={labelClass}>Filtrér på muskelgruppe</p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setSelectedTags(new Set())}
               className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                 selectedTags.size === 0
-                  ? "bg-foreground text-background"
-                  : "border border-zinc-300 dark:border-zinc-700"
+                  ? "bg-indigo-600 text-white"
+                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
               }`}
             >
               Alle
@@ -82,8 +83,8 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
                 onClick={() => toggleTag(group)}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                   selectedTags.has(group)
-                    ? "bg-foreground text-background"
-                    : "border border-zinc-300 dark:border-zinc-700"
+                    ? "bg-indigo-600 text-white"
+                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
                 }`}
               >
                 {muscleGroupLabel[group]}
@@ -93,22 +94,22 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
         </div>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
-        Øvelse
-        <select name="exerciseId" required className={inputClass}>
+      <div>
+        <label className={labelClass} htmlFor="exerciseId">Øvelse</label>
+        <select id="exerciseId" name="exerciseId" required className={inputClass}>
           {filteredExercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
               {exercise.name}
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {sets.map((set, index) => (
           <div key={set.id} className="flex items-end gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-              {index === 0 && "Reps"}
+            <div className="flex-1">
+              {index === 0 && <p className={labelClass}>Reps</p>}
               <input
                 name="reps"
                 type="number"
@@ -120,9 +121,9 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
                 onChange={(event) => updateSet(set.id, "reps", event.target.value)}
                 className={inputClass}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-              {index === 0 && "Vægt (kg)"}
+            </div>
+            <div className="flex-1">
+              {index === 0 && <p className={labelClass}>Vægt (kg)</p>}
               <input
                 name="weightKg"
                 type="number"
@@ -134,13 +135,13 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
                 onChange={(event) => updateSet(set.id, "weightKg", event.target.value)}
                 className={inputClass}
               />
-            </label>
+            </div>
             {sets.length > 1 && (
               <button
                 type="button"
                 onClick={() => removeSet(set.id)}
                 aria-label={`Fjern sæt ${index + 1}`}
-                className="min-h-12 rounded border border-zinc-300 px-3 text-sm text-zinc-500 dark:border-zinc-700"
+                className="min-h-12 rounded-xl border border-zinc-300 px-3 text-sm text-zinc-500 hover:border-red-300 hover:text-red-600"
               >
                 ×
               </button>
@@ -150,20 +151,22 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
         <button
           type="button"
           onClick={addSet}
-          className="self-start rounded border border-dashed border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
+          className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 px-4 text-sm font-medium text-zinc-600 hover:border-indigo-300 hover:text-indigo-600"
         >
           + Tilføj sæt
         </button>
       </div>
 
       {state.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+          {state.error}
+        </p>
       )}
 
       <button
         type="submit"
         disabled={isPending}
-        className="rounded bg-foreground px-4 py-3 text-base font-medium text-background disabled:opacity-50"
+        className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? "Gemmer…" : sets.length === 1 ? "Gem sæt" : `Gem ${sets.length} sæt`}
       </button>

@@ -21,15 +21,18 @@ export default async function HistoryPage() {
   const workoutSummaries = getLatestWorkouts(workouts, entries, exercises, workouts.length);
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold">Historik</h1>
+    <div className="zet-page flex flex-col gap-6">
+      <header className="zet-pageHeader">
+        <p className="zet-brand">ZET</p>
+        <h1>Historik</h1>
+      </header>
 
       {workoutSummaries.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Ingen træninger logget endnu.
-        </p>
+        <div className="zet-panel">
+          <p className="text-sm text-zinc-500">Ingen træninger logget endnu.</p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="zet-panel divide-y divide-zinc-100">
           {workoutSummaries.map(({ workout, exerciseNames, strengthSetCount, cardioCount }) => {
             const countParts = [
               strengthSetCount > 0 ? `${strengthSetCount} sæt` : null,
@@ -40,12 +43,17 @@ export default async function HistoryPage() {
               <li key={workout.id}>
                 <Link
                   href={`/history/${workout.id}`}
-                  className="block rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800"
+                  className="group flex items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
                 >
-                  <div className="font-medium">{formatDateDanish(workout.date)}</div>
-                  <div className="text-zinc-500 dark:text-zinc-400">
-                    {exerciseNames.join(", ")} · {countParts.join(", ")}
+                  <div className="min-w-0">
+                    <p className="font-medium text-zinc-900 group-hover:text-indigo-600">
+                      {formatDateDanish(workout.date)}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-zinc-500">
+                      {exerciseNames.join(", ")} · {countParts.join(", ")}
+                    </p>
                   </div>
+                  <span aria-hidden="true" className="shrink-0 text-zinc-400 group-hover:text-indigo-600">→</span>
                 </Link>
               </li>
             );

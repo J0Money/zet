@@ -17,15 +17,15 @@ export function LogFormTabs({
   const [tab, setTab] = useState<Tab>("strength");
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
+    <div className="flex flex-col gap-5">
+      <div className="flex gap-1 rounded-xl bg-zinc-100 p-1">
         <button
           type="button"
           onClick={() => setTab("strength")}
-          className={`flex-1 rounded p-2 text-sm font-medium ${
+          className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
             tab === "strength"
-              ? "bg-foreground text-background"
-              : "border border-zinc-300 dark:border-zinc-700"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-zinc-500 hover:text-zinc-700"
           }`}
         >
           Styrke
@@ -33,21 +33,23 @@ export function LogFormTabs({
         <button
           type="button"
           onClick={() => setTab("cardio")}
-          className={`flex-1 rounded p-2 text-sm font-medium ${
+          className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
             tab === "cardio"
-              ? "bg-foreground text-background"
-              : "border border-zinc-300 dark:border-zinc-700"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-zinc-500 hover:text-zinc-700"
           }`}
         >
           Cardio
         </button>
       </div>
 
-      {tab === "strength" ? (
-        <StrengthSetForm exercises={strengthExercises} />
-      ) : (
-        <CardioEntryForm exercises={cardioExercises} />
-      )}
+      <div className="zet-panel">
+        {tab === "strength" ? (
+          <StrengthSetForm exercises={strengthExercises} />
+        ) : (
+          <CardioEntryForm exercises={cardioExercises} />
+        )}
+      </div>
     </div>
   );
 }

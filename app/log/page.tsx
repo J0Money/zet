@@ -50,32 +50,33 @@ export default async function LogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold">Log en træning</h1>
+    <div className="zet-page flex flex-col gap-6">
+      <header className="zet-pageHeader">
+        <p className="zet-brand">ZET</p>
+        <h1>Log en træning</h1>
+      </header>
 
       <LogFormTabs
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
       />
 
-      <section>
-        <h2 className="mb-2 font-semibold">Dagens sæt</h2>
+      <section className="zet-panel">
+        <h2 className="zet-sectionTitle mb-4">Dagens sæt</h2>
         {groupedEntries.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Ingen sæt logget i dag endnu.
-          </p>
+          <p className="text-sm text-zinc-500">Ingen sæt logget i dag endnu.</p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="divide-y divide-zinc-100">
             {groupedEntries.map((group) => (
-              <li key={group.exerciseId}>
-                <p className="font-medium text-sm">{group.exerciseName}</p>
-                <ul className="mt-1 flex flex-col gap-1 pl-1">
+              <li key={group.exerciseId} className="py-3 first:pt-0 last:pb-0">
+                <p className="font-medium text-zinc-900">{group.exerciseName}</p>
+                <ul className="mt-1.5 flex flex-col gap-1">
                   {group.entries.map((entry, index) => (
-                    <li key={entry.id} className="flex justify-between text-sm text-zinc-500 dark:text-zinc-400">
+                    <li key={entry.id} className="flex justify-between text-sm text-zinc-500">
                       {entry.kind === "strength" ? (
                         <>
                           <span>Sæt {index + 1}</span>
-                          <span>{entry.weight_kg} kg × {entry.reps}</span>
+                          <span className="font-mono tabular-nums text-zinc-700">{entry.weight_kg} kg × {entry.reps}</span>
                         </>
                       ) : (
                         <span>
