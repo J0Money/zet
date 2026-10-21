@@ -6,7 +6,8 @@ import { formatPace } from "@/lib/format";
 import type { Exercise } from "@/lib/types";
 
 const initialState: LogCardioEntryState = {};
-const inputClass = "rounded border border-zinc-300 bg-transparent p-3 text-base dark:border-zinc-700";
+const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
+const labelClass = "mb-2 block text-sm font-medium text-zinc-700";
 
 export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
@@ -32,21 +33,22 @@ export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
   const pace = formatPace(Number(distanceKm), durationSec);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm">
-        Øvelse
-        <select name="exerciseId" required defaultValue={state.values?.exerciseId} className={inputClass}>
+    <form action={formAction} className="flex flex-col gap-5">
+      <div>
+        <label className={labelClass} htmlFor="exerciseId">Øvelse</label>
+        <select id="exerciseId" name="exerciseId" required defaultValue={state.values?.exerciseId} className={inputClass}>
           {exercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
               {exercise.name}
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Distance (km)
+      <div>
+        <label className={labelClass} htmlFor="distanceKm">Distance (km)</label>
         <input
+          id="distanceKm"
           name="distanceKm"
           type="number"
           inputMode="decimal"
@@ -57,12 +59,13 @@ export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
           onChange={(event) => setDistanceKm(event.target.value)}
           className={inputClass}
         />
-      </label>
+      </div>
 
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          Minutter
+        <div className="flex-1">
+          <label className={labelClass} htmlFor="minutes">Minutter</label>
           <input
+            id="minutes"
             name="minutes"
             type="number"
             inputMode="numeric"
@@ -73,11 +76,12 @@ export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
             onChange={(event) => setMinutes(event.target.value)}
             className={inputClass}
           />
-        </label>
+        </div>
 
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          Sekunder
+        <div className="flex-1">
+          <label className={labelClass} htmlFor="seconds">Sekunder</label>
           <input
+            id="seconds"
             name="seconds"
             type="number"
             inputMode="numeric"
@@ -89,21 +93,23 @@ export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
             onChange={(event) => setSeconds(event.target.value)}
             className={inputClass}
           />
-        </label>
+        </div>
       </div>
 
       {pace && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Pace: {pace}</p>
+        <p className="text-sm text-zinc-500">Pace: <span className="font-medium text-zinc-700">{pace}</span></p>
       )}
 
       {state.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+          {state.error}
+        </p>
       )}
 
       <button
         type="submit"
         disabled={isPending}
-        className="rounded bg-foreground px-4 py-3 text-base font-medium text-background disabled:opacity-50"
+        className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? "Gemmer…" : "Gem cardio"}
       </button>

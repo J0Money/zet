@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const exercises = await getExercises(currentUser.id);
 
   return (
-    <div className="zet-dashboard">
+    <div className="zet-page">
       <header className="zet-header">
         <div className="zet-masthead">
           <div><p className="zet-brand">ZET</p><h1>Overblik</h1></div>
