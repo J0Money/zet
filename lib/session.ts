@@ -11,3 +11,11 @@ export const requireUser = cache(async () => {
   if (!session) redirect("/login");
   return { id: session.user.id, name: session.user.name };
 });
+
+// Som requireUser(), men omdirigerer ikke, returnerer null i stedet. Bruges
+// hvor noget (fx bundnavigationen) skal virke ens for alle, uanset om man er
+// logget ind, i stedet for at sende besøgende videre til /login.
+export const getOptionalUser = cache(async () => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session ? { id: session.user.id, name: session.user.name } : null;
+});
