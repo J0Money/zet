@@ -48,6 +48,18 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - TypeScript, ESLint, `npm run build` og hele `tests/access.integration.test.ts` (6 deltests) bestod.
 - Opfølgning: Joe syntes historik-oversigten var uoverskuelig med rigtige data (mange øvelser på én dag blev til én lang, sammenhængende tekstlinje). Hver træningsdag har nu sin egen boks (`zet-panel`) i stedet for én delt liste med skillelinjer, og øvelserne vises som små runde mærker i stedet for en kommasepareret tekststreng. Verificeret visuelt med en midlertidig testbruger med flere tætpakkede træningsdage (7 øvelser på én dag), oprettet og slettet igen efter testen.
 
+### Ret og slet loggede sæt/cardio (21. oktober 2026)
+
+- Joe ønskede både at kunne rette og slette et logget sæt eller en cardio-registrering, både på log-sidens "Dagens sæt" og i historik-detaljer. Ingen af delene fandtes før.
+- `lib/workout-store.ts` har fire nye funktioner (`updateStrengthEntry`, `deleteStrengthEntry`, `updateCardioEntry`, `deleteCardioEntry`), alle med samme ejerskabstjek-mønster som de eksisterende `add*`-funktioner: slår sættets/registreringens `workout_id` op, bekræfter via `getWorkoutById` at den tilhører den rigtige bruger, afviser ellers.
+- `app/components/entry-actions.ts` samler de fire Server Actions, delt mellem log- og historiksiden. Alle fire reltevante stier genopfriskes efter en ændring, inklusive `/history/[id]` for alle træninger (Next.js' `revalidatePath` med `"page"`-typen dækker hele den dynamiske rute).
+- To nye, delte klientkomponenter, `StrengthEntryRow` og `CardioEntryRow`, viser hver række og rummer selv deres egen rette-/slettetilstand. Rette-knappen åbner et lille inlineformular; slet beder om bekræftelse med browserens indbyggede `confirm()`, før noget sendes. Ikonerne (Phosphor `PencilSimple`/`TrashSimple`) er altid synlige, ikke skjult bag hover, det er en mobil-app, og der er intet "hover" på en telefon.
+- To rigtige fejl blev fundet og rettet under test, før de nåede Joe:
+  1. `getEntries()` i `lib/workout-store.ts` manglede `ORDER BY created_at`. Uden den kunne en `UPDATE` flytte en rækkes fysiske plads i en usorteret `SELECT`, så "Sæt 1"/"Sæt 2"-nummereringen kunne bytte plads efter en rettelse, selvom `created_at`-feltet allerede fandtes i skemaet.
+  2. Redigeringsformularen lukkede ikke automatisk efter et vellykket gem. Rettet med samme render-tids-synkroniseringsmønster som `CardioEntryForm` allerede bruger (ikke en `useEffect`, af samme grund som dengang).
+- Testet: TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (6 deltests) bestod. Rettelse og sletning blev verificeret visuelt i browseren med en midlertidig testbruger (ret virker synligt og lukker korrekt igen; rækkefølgen er nu stabil). Selve slet-knappen kunne ikke fuldføres gennem det automatiserede browserværktøj, da det altid afviser browserens `confirm()`-dialog, så logikken (ejer kan slette, en anden bruger kan hverken rette eller slette) blev i stedet bekræftet direkte mod databasen med to midlertidige testbrugere, begge dele bestod, og testdata blev ryddet op bagefter.
+- Browsertest af selve slet-knappen i en rigtig browser er derfor stadig ikke udført. Joe bør selv afprøve den.
+
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
 - Joe har selv kørt adgangskodeopsætningen og bekræftet, at han er logget ind. Gentag ikke opsætningen.

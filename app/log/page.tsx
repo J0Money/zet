@@ -1,8 +1,9 @@
 import { requireUser } from "@/lib/session";
 import { connection } from "next/server";
+import { CardioEntryRow } from "@/app/components/cardio-entry-row";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
+import { StrengthEntryRow } from "@/app/components/strength-entry-row";
 import { getTodayInCopenhagen } from "@/lib/dates";
-import { formatCardio, formatPace } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 
@@ -71,23 +72,13 @@ export default async function LogPage() {
               <li key={group.exerciseId} className="py-3 first:pt-0 last:pb-0">
                 <p className="font-medium text-zinc-900">{group.exerciseName}</p>
                 <ul className="mt-1.5 flex flex-col gap-1">
-                  {group.entries.map((entry, index) => (
-                    <li key={entry.id} className="flex justify-between text-sm text-zinc-500">
-                      {entry.kind === "strength" ? (
-                        <>
-                          <span>Sæt {index + 1}</span>
-                          <span className="font-mono tabular-nums text-zinc-700">{entry.weight_kg} kg × {entry.reps}</span>
-                        </>
-                      ) : (
-                        <span>
-                          {formatCardio(entry.distance_km, entry.duration_sec)}
-                          {formatPace(entry.distance_km, entry.duration_sec) && (
-                            <> · {formatPace(entry.distance_km, entry.duration_sec)}</>
-                          )}
-                        </span>
-                      )}
-                    </li>
-                  ))}
+                  {group.entries.map((entry, index) =>
+                    entry.kind === "strength" ? (
+                      <StrengthEntryRow key={entry.id} entry={entry} label={`Sæt ${index + 1}`} />
+                    ) : (
+                      <CardioEntryRow key={entry.id} entry={entry} />
+                    ),
+                  )}
                 </ul>
               </li>
             ))}
