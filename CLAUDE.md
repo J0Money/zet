@@ -2,16 +2,17 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
-## Overlevering til næste session (21. oktober 2026, slut på dagens arbejde)
+## ZET er udgivet (21. oktober 2026)
 
-- **Trin 7 er helt færdigt og testet:** login, sessionsbeskyttelse af alle sider, logout, beskyttet invitationsadministration, flere muskelgrupper pr. øvelse (40 øvelser) og tag-filter på log-siden. Alt er bekræftet af Joe i browseren og på mobilen.
-- **GitHub:** Koden ligger nu på [github.com/J0Money/zet](https://github.com/J0Money/zet) (privat, Joes personlige konto), lokal `origin` peger herpå. Alle 7 commits er pushet.
-  - Et første repo blev ved en fejl oprettet under Joes praktik-konto (`Joachim-SearchMind/zet`). En overførsel til `J0Money` blev sat i gang, men mailen med acceptlinket dukkede aldrig op i `J0Money`s indbakke (heller ikke i spam, inden for et par minutter). Løst i stedet ved at Joe selv kørte `gh auth login` og loggede ind som `J0Money`, hvorefter et nyt repo blev oprettet direkte under hans konto og koden pushet dertil.
-  - `Joachim-SearchMind/zet` findes stadig (med en nu overflødig, ventende overførsel) og er bevidst **ikke** slettet, Joe ville gemme den som backup. Ingen handling nødvendig her, medmindre Joe selv beder om det.
-- **Vercel:** Intet projekt oprettet endnu. Det er næste skridt i trin 8.
-- **Når vi når til Vercel-opsætningen**, skal disse miljøvariabler sættes der (værdierne findes kun i Joes `.env.local`, vis dem aldrig i chatten): `DATABASE_URL`, `DIRECT_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (skal opdateres til den rigtige produktions-URL, når Vercel har tildelt en), `ADMIN_EMAIL`. `BETTER_AUTH_TRUSTED_ORIGINS` (brugt lokalt til telefontest) skal ikke med i Vercel.
-- Husk at tjekke Better Auths IP-baserede rate limiting (`lib/auth.ts`) fungerer korrekt bag Vercels proxy, som en del af den samlede deploykontrol, se note i trin 7-afsnittet nedenfor.
-- Ingen nye ønsker til finpudsning er noteret endnu ud over selve udgivelsen.
+- **Appen kører i produktion på [zet-wheat.vercel.app](https://zet-wheat.vercel.app).** Joe har bekræftet: login virker, dashboardet viser de rigtige tal, "Log ud" virker, og en ny træning kan logges og ses i historikken.
+- **GitHub:** Koden ligger på [github.com/J0Money/zet](https://github.com/J0Money/zet) (privat, Joes personlige konto), lokal `origin` peger herpå.
+  - Et første repo blev ved en fejl oprettet under Joes praktik-konto (`Joachim-SearchMind/zet`). En forsøgt overførsel via e-mail virkede ikke (mailen dukkede aldrig op). Løst i stedet ved at Joe selv kørte `gh auth login` som `J0Money`, hvorefter et nyt repo blev oprettet direkte under hans konto. `Joachim-SearchMind/zet` findes stadig som bevidst bevaret backup.
+- **Vercel-projektet** `zet` er oprettet under Joes konto (team `j0-money`), importeret fra GitHub-repoet, branch `master`. Alle fem miljøvariabler er sat: `DATABASE_URL`, `DIRECT_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`.
+- **Fejl undervejs og løsning:** Login fejlede først i produktion med Better Auths `Invalid origin`-fejl i Vercels logs. Årsagen var ikke selve konfigurationen, men at Joe testede på en af Vercels midlertidige per-deployment-adresser (fx `zet-xxxxx-j0-money.vercel.app`, dem man lander på, når man klikker ind fra selve deployment-oversigten), som ikke matcher `BETTER_AUTH_URL`. Løsningen var at bruge den faste produktionsadresse `zet-wheat.vercel.app` i stedet. **Vigtigt fremover:** test og del altid den faste produktions-URL, ikke de midlertidige deployment-specifikke adresser.
+- `BETTER_AUTH_URL` skal være en komplet adresse med `https://` foran (ikke kun domænet), ellers fejler Better Auths interne URL-opbygning.
+- Husk, at en ændret miljøvariabel i Vercel kræver en manuel redeploy (Deployments → ⋯ → Redeploy), den gælder ikke automatisk for allerede kørende deployments.
+- `BETTER_AUTH_TRUSTED_ORIGINS` (sat lokalt til telefontest med Joes WiFi-IP) blev formentlig importeret til Vercel sammen med de andre variabler via "Import .env". Den er ufarlig i produktion (peger på en lokal, uopnåelig adresse), men kan fjernes fra Vercel for ryddelighedens skyld, hvis Joe ønsker det.
+- **Resterende til fuld finpudsning (trin 8):** Better Auths IP-baserede rate limiting bag Vercels proxy er ikke eksplicit verificeret (bør tjekkes, at den rigtige klient-IP bruges, ikke Vercels interne adresse). Ellers er ingen yderligere ønsker noteret.
 
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
@@ -140,7 +141,7 @@ Datamodellen er implementeret i Postgres via Drizzle. Schemaet ligger i `lib/db/
 5. Færdig: Historik med liste og detaljevisning.
 6. Færdig: Database og Drizzle (Neon). `lib/workout-store.ts` læser og skriver i Postgres. `lib/mock-data.ts` er fjernet.
 7. **I gang:** Login med Better Auth, så hver bruger får sine egne data.
-8. Finpudsning og udgivelse, fx på Vercel.
+8. **Udgivet:** Live på [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Rate limiting bag Vercels proxy er endnu ikke eksplicit verificeret.
 
 ## Kontrol
 
