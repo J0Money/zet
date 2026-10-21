@@ -58,7 +58,7 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
   1. `getEntries()` i `lib/workout-store.ts` manglede `ORDER BY created_at`. Uden den kunne en `UPDATE` flytte en rækkes fysiske plads i en usorteret `SELECT`, så "Sæt 1"/"Sæt 2"-nummereringen kunne bytte plads efter en rettelse, selvom `created_at`-feltet allerede fandtes i skemaet.
   2. Redigeringsformularen lukkede ikke automatisk efter et vellykket gem. Rettet med samme render-tids-synkroniseringsmønster som `CardioEntryForm` allerede bruger (ikke en `useEffect`, af samme grund som dengang).
 - Testet: TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (6 deltests) bestod. Rettelse og sletning blev verificeret visuelt i browseren med en midlertidig testbruger (ret virker synligt og lukker korrekt igen; rækkefølgen er nu stabil). Selve slet-knappen kunne ikke fuldføres gennem det automatiserede browserværktøj, da det altid afviser browserens `confirm()`-dialog, så logikken (ejer kan slette, en anden bruger kan hverken rette eller slette) blev i stedet bekræftet direkte mod databasen med to midlertidige testbrugere, begge dele bestod, og testdata blev ryddet op bagefter.
-- Browsertest af selve slet-knappen i en rigtig browser er derfor stadig ikke udført. Joe bør selv afprøve den.
+- Joe har nu selv bekræftet i browseren: både ret og slet virker, for både styrkesæt og cardio.
 
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
