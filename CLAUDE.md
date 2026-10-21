@@ -27,6 +27,16 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - **Vigtig lektion om Vercel + GitHub:** De tre deployments efter det første udgivelsestrin blev "Blocked" i Vercel. Årsagen var, at git-commits på denne maskine var forfattet med Joes Searchmind-arbejdsmail (`johj@searchmind.dk`), som GitHub knytter til `Joachim-SearchMind`-kontoen, den har ikke adgang til Joes personlige Vercel-projekt (Hobby-planen tillader ikke samarbejde på private repos). Løst ved at sætte `git config user.name`/`user.email` lokalt for dette repo til Joes personlige, verificerede mail (`joachimh270@gmail.com`) og lave en ny commit. **Tjek fremover:** `git config user.email` i dette repo skal blive ved med at være `joachimh270@gmail.com`, ellers blokeres fremtidige deployments igen.
 - **Pace-beregning tilføjet til cardio.** `lib/format.ts`s nye `formatPace()` regner pace (min:sek pr. km) ud fra distance og varighed, returnerer `null`, hvis et af tallene er 0 eller ugyldigt. `CardioEntryForm` viser pacen live, mens man taster distance/minutter/sekunder, rent klientside, ingen database- eller serverændring. Pacen gemmes bevidst ikke selv, den regnes altid ud fra de gemte distance/varighed-tal, så den aldrig kan blive inkonsistent. Vises nu også, hvor en gemt cardio-træning allerede vises: "Dagens sæt" på log-siden og træningsdetaljer i historikken (fx "10 km på 26 min 30 sek · 5:06 /km").
 
+### Rigtig admin-rolle i databasen (21. oktober 2026)
+
+- Joe valgte en rigtig `role`-kolonne på `user` ("admin"/"member") frem for fortsat at bruge `ADMIN_EMAIL`-miljøvariablen, og valgte at beholde admin-siden som kun invitationer (ikke en bredere brugeroversigt).
+- Migrationen `0007_add_user_role.sql` er kørt i Neon: opretter typen `user_role`, tilføjer `role` (standard `"member"`) på `user`, og sætter kun Joes seedede bruger (fast id) til `"admin"`. Bekræftet ved opslag: Joe = admin, de to andre eksisterende brugere (Alex, Erik) = member.
+- `lib/admin.ts`s `requireAdmin()` slår nu rollen op direkte i databasen i stedet for at sammenligne sessionens e-mail med `ADMIN_EMAIL`. `lib/session.ts`s `requireUser()` har mistet `email`-feltet igen, det var kun tilføjet til det gamle admin-tjek og bruges ikke andre steder.
+- Nye brugere (inklusive venner, der opretter sig via invitationslinks) får automatisk `"member"`, databasens standardværdi, ingen kodeændring nødvendig i `lib/invitations.ts`s `acceptInvitation()`.
+- **`ADMIN_EMAIL` er nu overflødig** og kan fjernes fra både `.env.local` og Vercels miljøvariabler, hvis Joe ønsker oprydning. Ikke gjort endnu, da den er harmløs at lade stå.
+- At gøre en anden bruger til admin kræver i dag en direkte rettelse i databasen (fx via `npx drizzle-kit studio`), ingen brugerflade til det, det var bevidst fravalgt.
+- TypeScript, ESLint og `npm run build` bestod.
+
 ## Aktuel status efter sessionsbeskyttelse (20. oktober 2026)
 
 - Joe har selv kørt adgangskodeopsætningen og bekræftet, at han er logget ind. Gentag ikke opsætningen.

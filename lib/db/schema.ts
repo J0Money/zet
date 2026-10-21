@@ -33,6 +33,8 @@ export const muscleGroup = pgEnum("muscle_group", [
   "full_body",
 ]);
 
+export const userRole = pgEnum("user_role", ["admin", "member"]);
+
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
@@ -45,6 +47,10 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
+  // Styrer adgang til /admin/invitations, se lib/admin.ts. Nye brugere
+  // (inklusive dem, der oprettes via invitationslinks) får "member" som
+  // standard; kun Joes bruger er sat til "admin" direkte i databasen.
+  role: userRole("role").notNull().default("member"),
 });
 
 // Better Auth's own tables, generated via `npx auth generate` (uuid ids
