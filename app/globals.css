@@ -48,3 +48,9 @@ body {
   .zet-pageHeader h1 { font-size: 25px; }
   .zet-panel { padding: 16px; }
 }
+
+/* Konfetti ved ny rekord, se app/components/confetti.tsx. */
+@keyframes zet-confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+}

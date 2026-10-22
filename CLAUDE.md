@@ -2,6 +2,18 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Tre "fede features" fra brainstormen (22. oktober 2026)
+
+Fra brainstormen valgte Joe fire idéer. De tre mindre er nu bygget; mørkt tema (den fjerde og største, da den rører hele appens styling) mangler stadig og kræver en afklaring med Joe først.
+
+- **Motivationscitat ved login:** `lib/motivation-quotes.ts` (nyt) eksporterer `getRandomQuote()`, der vælger tilfældigt blandt 16 danske citater/sjove beskeder. `/login` (`app/login/page.tsx`) viser citatet i bunden af siden, under formularen. Siden var allerede dynamisk (`connection()`), så citatet beregnes på serveren ved hvert besøg og skifter altså, hver gang siden genindlæses.
+- **"Hvor tung er det egentlig?":** `lib/fun-comparisons.ts` (nyt) eksporterer `getWeightComparison()`, der omregner ugens samlede styrkevolumen til noget konkret, fx "≈ et klaver" eller "≈ 3 køleskabe", ud fra en liste af kendte genstande og deres omtrentlige vægt (køleskab, klaver, lille bil, elefant, bus). Vist under styrkevolumen-tallet på dashboardets "Denne uge"-kort (`app/components/weekly-volume-card.tsx`). Vægtene er grove, runde overslag til sjov, ikke præcise opslag, så det fremgår af selve ordvalget ("≈").
+- **Konfetti ved ny personlig rekord:** `app/log/actions.ts`s `logStrengthSet` sammenligner nu hvert gemt sæt med brugerens hidtidige bedste for den øvelse (tungest vinder, lige vægt afgøres af flest reps, samme logik som de eksisterende personlige rekorder på dashboardet) og returnerer `newRecord: true`, hvis mindst ét af de nye sæt slår rekorden. `app/components/confetti.tsx` (nyt) er en lille, afhængighedsfri konfetti-animation i rene CSS-keyframes (ingen ekstern pakke). `app/components/strength-set-form.tsx` viser konfettien og en "🎉 Ny personlig rekord!"-besked, når `newRecord` er sand.
+- **Fejlrettelse undervejs:** Den første version af `confetti.tsx` kaldte `setState` direkte inde i en bar `useEffect`, hvilket ESLint-reglen `react-hooks/set-state-in-effect` afviste. Rettet ved at opdele i to komponenter: `Confetti` (stateløs, viser kun barnet, når den skal) og `ConfettiBurst` (remountes med en ny `key` for hver rekord, genererer selve partiklerne i en `useState`-initializer ved renderingen i stedet for i en effect; kun nedtællingen til at fjerne konfettien igen er en effect).
+- Testet i browseren med en midlertidig testbruger (oprettet og slettet igen bagefter): citatet skiftede ved genindlæsning, "≈ et klaver" blev vist korrekt for en ugentlig volumen på 300 kg, og et sæt tungere end den gemte rekord udløste både konfetti og rekord-beskeden korrekt.
+- TypeScript, ESLint for de ændrede/nye filer og `npm run build` bestod alle uden fejl. Ingen ny migration eller pakke i dette trin.
+- **Mørkt tema mangler stadig.** Det er den sidste af de fire valgte idéer, men rører potentielt hele appens styling (fx `zet-panel`s hvide baggrund i `app/globals.css`), så det kræver en afklaring af omfang og valg (manuel skifteknap med gemt valg, eller følge telefonens systemindstilling) med Joe, før noget kodes.
+
 ### Installerbar som app (PWA) (22. oktober 2026)
 
 - Fra brainstormen valgte Joe at gøre ZET installerbar på telefonen ("Føj til hjemmeskærm"), så den føles mere som en rigtig app.
