@@ -2,6 +2,15 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Installerbar som app (PWA) (22. oktober 2026)
+
+- Fra brainstormen valgte Joe at gøre ZET installerbar på telefonen ("Føj til hjemmeskærm"), så den føles mere som en rigtig app.
+- `app/manifest.ts` (Next.js' indbyggede konvention, serveres automatisk på `/manifest.webmanifest`) beskriver appen: navn "ZET", `start_url: "/dashboard"`, `display: "standalone"` (ingen browser-adresselinje, når den er installeret), tema- og baggrundsfarve der matcher appens indigo-palette.
+- To ikoner (192×192 og 512×512) genereres på serveren med Next.js' indbyggede `ImageResponse` (`app/icon-192.png/route.tsx`, `app/icon-512.png/route.tsx`), en simpel indigo firkant med et hvidt "Z". Ingen ekstern designfil eller pakke nødvendig. Samme teknik bruges til `app/apple-icon.tsx` (Next.js' egen navnekonvention, 180×180, bruges som `apple-touch-icon` på iPhone/iPad).
+- `app/layout.tsx` har fået `appleWebApp`-metadata (gør at "Føj til hjemmeskærm" på iOS åbner i fuldskærm uden Safaris adresselinje) og en `viewport`-eksport med `themeColor`, der matcher indigo-brandfarven.
+- Verificeret: build genererer alle fire nye ruter korrekt (`/manifest.webmanifest`, `/icon-192.png`, `/icon-512.png`, `/apple-icon`), ikonet ser korrekt ud visuelt, og de rigtige meta-tags (`mobile-web-app-capable`, `apple-mobile-web-app-title`, `theme-color`, `link rel="manifest"`/`apple-touch-icon`) er til stede i den rigtige rækkefølge på en side. TypeScript, ESLint og produktionsbuild bestod.
+- **Joe mangler at afprøve selve installationen** på sin telefon (Android: "Føj til startskærm"/installer-prompt i Chrome; iPhone: del-ikonet → "Føj til hjemmeskærm" i Safari), det kan jeg ikke teste fra min side.
+
 ## Overlevering til næste session (21. oktober 2026, slut på dagens arbejde)
 
 - **ZET er udgivet og kører stabilt** på [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Alt arbejde i dag er pushet til `master` på [github.com/J0Money/zet](https://github.com/J0Money/zet), intet ligger uncommittet.

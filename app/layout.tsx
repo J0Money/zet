@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AdminNavLink } from "@/app/components/admin-nav-link";
@@ -18,6 +18,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Zet",
   description: "Personlig workout-logging",
+  // Får "Føj til hjemmeskærm" på iPhone/iPad til at åbne ZET i fuldskærm
+  // (uden Safaris adresselinje), i stedet for bare at genveje til siden.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ZET",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
