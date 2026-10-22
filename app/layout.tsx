@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AdminNavLink } from "@/app/components/admin-nav-link";
 import { BottomNav } from "@/app/components/bottom-nav";
 import "./globals.css";
 
@@ -51,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {themeInitScript}
         </Script>
         <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))]">{children}</main>
-        <BottomNav adminLink={<Suspense fallback={null}><AdminNavLink /></Suspense>} />
+        <BottomNav />
       </body>
     </html>
   );

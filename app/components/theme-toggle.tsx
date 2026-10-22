@@ -1,10 +1,8 @@
 "use client";
 
-// Ikonet styres rent af CSS (dark:hidden/dark:block), ikke React-state, så
-// der ikke er en kort periode efter indlæsning, hvor det forkerte ikon
-// vises, mens komponenten finder ud af det aktuelle tema.
-import { Moon, Sun } from "@phosphor-icons/react";
-
+// Både kontakten og dens prik styres af ren CSS (dark:-varianter), ikke
+// React-state, så der ikke opstår et kort øjeblik med forkert position,
+// efter siden er indlæst, se forklaringen i app/layout.tsx.
 export function ThemeToggle() {
   function toggle() {
     const root = document.documentElement;
@@ -22,13 +20,15 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label="Skift mellem lyst og mørkt tema"
-      className="flex w-full flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-indigo-600"
+      className="zet-panel flex w-full items-center justify-between gap-3 text-left"
     >
-      <Sun aria-hidden="true" size={22} weight="regular" className="dark:hidden" />
-      <Moon aria-hidden="true" size={22} weight="regular" className="hidden dark:block" />
-      <span className="dark:hidden">Mørkt</span>
-      <span className="hidden dark:inline">Lyst</span>
+      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Mørkt tema</span>
+      <span
+        aria-hidden="true"
+        className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-zinc-300 dark:bg-indigo-600 transition-colors"
+      >
+        <span className="inline-block h-5 w-5 translate-x-0.5 dark:translate-x-5 transform rounded-full bg-white transition-transform" />
+      </span>
     </button>
   );
 }

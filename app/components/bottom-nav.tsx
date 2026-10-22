@@ -1,12 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartBar, ClockCounterClockwise, PlusCircle, SignOut } from "@phosphor-icons/react";
+import { ChartBar, ClockCounterClockwise, GearSix, PlusCircle } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
-import { logout } from "@/app/components/logout-action";
-import { ThemeToggle } from "@/app/components/theme-toggle";
 
 type NavItem = {
   href: string;
@@ -18,9 +15,10 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: ChartBar },
   { href: "/log", label: "Log", icon: PlusCircle },
   { href: "/history", label: "Historik", icon: ClockCounterClockwise },
+  { href: "/settings", label: "Indstillinger", icon: GearSix },
 ];
 
-export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
+export function BottomNav() {
   const pathname = usePathname();
 
   // Oprettelsessiden har sit eget forløb uden træningsnavigation.
@@ -46,21 +44,6 @@ export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
             </li>
           );
         })}
-        {adminLink}
-        <li className="flex-1">
-          <ThemeToggle />
-        </li>
-        <li className="flex-1">
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-indigo-600"
-            >
-              <SignOut aria-hidden="true" size={22} weight="regular" />
-              Log ud
-            </button>
-          </form>
-        </li>
       </ul>
     </nav>
   );
