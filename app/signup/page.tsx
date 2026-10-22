@@ -26,10 +26,10 @@ export default async function SignupPage({
   return (
     <div className="mx-auto w-full max-w-md px-5 pb-8 pt-10 sm:pt-16">
       <p className="mb-8 text-sm font-bold tracking-[0.22em] text-indigo-600">ZET</p>
-      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Opret bruger</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Opret bruger</h1>
       {details.status === "valid" && typeof token === "string" ? (
         <>
-          <p className="mb-8 mt-3 text-sm leading-6 text-zinc-600">
+          <p className="mb-8 mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             Du er inviteret til ZET. Vælg navn og adgangskode for at komme i gang.
           </p>
           <SignupForm
@@ -40,13 +40,13 @@ export default async function SignupPage({
           />
         </>
       ) : (
-        <div role="status" className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6">
-          <h2 className="font-semibold text-zinc-900">
+        <div role="status" className="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+          <h2 className="font-semibold text-zinc-900 dark:text-zinc-50">
             {details.status === "unavailable"
               ? "Vi kan ikke kontrollere invitationen lige nu"
               : token ? "Invitationen kan ikke bruges" : "Du skal bruge en invitation"}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-600">
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
             {details.status === "unavailable"
               ? "Prøv at genindlæse siden om lidt."
               : token

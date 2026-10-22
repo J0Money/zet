@@ -20,14 +20,14 @@ export function LogFormTabs({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex gap-1 rounded-xl bg-zinc-100 p-1">
+      <div className="flex gap-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 p-1">
         <button
           type="button"
           onClick={() => setTab("strength")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
             tab === "strength"
-              ? "bg-white text-indigo-600 shadow-sm"
-              : "text-zinc-500 hover:text-zinc-700"
+              ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
           }`}
         >
           Styrke
@@ -37,8 +37,8 @@ export function LogFormTabs({
           onClick={() => setTab("cardio")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
             tab === "cardio"
-              ? "bg-white text-indigo-600 shadow-sm"
-              : "text-zinc-500 hover:text-zinc-700"
+              ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
           }`}
         >
           Cardio

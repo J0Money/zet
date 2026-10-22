@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { login, type LoginState } from "./actions";
 
 const initialState: LoginState = {};
-const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
+const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, initialState);
@@ -23,11 +23,11 @@ export function LoginForm() {
           <input id="password" name="password" type={showPassword ? "text" : "password"}
             autoComplete="current-password" required maxLength={128} className={inputClass} />
         </div>
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-600">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
           <input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} className="size-4 accent-indigo-600" />
           Vis adgangskode
         </label>
-        {state.error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">{state.error}</p>}
+        {state.error && <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">{state.error}</p>}
         <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
           {pending ? "Logger ind…" : "Log ind"}
         </button>

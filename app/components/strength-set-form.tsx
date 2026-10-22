@@ -7,8 +7,8 @@ import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
 const initialState: LogStrengthSetState = {};
-const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
-const labelClass = "mb-2 block text-sm font-medium text-zinc-700";
+const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
+const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
 type SetRow = { id: number; reps: string; weightKg: string };
 
@@ -74,7 +74,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
       <Confetti trigger={confettiTrigger} />
 
       {state.success && state.newRecord && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium leading-6 text-amber-800">
+        <p className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm font-medium leading-6 text-amber-800 dark:text-amber-200">
           🎉 Ny personlig rekord!
         </p>
       )}
@@ -89,7 +89,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
               className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                 selectedProgramId === null
                   ? "bg-indigo-600 text-white"
-                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                  : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
               }`}
             >
               Alle
@@ -102,7 +102,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
                 className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                   selectedProgramId === program.id
                     ? "bg-indigo-600 text-white"
-                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                    : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
                 }`}
               >
                 {program.name}
@@ -122,7 +122,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
               className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                 selectedTags.size === 0
                   ? "bg-indigo-600 text-white"
-                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                  : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
               }`}
             >
               Alle
@@ -135,7 +135,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
                 className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                   selectedTags.has(group)
                     ? "bg-indigo-600 text-white"
-                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                    : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
                 }`}
               >
                 {muscleGroupLabel[group]}
@@ -192,7 +192,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
                 type="button"
                 onClick={() => removeSet(set.id)}
                 aria-label={`Fjern sæt ${index + 1}`}
-                className="min-h-12 rounded-xl border border-zinc-300 px-3 text-sm text-zinc-500 hover:border-red-300 hover:text-red-600"
+                className="min-h-12 rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 text-sm text-zinc-500 dark:text-zinc-400 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400"
               >
                 ×
               </button>
@@ -202,14 +202,14 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
         <button
           type="button"
           onClick={addSet}
-          className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 px-4 text-sm font-medium text-zinc-600 hover:border-indigo-300 hover:text-indigo-600"
+          className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600"
         >
           + Tilføj sæt
         </button>
       </div>
 
       {state.error && (
-        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+        <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
           {state.error}
         </p>
       )}

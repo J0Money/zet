@@ -6,7 +6,7 @@ import { registerWithInvitation, type SignupState } from "./actions";
 
 const initialState: SignupState = {};
 const inputClass =
-  "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-indigo-600";
+  "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-indigo-600";
 
 export function SignupForm({
   token,
@@ -48,9 +48,9 @@ export function SignupForm({
             value={email}
             readOnly
             aria-describedby="email-help"
-            className={`${inputClass} bg-zinc-50 text-zinc-600`}
+            className={`${inputClass} bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400`}
           />
-          <p id="email-help" className="mt-2 text-xs leading-5 text-zinc-500">
+          <p id="email-help" className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             Invitationen gælder denne e-mailadresse.
           </p>
         </div>
@@ -81,7 +81,7 @@ export function SignupForm({
             aria-describedby="password-help"
             className={inputClass}
           />
-          <p id="password-help" className="mt-2 text-xs leading-5 text-zinc-500">
+          <p id="password-help" className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             Brug mindst {minPasswordLength} tegn. Vælg en adgangskode, du ikke bruger andre steder.
           </p>
         </div>
@@ -100,7 +100,7 @@ export function SignupForm({
             className={inputClass}
           />
         </div>
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-600">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
           <input
             type="checkbox"
             checked={showPassword}
@@ -110,7 +110,7 @@ export function SignupForm({
           Vis adgangskoder
         </label>
         {state.error && (
-          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+          <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
             {state.error}
           </p>
         )}

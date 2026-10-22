@@ -30,20 +30,20 @@ export function WeeklyVolumeHistoryCard({
   return (
     <section className="zet-panel">
       <h2 className="text-base font-semibold tracking-tight">Styrkevolumen pr. uge</h2>
-      <p className="mt-1 text-sm text-zinc-500">Samlet volumen de seneste 8 uger, så du kan se udviklingen, ikke kun denne uge.</p>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Samlet volumen de seneste 8 uger, så du kan se udviklingen, ikke kun denne uge.</p>
 
       {!hasAnyVolume ? (
-        <p className="mt-6 rounded-xl bg-zinc-50 px-4 py-12 text-center text-sm text-zinc-500">
+        <p className="mt-6 rounded-xl bg-zinc-50 dark:bg-zinc-800 px-4 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Ingen styrkesæt logget endnu.
         </p>
       ) : (
         <div className="mt-6 h-60 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#71717a" }} tickLine={false} axisLine={false} tickMargin={12} />
-              <YAxis tick={{ fontSize: 12, fill: "#71717a" }} tickLine={false} axisLine={false} width={55} unit=" kg" />
-              <Tooltip contentStyle={{ borderRadius: 4, borderColor: "#e4e4e7" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--zet-border)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "var(--zet-muted)" }} tickLine={false} axisLine={false} tickMargin={12} />
+              <YAxis tick={{ fontSize: 12, fill: "var(--zet-muted)" }} tickLine={false} axisLine={false} width={55} unit=" kg" />
+              <Tooltip contentStyle={{ borderRadius: 4, borderColor: "var(--zet-border)", background: "var(--zet-panel-bg)", color: "var(--foreground)" }} />
               <Bar dataKey="totalVolumeKg" name="Volumen" unit=" kg" fill="var(--color-indigo-600)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>

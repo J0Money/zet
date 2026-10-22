@@ -10,7 +10,7 @@ import {
 import type { StrengthEntry } from "@/lib/types";
 
 const initialState: UpdateStrengthSetState = {};
-const inputClass = "w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm focus:border-indigo-600";
+const inputClass = "w-16 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 
 // Rækkerne vises på to steder (log-siden og historik-detaljer), derfor én
 // delt komponent, der selv styrer sin egen visnings-/redigeringstilstand.
@@ -32,7 +32,7 @@ export function StrengthEntryRow({ entry, label }: { entry: StrengthEntry; label
       <li className="flex flex-col gap-1.5 py-1">
         <form action={formAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="id" value={entry.id} />
-          <span className="w-14 shrink-0 text-sm text-zinc-500">{label}</span>
+          <span className="w-14 shrink-0 text-sm text-zinc-500 dark:text-zinc-400">{label}</span>
           <input
             name="reps" type="number" inputMode="numeric" min={1} step={1} required
             defaultValue={entry.reps} aria-label="Reps" className={inputClass}
@@ -51,24 +51,24 @@ export function StrengthEntryRow({ entry, label }: { entry: StrengthEntry; label
           </button>
           <button
             type="button" onClick={() => setEditing(false)}
-            className="min-h-8 rounded-lg border border-zinc-300 px-3 text-xs text-zinc-600"
+            className="min-h-8 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 text-xs text-zinc-600 dark:text-zinc-400"
           >
             Annullér
           </button>
         </form>
-        {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+        {state.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
       </li>
     );
   }
 
   return (
-    <li className="flex items-center justify-between gap-2 text-sm text-zinc-500">
+    <li className="flex items-center justify-between gap-2 text-sm text-zinc-500 dark:text-zinc-400">
       <span className="w-14 shrink-0">{label}</span>
-      <span className="font-mono tabular-nums text-zinc-700">{entry.weight_kg} kg × {entry.reps}</span>
+      <span className="font-mono tabular-nums text-zinc-700 dark:text-zinc-300">{entry.weight_kg} kg × {entry.reps}</span>
       <div className="ml-auto flex shrink-0 gap-1">
         <button
           type="button" onClick={() => setEditing(true)} aria-label="Ret sæt"
-          className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
+          className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-indigo-600"
         >
           <PencilSimple size={16} />
         </button>
@@ -77,7 +77,7 @@ export function StrengthEntryRow({ entry, label }: { entry: StrengthEntry; label
           <button
             type="submit" aria-label="Slet sæt"
             onClick={(event) => { if (!confirm("Slet dette sæt?")) event.preventDefault(); }}
-            className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+            className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
           >
             <TrashSimple size={16} />
           </button>

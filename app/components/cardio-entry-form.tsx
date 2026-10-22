@@ -6,8 +6,8 @@ import { formatPace } from "@/lib/format";
 import type { Exercise, TrainingProgram } from "@/lib/types";
 
 const initialState: LogCardioEntryState = {};
-const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
-const labelClass = "mb-2 block text-sm font-medium text-zinc-700";
+const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
+const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
 export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
@@ -50,7 +50,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
               className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                 selectedProgramId === null
                   ? "bg-indigo-600 text-white"
-                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                  : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
               }`}
             >
               Alle
@@ -63,7 +63,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
                 className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                   selectedProgramId === program.id
                     ? "bg-indigo-600 text-white"
-                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                    : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
                 }`}
               >
                 {program.name}
@@ -136,11 +136,11 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
       </div>
 
       {pace && (
-        <p className="text-sm text-zinc-500">Pace: <span className="font-medium text-zinc-700">{pace}</span></p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">Pace: <span className="font-medium text-zinc-700 dark:text-zinc-300">{pace}</span></p>
       )}
 
       {state.error && (
-        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+        <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
           {state.error}
         </p>
       )}
