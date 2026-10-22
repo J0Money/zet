@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { logStrengthSet, type LogStrengthSetState } from "@/app/log/actions";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
-import type { Exercise, MuscleGroup } from "@/lib/types";
+import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
 const initialState: LogStrengthSetState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
@@ -15,9 +15,10 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
+export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [selectedTags, setSelectedTags] = useState<Set<MuscleGroup>>(new Set());
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const nextId = useRef(1);
   const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
 
@@ -31,11 +32,14 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
     () => MUSCLE_GROUPS.filter((group) => exercises.some((exercise) => exercise.muscle_groups.includes(group))),
     [exercises],
   );
+  const selectedProgram = programs.find((program) => program.id === selectedProgramId);
+  const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
   // Flere valgte tags virker som "eller": en øvelse vises, hvis den matcher
-  // mindst ét af dem, fx "Ryg" + "Biceps" viser øvelser med enten tag.
-  const filteredExercises = selectedTags.size === 0
-    ? exercises
-    : exercises.filter((exercise) => exercise.muscle_groups.some((group) => selectedTags.has(group)));
+  // mindst ét af dem, fx "Ryg" + "Biceps" viser øvelser med enten tag. Et
+  // valgt program indskrænker yderligere til kun dets egne øvelser.
+  const filteredExercises = exercises
+    .filter((exercise) => selectedTags.size === 0 || exercise.muscle_groups.some((group) => selectedTags.has(group)))
+    .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id));
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -61,6 +65,39 @@ export function StrengthSetForm({ exercises }: { exercises: Exercise[] }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      {programs.length > 0 && (
+        <div>
+          <p className={labelClass}>Program</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedProgramId(null)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                selectedProgramId === null
+                  ? "bg-indigo-600 text-white"
+                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+              }`}
+            >
+              Alle
+            </button>
+            {programs.map((program) => (
+              <button
+                key={program.id}
+                type="button"
+                onClick={() => setSelectedProgramId(program.id === selectedProgramId ? null : program.id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  selectedProgramId === program.id
+                    ? "bg-indigo-600 text-white"
+                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                }`}
+              >
+                {program.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {availableTags.length > 0 && (
         <div>
           <p className={labelClass}>Filtrér på muskelgruppe</p>

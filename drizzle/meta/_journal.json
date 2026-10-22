@@ -57,6 +57,13 @@
       "when": 1792576768139,
       "tag": "0007_add_user_role",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792655525557,
+      "tag": "0008_add_training_programs",
+      "breakpoints": true
     }
   ]
 }
