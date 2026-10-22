@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { logStrengthSet, type LogStrengthSetState } from "@/app/log/actions";
+import { Confetti } from "@/app/components/confetti";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
@@ -21,10 +22,15 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const nextId = useRef(1);
   const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
-  // Efter et vellykket gem starter listen af sæt forfra, klar til næste øvelse.
+  // Efter et vellykket gem starter listen af sæt forfra, klar til næste
+  // øvelse, og en ny rekord udløser konfetti.
   useEffect(() => {
-    if (state.success) setSets([emptySet(nextId.current++)]);
+    if (state.success) {
+      setSets([emptySet(nextId.current++)]);
+      if (state.newRecord) setConfettiTrigger((count) => count + 1);
+    }
   }, [state]);
 
   // Kun tags, der rent faktisk findes på en af øvelserne, vises som knapper.
@@ -65,6 +71,14 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      <Confetti trigger={confettiTrigger} />
+
+      {state.success && state.newRecord && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium leading-6 text-amber-800">
+          🎉 Ny personlig rekord!
+        </p>
+      )}
+
       {programs.length > 0 && (
         <div>
           <p className={labelClass}>Program</p>

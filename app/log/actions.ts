@@ -3,9 +3,11 @@
 import { requireUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
+import type { StrengthEntry } from "@/lib/types";
 import {
   addCardioEntry,
   addStrengthEntries,
+  getEntries,
   getExercises,
   getOrCreateWorkoutForDate,
 } from "@/lib/workout-store";
@@ -13,6 +15,7 @@ import {
 export type LogStrengthSetState = {
   error?: string;
   success?: boolean;
+  newRecord?: boolean;
 };
 
 export async function logStrengthSet(
@@ -48,6 +51,24 @@ export async function logStrengthSet(
     sets.push({ reps, weight_kg: weightKg });
   }
 
+  // Tjek for en ny rekord, før sættene gemmes, samme sammenligning som
+  // getPersonalRecords() i lib/workouts.ts (tungest vinder, lige vægt
+  // afgøres af flest reps). Ingen tidligere sæt for øvelsen tæller også
+  // som en rekord, det er trods alt din første.
+  const existingEntries = await getEntries(currentUser.id);
+  const priorBest = existingEntries
+    .filter((entry): entry is StrengthEntry => entry.kind === "strength" && entry.exercise_id === exercise.id)
+    .reduce<{ weight_kg: number; reps: number } | null>((best, entry) => {
+      if (!best || entry.weight_kg > best.weight_kg || (entry.weight_kg === best.weight_kg && entry.reps > best.reps)) {
+        return { weight_kg: entry.weight_kg, reps: entry.reps };
+      }
+      return best;
+    }, null);
+  const newRecord = sets.some((set) =>
+    !priorBest || set.weight_kg > priorBest.weight_kg ||
+    (set.weight_kg === priorBest.weight_kg && set.reps > priorBest.reps),
+  );
+
   const today = getTodayInCopenhagen();
   const workout = await getOrCreateWorkoutForDate(currentUser.id, today);
 
@@ -61,7 +82,7 @@ export async function logStrengthSet(
   revalidatePath("/history");
   revalidatePath("/log");
 
-  return { success: true };
+  return { success: true, newRecord };
 }
 
 export type LogCardioEntryState = {
