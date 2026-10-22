@@ -5,7 +5,7 @@ import { createProgramAction, type CreateProgramState } from "@/app/programs/act
 import type { Exercise } from "@/lib/types";
 
 const initialState: CreateProgramState = {};
-const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
+const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 
 export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
   const [state, formAction, isPending] = useActionState(createProgramAction, initialState);
@@ -30,21 +30,21 @@ export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
       className="flex flex-col gap-4"
     >
       <div>
-        <label className="mb-2 block text-sm font-medium text-zinc-700" htmlFor="name">Navn</label>
+        <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="name">Navn</label>
         <input id="name" name="name" type="text" required maxLength={100} placeholder="Fx Pushdag" className={inputClass} />
       </div>
 
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-zinc-700">Øvelser</p>
+        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Øvelser</p>
         {[
           { label: "Styrke", list: strengthExercises },
           { label: "Cardio", list: cardioExercises },
         ].map(({ label, list }) => list.length > 0 && (
           <div key={label}>
-            <p className="mb-1.5 text-xs font-medium text-zinc-500">{label}</p>
-            <div className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-2">
+            <p className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+            <div className="flex flex-col gap-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2">
               {list.map((exercise) => (
-                <label key={exercise.id} className="flex min-h-10 items-center gap-2.5 rounded-lg px-2 text-sm hover:bg-zinc-50">
+                <label key={exercise.id} className="flex min-h-10 items-center gap-2.5 rounded-lg px-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800">
                   <input
                     type="checkbox"
                     name="exerciseIds"
@@ -62,7 +62,7 @@ export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
       </div>
 
       {state.error && (
-        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+        <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
           {state.error}
         </p>
       )}

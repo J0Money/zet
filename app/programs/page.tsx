@@ -30,7 +30,7 @@ export default async function ProgramsPage() {
       <header className="zet-pageHeader">
         <p className="zet-brand">ZET</p>
         <h1>Programmer</h1>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
           Saml øvelser i et program, fx &quot;Pushdag&quot;, så du hurtigt kan finde dem igen på log-siden.
         </p>
       </header>
@@ -43,20 +43,20 @@ export default async function ProgramsPage() {
       <section className="zet-panel">
         <h2 className="zet-sectionTitle mb-4">Dine programmer</h2>
         {ownPrograms.length === 0 ? (
-          <p className="text-sm text-zinc-500">Du har ikke oprettet nogen programmer endnu.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Du har ikke oprettet nogen programmer endnu.</p>
         ) : (
-          <ul className="divide-y divide-zinc-100">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {ownPrograms.map((program) => (
               <li key={program.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-zinc-900">{program.name}</p>
-                    <p className="mt-1 text-sm text-zinc-500">
+                    <p className="font-medium text-zinc-900 dark:text-zinc-50">{program.name}</p>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                       {program.exercise_ids.map((id) => exerciseNameById.get(id) ?? "Ukendt øvelse").join(", ")}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
-                    program.is_published ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"
+                    program.is_published ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
                   }`}>
                     {program.is_published ? "Udgivet" : "Privat"}
                   </span>
@@ -65,7 +65,7 @@ export default async function ProgramsPage() {
                   <form action={togglePublishAction}>
                     <input type="hidden" name="id" value={program.id} />
                     <input type="hidden" name="isPublished" value={program.is_published ? "false" : "true"} />
-                    <button type="submit" className="min-h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-600 hover:border-indigo-300 hover:text-indigo-600">
+                    <button type="submit" className="min-h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 text-sm text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600">
                       {program.is_published ? "Gør privat" : "Udgiv"}
                     </button>
                   </form>
@@ -73,7 +73,7 @@ export default async function ProgramsPage() {
                     <input type="hidden" name="id" value={program.id} />
                     <ConfirmSubmitButton
                       confirmMessage={`Slet programmet "${program.name}"?`}
-                      className="min-h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-600 hover:border-red-300 hover:text-red-600"
+                      className="min-h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 text-sm text-zinc-600 dark:text-zinc-400 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400"
                     >
                       Slet
                     </ConfirmSubmitButton>
@@ -88,11 +88,11 @@ export default async function ProgramsPage() {
       {sharedPrograms.length > 0 && (
         <section className="zet-panel">
           <h2 className="zet-sectionTitle mb-4">Udgivet af andre</h2>
-          <ul className="divide-y divide-zinc-100">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {sharedPrograms.map((program) => (
               <li key={program.id} className="py-3 first:pt-0 last:pb-0">
-                <p className="font-medium text-zinc-900">{program.name}</p>
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="font-medium text-zinc-900 dark:text-zinc-50">{program.name}</p>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                   {program.exercise_ids.map((id) => exerciseNameById.get(id) ?? "Ukendt øvelse").join(", ")}
                 </p>
               </li>

@@ -47,7 +47,7 @@ export default async function WorkoutDetailPage({
   return (
     <div className="zet-page flex flex-col gap-6">
       <div>
-        <Link href="/history" className="text-sm text-zinc-500 hover:text-indigo-600">
+        <Link href="/history" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-indigo-600">
           ← Tilbage til historik
         </Link>
       </div>
@@ -56,19 +56,19 @@ export default async function WorkoutDetailPage({
         <p className="zet-brand">ZET</p>
         <h1>{formatDateDanish(workout.date)}</h1>
         {workout.notes && (
-          <p className="mt-2 text-sm text-zinc-500">{workout.notes}</p>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{workout.notes}</p>
         )}
       </header>
 
       {entriesByExercise.size === 0 ? (
         <div className="zet-panel">
-          <p className="text-sm text-zinc-500">Ingen sæt registreret for denne træning.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen sæt registreret for denne træning.</p>
         </div>
       ) : (
-        <ul className="zet-panel divide-y divide-zinc-100">
+        <ul className="zet-panel divide-y divide-zinc-100 dark:divide-zinc-800">
           {[...entriesByExercise.entries()].map(([exerciseId, exerciseEntries]) => (
             <li key={exerciseId} className="py-3 first:pt-0 last:pb-0">
-              <p className="font-medium text-zinc-900">
+              <p className="font-medium text-zinc-900 dark:text-zinc-50">
                 {exerciseNameById.get(exerciseId) ?? "Ukendt øvelse"}
               </p>
               <ul className="mt-1.5 flex flex-col gap-1">

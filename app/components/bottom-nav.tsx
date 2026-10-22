@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChartBar, ClockCounterClockwise, PlusCircle, SignOut } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { logout } from "@/app/components/logout-action";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 
 type NavItem = {
   href: string;
@@ -26,7 +27,7 @@ export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
   if (pathname === "/signup" || pathname === "/login") return null;
 
   return (
-    <nav aria-label="Hovednavigation" className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav aria-label="Hovednavigation" className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pb-[env(safe-area-inset-bottom)]">
       <ul className="mx-auto flex max-w-lg justify-around gap-2 px-4 py-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname.startsWith(href);
@@ -36,7 +37,7 @@ export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
                 href={href}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 border-t-2 py-3 text-xs font-medium ${
-                  isActive ? "border-indigo-600 text-indigo-600" : "border-transparent text-zinc-500 hover:text-indigo-600"
+                  isActive ? "border-indigo-600 text-indigo-600" : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-indigo-600"
                 }`}
               >
                 <Icon aria-hidden="true" size={22} weight={isActive ? "fill" : "regular"} />
@@ -47,10 +48,13 @@ export function BottomNav({ adminLink }: { adminLink?: ReactNode }) {
         })}
         {adminLink}
         <li className="flex-1">
+          <ThemeToggle />
+        </li>
+        <li className="flex-1">
           <form action={logout}>
             <button
               type="submit"
-              className="flex w-full flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 hover:text-indigo-600"
+              className="flex w-full flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-indigo-600"
             >
               <SignOut aria-hidden="true" size={22} weight="regular" />
               Log ud

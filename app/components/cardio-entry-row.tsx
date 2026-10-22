@@ -11,7 +11,7 @@ import { formatCardio, formatPace } from "@/lib/format";
 import type { CardioEntry } from "@/lib/types";
 
 const initialState: UpdateCardioEntryState = {};
-const inputClass = "w-16 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm focus:border-indigo-600";
+const inputClass = "w-16 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 
 export function CardioEntryRow({ entry }: { entry: CardioEntry }) {
   const [editing, setEditing] = useState(false);
@@ -56,18 +56,18 @@ export function CardioEntryRow({ entry }: { entry: CardioEntry }) {
           </button>
           <button
             type="button" onClick={() => setEditing(false)}
-            className="min-h-8 rounded-lg border border-zinc-300 px-3 text-xs text-zinc-600"
+            className="min-h-8 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 text-xs text-zinc-600 dark:text-zinc-400"
           >
             Annullér
           </button>
         </form>
-        {state.error && <p className="text-xs text-red-600">{state.error}</p>}
+        {state.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
       </li>
     );
   }
 
   return (
-    <li className="flex items-center justify-between gap-2 text-sm text-zinc-500">
+    <li className="flex items-center justify-between gap-2 text-sm text-zinc-500 dark:text-zinc-400">
       <span>
         {formatCardio(entry.distance_km, entry.duration_sec)}
         {formatPace(entry.distance_km, entry.duration_sec) && (
@@ -77,7 +77,7 @@ export function CardioEntryRow({ entry }: { entry: CardioEntry }) {
       <div className="ml-auto flex shrink-0 gap-1">
         <button
           type="button" onClick={() => setEditing(true)} aria-label="Ret cardio"
-          className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-indigo-600"
+          className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-indigo-600"
         >
           <PencilSimple size={16} />
         </button>
@@ -86,7 +86,7 @@ export function CardioEntryRow({ entry }: { entry: CardioEntry }) {
           <button
             type="submit" aria-label="Slet cardio"
             onClick={(event) => { if (!confirm("Slet denne cardio-registrering?")) event.preventDefault(); }}
-            className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+            className="min-h-8 min-w-8 rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
           >
             <TrashSimple size={16} />
           </button>

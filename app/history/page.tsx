@@ -29,7 +29,7 @@ export default async function HistoryPage() {
 
       {workoutSummaries.length === 0 ? (
         <div className="zet-panel">
-          <p className="text-sm text-zinc-500">Ingen træninger logget endnu.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen træninger logget endnu.</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -46,14 +46,14 @@ export default async function HistoryPage() {
                   className="group zet-panel block transition-colors hover:border-indigo-200"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-zinc-900 group-hover:text-indigo-600">
+                    <p className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600">
                       {formatDateDanish(workout.date)}
                     </p>
                     <span className="shrink-0 text-xs text-zinc-400">{countParts.join(" · ")}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {exerciseNames.map((name) => (
-                      <span key={name} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">
+                      <span key={name} className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         {name}
                       </span>
                     ))}

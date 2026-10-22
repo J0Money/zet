@@ -73,12 +73,12 @@ export default async function LogPage() {
       <section className="zet-panel">
         <h2 className="zet-sectionTitle mb-4">Dagens sæt</h2>
         {groupedEntries.length === 0 ? (
-          <p className="text-sm text-zinc-500">Ingen sæt logget i dag endnu.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen sæt logget i dag endnu.</p>
         ) : (
-          <ul className="divide-y divide-zinc-100">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {groupedEntries.map((group) => (
               <li key={group.exerciseId} className="py-3 first:pt-0 last:pb-0">
-                <p className="font-medium text-zinc-900">{group.exerciseName}</p>
+                <p className="font-medium text-zinc-900 dark:text-zinc-50">{group.exerciseName}</p>
                 <ul className="mt-1.5 flex flex-col gap-1">
                   {group.entries.map((entry, index) =>
                     entry.kind === "strength" ? (

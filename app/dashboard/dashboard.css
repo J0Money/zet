@@ -1,27 +1,27 @@
 /* Dashboard-specifikke klasser. De delte (zet-page, zet-brand, zet-panel,
    zet-sectionTitle m.fl.) ligger i app/globals.css, så log og historik kan
    genbruge dem uden at importere denne fil. */
-.zet-header { border-bottom: 1px solid #dedee3; padding-bottom: 22px; }
+.zet-header { border-bottom: 1px solid var(--zet-border); padding-bottom: 22px; }
 .zet-masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .zet-masthead h1 { font-size: 28px; font-weight: 650; letter-spacing: -.045em; }
 .zet-headerAction { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: 5px; background: var(--color-indigo-600); color: white; font-size: 13px; font-weight: 550; }
 .zet-headerAction:hover { background: var(--color-indigo-700); }
 .zet-headerAction span { font-size: 20px; line-height: 1; }
-.zet-streak { margin-top: 10px; font-size: 13px; color: #71717a; }
-.zet-streak strong { font-weight: 600; color: #3f3f46; }
+.zet-streak { margin-top: 10px; font-size: 13px; color: var(--zet-muted); }
+.zet-streak strong { font-weight: 600; color: var(--zet-muted-strong); }
 /* gap i stedet for margin på de enkelte kort: robust uanset hvor mange
    zet-panel/zet-weekly-kort der stables i rækkefølge. */
 .zet-content { display: flex; flex-direction: column; gap: 20px; padding-top: 24px; }
-.zet-weekly { padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
+.zet-weekly { padding: 22px; border: 1px solid var(--zet-border); border-radius: 8px; background: var(--zet-panel-bg); }
 .zet-summaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; gap: 24px; }
 .zet-metric { min-width: 0; }
 .zet-metricValue { font-size: clamp(27px, 3vw, 36px); line-height: 1.2; font-weight: 600; letter-spacing: -.045em; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.zet-metricValue span { font-size: 14px; font-weight: 400; color: #71717a; letter-spacing: 0; }
-.zet-weeklyLabel { margin-top: 6px; font-size: 12px; color: #71717a; }
+.zet-metricValue span { font-size: 14px; font-weight: 400; color: var(--zet-muted); letter-spacing: 0; }
+.zet-weeklyLabel { margin-top: 6px; font-size: 12px; color: var(--zet-muted); }
 .zet-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (min-width: 700px) {
   .zet-summaryGrid:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .zet-metric + .zet-metric { padding-left: 24px; border-left: 1px solid #dedee3; }
+  .zet-metric + .zet-metric { padding-left: 24px; border-left: 1px solid var(--zet-border); }
 }
 @media (max-width: 600px) {
   .zet-masthead h1 { font-size: 25px; }

@@ -13,7 +13,7 @@ export async function AdminNavLink() {
     <li className="flex-1">
       <Link
         href="/admin/invitations"
-        className="flex flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 hover:text-indigo-600"
+        className="flex flex-col items-center gap-1 border-t-2 border-transparent py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-indigo-600"
       >
         <ShieldCheck aria-hidden="true" size={22} weight="regular" />
         Admin

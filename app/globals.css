@@ -6,6 +6,23 @@
   color-scheme: light;
   --background: #f7f7fa;
   --foreground: #18181b;
+  --zet-border: #dedee3;
+  --zet-panel-bg: #ffffff;
+  --zet-muted: #71717a;
+  --zet-muted-strong: #3f3f46;
+}
+
+/* Sættes af det lille script i app/layout.tsx, før siden males, så der
+   ikke blinker forkert tema, inden React overtager. Skiftes derefter af
+   app/components/theme-toggle.tsx. */
+:root.dark {
+  color-scheme: dark;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --zet-border: #27272a;
+  --zet-panel-bg: #18181b;
+  --zet-muted: #a1a1aa;
+  --zet-muted-strong: #d4d4d8;
 }
 
 @theme inline {
@@ -39,9 +56,9 @@ body {
   padding: 32px 32px 24px;
 }
 .zet-brand { margin-bottom: 14px; font-size: 13px; font-weight: 750; letter-spacing: .08em; color: var(--color-indigo-600); }
-.zet-pageHeader { border-bottom: 1px solid #dedee3; padding-bottom: 22px; }
+.zet-pageHeader { border-bottom: 1px solid var(--zet-border); padding-bottom: 22px; }
 .zet-pageHeader h1 { font-size: 28px; font-weight: 650; letter-spacing: -.045em; }
-.zet-panel { min-width: 0; padding: 22px; border: 1px solid #dedee3; border-radius: 8px; background: white; }
+.zet-panel { min-width: 0; padding: 22px; border: 1px solid var(--zet-border); border-radius: 8px; background: var(--zet-panel-bg); }
 .zet-sectionTitle { font-size: 14px; font-weight: 600; }
 @media (max-width: 600px) {
   .zet-page { padding: 24px 20px; }
