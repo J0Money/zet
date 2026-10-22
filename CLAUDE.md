@@ -2,6 +2,16 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Samlet indstillinger-side (22. oktober 2026)
+
+- Joe syntes ikke, at tema-skift hørte hjemme direkte i bundnavigationen, og ville hellere have det samlet med "Log ud" og andre indstillinger på ét sted. Valgte: ét nyt "Indstillinger"-ikon i bundnavigationen (i stedet for separate "Mørkt/Lyst"- og "Log ud"-ikoner), og at admin-linket (kun synligt for Joe) også flyttes med derind, så bundnavigationen bliver ens for alle brugere.
+- Ny side `/settings` (`app/settings/page.tsx`), beskyttet af `requireUser()` som de andre sider. Tre sektioner: "Udseende" (tema-kontakten), "Administration" (kun for admins, link til `/admin/invitations`, bruger den eksisterende `isCurrentUserAdmin()` fra `lib/admin.ts`) og "Konto" (log ud-knappen).
+- `app/components/theme-toggle.tsx` er lavet om fra et lille ikon i bundnavigationen til en fuld kontakt-række (tekst "Mørkt tema" + en visuel switch), stadig uden React-state, ren CSS (`dark:`-varianter) styrer både kontaktens farve og prikkens position.
+- `app/components/bottom-nav.tsx` er forenklet til kun de fire faste sider (Dashboard, Log, Historik, Indstillinger) for alle brugere. Den tog før en `adminLink`-prop fra `layout.tsx` (en `<Suspense>`-indpakket `AdminNavLink`-serverkomponent); den er fjernet.
+- `app/components/admin-nav-link.tsx` er slettet, den blev overflødig, da admin-linket flyttede ind på indstillingssiden i stedet. `app/layout.tsx` har mistet sin `<Suspense>`-indpakning, der ikke længere er brug for.
+- **Sidegevinst:** Forsiden (`/`) gik i build-outputtet tilbage til fuldt statisk (`○`) i stedet for delvist forudrenderet (`◐`), fordi admin-tjekket (det eneste, der gjorde bundnavigationen "live" pr. besøg) ikke længere ligger i selve navigationen, men kun på den dynamiske indstillingsside. Hurtigere, ikke en regression.
+- Testet grundigt i browseren med en midlertidig testbruger (kortvarigt gjort til admin for at se administrationssektionen, slettet igen efter testen): tema-kontakten skifter korrekt begge veje på selve siden, administrationslinket virker og vises kun for admins, og log ud sender korrekt til login-siden. TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (7 deltests) bestod.
+
 ### Mørkt tema (22. oktober 2026)
 
 - Den fjerde og sidste idé fra brainstormen. Joe valgte en manuel skifteknap med gemt valg (frem for kun at følge telefonens systemindstilling), og at dække hele appen i ét samlet trin (frem for side for side), for at undgå at appen så blandet ud undervejs.
