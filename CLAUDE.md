@@ -2,6 +2,15 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Kalenderoversigt på historik-siden (22. oktober 2026)
+
+- Fra brainstormen: en kalendervisning af træningsdage. Joe valgte at lægge den på historik-siden som et alternativ til listen (et "Liste"/"Kalender"-faneskift, samme mønster som styrke-/cardio-fanerne på log-siden), og at et klik på en dag med en træning hopper direkte til den eksisterende detaljeside, i stedet for at bygge en ny forhåndsvisning.
+- `app/components/history-view.tsx` (nyt, klientkomponent) rummer selve faneskiftet og den eksisterende liste (flyttet ud af `app/history/page.tsx`, som nu kun henter data og sender dem videre).
+- `app/components/history-calendar.tsx` (nyt, klientkomponent) viser én måned ad gangen (mandag som første ugedag, dansk navngivning), med frem/tilbage-pile til at bladre. "Næste måned" er deaktiveret, når den viste måned allerede er den nuværende eller en fremtidig, der ikke findes data for endnu. Dage med en træning er udfyldte, klikbare cirkler, der linker til `/history/[id]`; kommende dage i den aktuelle måned er nedtonede; dagens dato har en ring omkring sig. Ingen ny datahentning ved bladring mellem måneder, hele historikken er allerede hentet af siden.
+- **Fejl fundet og rettet under egen test, før den nåede Joe:** Første version brugte `aspect-square` på en flex-celle, der fyldte hele kolonnens bredde, så dagscirklerne blev op mod 95 px i diameter og rækkerne skubbede ned over hinanden. Rettet til en fast størrelse (`h-9 w-9`) centreret i hver celle, uafhængigt af kolonnens bredde.
+- Genbruger bevidst ikke `lib/dates.ts`, månedsnavnet formateres direkte i komponenten med samme `Intl.DateTimeFormat(..., { timeZone: "UTC" })`-mønster, da det kun er visning af en måned/år-kombination, komponenten selv styrer, ikke en reel "hvad er dags dato her"-beregning. "Dags dato" sendes derimod ind som prop fra serveren (`getTodayInCopenhagen()`), for ikke at regne tidszoner ud i browseren.
+- Testet grundigt i browseren med en midlertidig testbruger med træninger spredt over to måneder: faneskiftet, månedsnavigation frem og tilbage, klik på en dag åbner rigtig detaljeside, "Næste måned" deaktiveret korrekt i indeværende måned, samt visuelt tjek i både lyst og mørkt tema og på en simuleret mobilskærm (375 px) uden overløb. TypeScript, ESLint, produktionsbuild og hele `tests/access.integration.test.ts` (7 deltests) bestod.
+
 ### Rate limiting bag Vercels proxy verificeret (22. oktober 2026)
 
 - Den sidste løse ende fra selve udgivelsen (trin 8): om Better Auths login-begrænsning (5 forsøg i minuttet pr. IP, `lib/auth.ts`) rent faktisk kan se besøgendes rigtige IP-adresse bag Vercels proxy, eller om den fejlagtigt ville behandle alle besøgende som samme "bruger".
