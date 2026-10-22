@@ -2,6 +2,13 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Rate limiting bag Vercels proxy verificeret (22. oktober 2026)
+
+- Den sidste løse ende fra selve udgivelsen (trin 8): om Better Auths login-begrænsning (5 forsøg i minuttet pr. IP, `lib/auth.ts`) rent faktisk kan se besøgendes rigtige IP-adresse bag Vercels proxy, eller om den fejlagtigt ville behandle alle besøgende som samme "bruger".
+- Gennemgik Better Auths kildekode (`@better-auth/core/src/utils/ip.ts`): uden ekstra konfiguration læser den IP'en fra `x-forwarded-for`-headeren. Kan den ikke finde en troværdig IP, falder den tilbage til én delt tæller for alle besøgende (nøglen `"no-trusted-ip"`) og skriver en advarsel i serverloggen.
+- **Testet direkte mod produktion, ikke kun læst i koden:** Et bevidst forkert loginforsøg mod `zet-wheat.vercel.app` gav en ny række i `rate_limit`-tabellen med nøglen `"<rigtig-IP>|/sign-in/email"`, altså en ægte offentlig IP-adresse, ikke fallback-værdien. Testrækken blev slettet igen efter kontrollen.
+- **Konklusion: ingen kodeændring nødvendig.** Vercel sætter `x-forwarded-for` korrekt til besøgendes rigtige IP, og Better Auth læser den rigtigt. Loginforsøg tælles pr. besøgende, ikke samlet for alle, så I kan ikke ved et uheld låse hinanden ude, og begrænsningen virker reelt som beskyttelse.
+
 ### Samlet indstillinger-side (22. oktober 2026)
 
 - Joe syntes ikke, at tema-skift hørte hjemme direkte i bundnavigationen, og ville hellere have det samlet med "Log ud" og andre indstillinger på ét sted. Valgte: ét nyt "Indstillinger"-ikon i bundnavigationen (i stedet for separate "Mørkt/Lyst"- og "Log ud"-ikoner), og at admin-linket (kun synligt for Joe) også flyttes med derind, så bundnavigationen bliver ens for alle brugere.
@@ -271,7 +278,7 @@ Datamodellen er implementeret i Postgres via Drizzle. Schemaet ligger i `lib/db/
 5. Færdig: Historik med liste og detaljevisning.
 6. Færdig: Database og Drizzle (Neon). `lib/workout-store.ts` læser og skriver i Postgres. `lib/mock-data.ts` er fjernet.
 7. **I gang:** Login med Better Auth, så hver bruger får sine egne data.
-8. **Udgivet:** Live på [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Rate limiting bag Vercels proxy er endnu ikke eksplicit verificeret.
+8. **Udgivet:** Live på [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Rate limiting bag Vercels proxy er verificeret (se "Rate limiting bag Vercels proxy verificeret" nedenfor).
 
 ## Kontrol
 
