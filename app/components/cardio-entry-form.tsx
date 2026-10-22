@@ -3,17 +3,18 @@
 import { useActionState, useState } from "react";
 import { logCardioEntry, type LogCardioEntryState } from "@/app/log/actions";
 import { formatPace } from "@/lib/format";
-import type { Exercise } from "@/lib/types";
+import type { Exercise, TrainingProgram } from "@/lib/types";
 
 const initialState: LogCardioEntryState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-900 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700";
 
-export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
+export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [distanceKm, setDistanceKm] = useState(state.values?.distanceKm ?? "");
   const [minutes, setMinutes] = useState(state.values?.minutes ?? "");
   const [seconds, setSeconds] = useState(state.values?.seconds ?? "0");
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
 
   // Felterne skal også vise de tastede værdier igen efter en fejl fra serveren.
   // Justeres under selve renderingen (ikke i en effect), som React anbefaler
@@ -31,13 +32,51 @@ export function CardioEntryForm({ exercises }: { exercises: Exercise[] }) {
 
   const durationSec = (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
   const pace = formatPace(Number(distanceKm), durationSec);
+  const selectedProgram = programs.find((program) => program.id === selectedProgramId);
+  const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
+  const filteredExercises = programExerciseIds
+    ? exercises.filter((exercise) => programExerciseIds.has(exercise.id))
+    : exercises;
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      {programs.length > 0 && (
+        <div>
+          <p className={labelClass}>Program</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedProgramId(null)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                selectedProgramId === null
+                  ? "bg-indigo-600 text-white"
+                  : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+              }`}
+            >
+              Alle
+            </button>
+            {programs.map((program) => (
+              <button
+                key={program.id}
+                type="button"
+                onClick={() => setSelectedProgramId(program.id === selectedProgramId ? null : program.id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  selectedProgramId === program.id
+                    ? "bg-indigo-600 text-white"
+                    : "border border-zinc-300 text-zinc-600 hover:border-indigo-300"
+                }`}
+              >
+                {program.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className={labelClass} htmlFor="exerciseId">Øvelse</label>
         <select id="exerciseId" name="exerciseId" required defaultValue={state.values?.exerciseId} className={inputClass}>
-          {exercises.map((exercise) => (
+          {filteredExercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
               {exercise.name}
             </option>

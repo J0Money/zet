@@ -239,3 +239,38 @@ export const workoutCardio = pgTable("workout_cardio", {
     .notNull()
     .default(sql`clock_timestamp()`),
 });
+
+// En navngivet liste af øvelser (fx "Pushdag"), til hurtigt at filtrere
+// øvelsesvalget på log-siden. Altid ejet af én bruger; is_published styrer,
+// om andre også kan se og bruge den (ikke user_id null som exercise, en
+// delt øvelse har ingen ejer, et delt program har stadig en ejer, der kan
+// trække det tilbage igen).
+export const trainingProgram = pgTable("training_program", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  is_published: boolean("is_published").notNull().default(false),
+  created_at: timestamp("created_at")
+    .notNull()
+    .default(sql`clock_timestamp()`),
+});
+
+// Øvelserne i et program, i den rækkefølge de blev valgt (position).
+export const trainingProgramExercise = pgTable(
+  "training_program_exercise",
+  {
+    program_id: uuid("program_id")
+      .notNull()
+      .references(() => trainingProgram.id, { onDelete: "cascade" }),
+    exercise_id: uuid("exercise_id")
+      .notNull()
+      .references(() => exercise.id),
+    position: integer("position").notNull(),
+  },
+  (table) => [
+    unique("training_program_exercise_program_id_exercise_id_unique")
+      .on(table.program_id, table.exercise_id),
+  ],
+);

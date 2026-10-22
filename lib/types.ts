@@ -33,6 +33,14 @@ export type Workout = {
   notes: string;
 };
 
+export type TrainingProgram = {
+  id: string;
+  user_id: string;
+  name: string;
+  is_published: boolean;
+  exercise_ids: string[]; // in the order they were added to the program
+};
+
 type BaseEntry = {
   id: string;
   workout_id: string;

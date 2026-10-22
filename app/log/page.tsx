@@ -1,9 +1,11 @@
 import { requireUser } from "@/lib/session";
 import { connection } from "next/server";
+import Link from "next/link";
 import { CardioEntryRow } from "@/app/components/cardio-entry-row";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
 import { StrengthEntryRow } from "@/app/components/strength-entry-row";
 import { getTodayInCopenhagen } from "@/lib/dates";
+import { getPrograms } from "@/lib/programs";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 
@@ -21,6 +23,7 @@ export default async function LogPage() {
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
   const cardioExercises = exercises.filter((exercise) => exercise.type === "cardio");
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
+  const programs = await getPrograms(currentUser.id);
 
   const today = getTodayInCopenhagen();
   const workouts = await getWorkouts(currentUser.id);
@@ -57,9 +60,14 @@ export default async function LogPage() {
         <h1>Log en træning</h1>
       </header>
 
+      <Link href="/programs" className="self-start text-sm text-indigo-600 hover:text-indigo-800">
+        Administrer programmer →
+      </Link>
+
       <LogFormTabs
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
+        programs={programs}
       />
 
       <section className="zet-panel">
