@@ -1,12 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { logStrengthSet, type LogStrengthSetState } from "@/app/log/actions";
+import { createExerciseAction, logStrengthSet, type CreateExerciseState, type LogStrengthSetState } from "@/app/log/actions";
 import { Confetti } from "@/app/components/confetti";
+import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
 const initialState: LogStrengthSetState = {};
+const initialCreateState: CreateExerciseState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
@@ -18,8 +20,13 @@ function emptySet(id: number): SetRow {
 
 export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
+  const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
   const [selectedTags, setSelectedTags] = useState<Set<MuscleGroup>>(new Set());
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
+  const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
   const nextId = useRef(1);
   const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
@@ -33,17 +40,37 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
     }
   }, [state]);
 
+  // Efter en oprettet øvelse: føj den til listen, nulstil filtrene (så den
+  // garanteret er synlig uanset hvad der var valgt), og tving <select> til
+  // at vælge den (samme key-remount-trick som konfettien bruger, da
+  // defaultValue kun virker ved selve monteringen).
+  // Justeres under selve renderingen (ikke i en effect), som React anbefaler.
+  const [prevCreateState, setPrevCreateState] = useState(createState);
+  if (createState !== prevCreateState) {
+    setPrevCreateState(createState);
+    if (createState.exercise) {
+      setCustomExercises((current) => [...current, createState.exercise!]);
+      setSelectedProgramId(null);
+      setSelectedTags(new Set());
+      setPendingExerciseId(createState.exercise.id);
+      setExerciseSelectKey((count) => count + 1);
+      setShowCreateForm(false);
+    }
+  }
+
+  const allExercises = useMemo(() => [...exercises, ...customExercises], [exercises, customExercises]);
+
   // Kun tags, der rent faktisk findes på en af øvelserne, vises som knapper.
   const availableTags = useMemo(
-    () => MUSCLE_GROUPS.filter((group) => exercises.some((exercise) => exercise.muscle_groups.includes(group))),
-    [exercises],
+    () => MUSCLE_GROUPS.filter((group) => allExercises.some((exercise) => exercise.muscle_groups.includes(group))),
+    [allExercises],
   );
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
   // Flere valgte tags virker som "eller": en øvelse vises, hvis den matcher
   // mindst ét af dem, fx "Ryg" + "Biceps" viser øvelser med enten tag. Et
   // valgt program indskrænker yderligere til kun dets egne øvelser.
-  const filteredExercises = exercises
+  const filteredExercises = allExercises
     .filter((exercise) => selectedTags.size === 0 || exercise.muscle_groups.some((group) => selectedTags.has(group)))
     .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id));
 
@@ -70,6 +97,8 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   }
 
   return (
+    <>
+    <form id="create-strength-exercise" action={createFormAction} />
     <form action={formAction} className="flex flex-col gap-5">
       <Confetti trigger={confettiTrigger} />
 
@@ -146,8 +175,19 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
       )}
 
       <div>
-        <label className={labelClass} htmlFor="exerciseId">Øvelse</label>
-        <select id="exerciseId" name="exerciseId" required className={inputClass}>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="exerciseId">Øvelse</label>
+          {!showCreateForm && (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(true)}
+              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+            >
+              + Opret ny øvelse
+            </button>
+          )}
+        </div>
+        <select key={exerciseSelectKey} id="exerciseId" name="exerciseId" required defaultValue={pendingExerciseId} className={inputClass}>
           {filteredExercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
               {exercise.name}
@@ -155,6 +195,16 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
           ))}
         </select>
       </div>
+
+      {showCreateForm && (
+        <CreateExerciseForm
+          formId="create-strength-exercise"
+          type="strength"
+          state={createState}
+          isPending={isCreatingExercise}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
 
       <div className="flex flex-col gap-3">
         {sets.map((set, index) => (
@@ -222,5 +272,6 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
         {isPending ? "Gemmer…" : sets.length === 1 ? "Gem sæt" : `Gem ${sets.length} sæt`}
       </button>
     </form>
+    </>
   );
 }

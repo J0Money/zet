@@ -7,7 +7,7 @@ import "server-only";
 import { and, eq, or, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
-import type { CardioEntry, Entry, Exercise, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
+import type { CardioEntry, Entry, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
 
 // Shared or belonging to this user (user_id null means shared, see
 // CLAUDE.md's data model). En øvelse kan have flere muskelgrupper, derfor en
@@ -28,6 +28,35 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
     .leftJoin(exerciseMuscleGroup, eq(exerciseMuscleGroup.exercise_id, exercise.id))
     .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId)))
     .groupBy(exercise.id);
+}
+
+// Opretter en privat øvelse (user_id sat til den aktuelle bruger), som
+// derefter opfører sig som enhver anden øvelse: den kan vælges igen, og den
+// tæller med i personlige rekorder, volumen osv. Dubletter tjekkes af
+// kaldende kode (app/log/actions.ts), ikke her, da det kræver den fulde,
+// synlige øvelsesliste.
+export async function createExercise(
+  userId: string,
+  input: { name: string; type: ExerciseType; muscleGroups: MuscleGroup[] },
+): Promise<Exercise> {
+  const [created] = await db
+    .insert(exercise)
+    .values({ user_id: userId, name: input.name, type: input.type })
+    .returning();
+
+  if (input.muscleGroups.length > 0) {
+    await db.insert(exerciseMuscleGroup).values(
+      input.muscleGroups.map((muscle_group) => ({ exercise_id: created.id, muscle_group })),
+    );
+  }
+
+  return {
+    id: created.id,
+    user_id: created.user_id,
+    name: created.name,
+    type: created.type,
+    muscle_groups: input.muscleGroups,
+  };
 }
 
 export async function getWorkouts(userId: string): Promise<Workout[]> {
