@@ -2,6 +2,13 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Next.js opdateret til 16.4.2 (23. oktober 2026)
+
+- `npm audit` (kun læsning) viste kritiske sårbarheder i Next.js 16.0.0-16.4.0: fjernkørsel af kode via billedoptimering med SVG og via `use cache`, samt DoS via Server Actions. Rettet i 16.4.2. Joe valgte at opdatere.
+- `next` og `eslint-config-next` er opdateret til 16.4.2 (begge fastlåst til præcis version, som før) med `npm install next@16.4.2 eslint-config-next@16.4.2 --save-exact`. Ingen kodeændringer, kun `package.json` og `package-lock.json`.
+- Efter opdateringen: TypeScript, ESLint, produktionsbuild og `tests/access.integration.test.ts` (7 deltests) bestod. `npm audit --omit=dev` viser ikke længere Next.js. Tilbage er 4 moderate fund i `esbuild` via `drizzle-kit` (et udviklingsværktøj, ikke en del af den kørende app), og i alt 5 høje fund i udviklingsafhængigheder (fx `braces`) der ikke kører i produktion. Ingen af dem er rettet; `npm audit fix --force` må ikke bruges (breaking changes, fx nedgradering af `drizzle-kit`).
+- Bemærkning: Når dev-serveren starter, omskriver Next.js' eksperimentelle `agentFeedback` selv `AGENTS.md`. Den ændring er ikke en del af Joes arbejde og committes ikke med.
+
 ### Egne øvelser (23. oktober 2026)
 
 - Joe ville selv kunne skrive en øvelse ind. Valgt: oprettelse direkte fra log-siden ("+ Opret ny øvelse" ved øvelsesvalget), øvelser er private (`user_id` = den der opretter dem, ingen udgiv-funktion endnu, Joe var usikker på deling), og mindst én muskelgruppe er påkrævet for styrkeøvelser. Joe tilføjede selv kravet om dubletkontrol.
