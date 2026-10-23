@@ -3,10 +3,12 @@
 import { requireUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
-import type { StrengthEntry } from "@/lib/types";
+import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
+import type { Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
 import {
   addCardioEntry,
   addStrengthEntries,
+  createExercise,
   getEntries,
   getExercises,
   getOrCreateWorkoutForDate,
@@ -147,4 +149,54 @@ export async function logCardioEntry(
   revalidatePath("/log");
 
   return {};
+}
+
+export type CreateExerciseState = {
+  error?: string;
+  exercise?: Exercise;
+};
+
+export async function createExerciseAction(
+  _prevState: CreateExerciseState,
+  formData: FormData,
+): Promise<CreateExerciseState> {
+  const currentUser = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const type = String(formData.get("type") ?? "");
+  const muscleGroupsRaw = formData.getAll("muscleGroups").map(String);
+
+  if (!name) {
+    return { error: "Skriv et navn på øvelsen." };
+  }
+  if (name.length > 100) {
+    return { error: "Navnet må højst være 100 tegn." };
+  }
+  if (type !== "strength" && type !== "cardio") {
+    return { error: "Ugyldig øvelsestype." };
+  }
+  const exerciseType = type as ExerciseType;
+
+  const muscleGroups = muscleGroupsRaw.filter((group): group is MuscleGroup =>
+    (MUSCLE_GROUPS as string[]).includes(group),
+  );
+  // Cardio har ingen muskelgruppe-filter i UI'en, så kun styrkeøvelser
+  // kræver mindst én, ellers ville de aldrig kunne vælges via filteret.
+  if (exerciseType === "strength" && muscleGroups.length === 0) {
+    return { error: "Vælg mindst én muskelgruppe." };
+  }
+
+  const visibleExercises = await getExercises(currentUser.id);
+  const normalizedName = name.toLowerCase();
+  const isDuplicate = visibleExercises.some(
+    (existing) => existing.type === exerciseType && existing.name.trim().toLowerCase() === normalizedName,
+  );
+  if (isDuplicate) {
+    return { error: `"${name}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
+  }
+
+  const created = await createExercise(currentUser.id, { name, type: exerciseType, muscleGroups });
+
+  revalidatePath("/log");
+
+  return { exercise: created };
 }

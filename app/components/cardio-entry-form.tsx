@@ -1,20 +1,43 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { logCardioEntry, type LogCardioEntryState } from "@/app/log/actions";
+import { useActionState, useMemo, useState } from "react";
+import { createExerciseAction, logCardioEntry, type CreateExerciseState, type LogCardioEntryState } from "@/app/log/actions";
+import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { formatPace } from "@/lib/format";
 import type { Exercise, TrainingProgram } from "@/lib/types";
 
 const initialState: LogCardioEntryState = {};
+const initialCreateState: CreateExerciseState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
 export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
+  const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
   const [distanceKm, setDistanceKm] = useState(state.values?.distanceKm ?? "");
   const [minutes, setMinutes] = useState(state.values?.minutes ?? "");
   const [seconds, setSeconds] = useState(state.values?.seconds ?? "0");
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
+  const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
+
+  // Efter en oprettet øvelse: føj den til listen, nulstil program-filteret,
+  // og tving <select> til at vælge den (key-remount, da defaultValue kun
+  // virker ved selve monteringen).
+  // Justeres under selve renderingen (ikke i en effect), som React anbefaler.
+  const [prevCreateState, setPrevCreateState] = useState(createState);
+  if (createState !== prevCreateState) {
+    setPrevCreateState(createState);
+    if (createState.exercise) {
+      setCustomExercises((current) => [...current, createState.exercise!]);
+      setSelectedProgramId(null);
+      setPendingExerciseId(createState.exercise.id);
+      setExerciseSelectKey((count) => count + 1);
+      setShowCreateForm(false);
+    }
+  }
 
   // Felterne skal også vise de tastede værdier igen efter en fejl fra serveren.
   // Justeres under selve renderingen (ikke i en effect), som React anbefaler
@@ -32,13 +55,16 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
 
   const durationSec = (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
   const pace = formatPace(Number(distanceKm), durationSec);
+  const allExercises = useMemo(() => [...exercises, ...customExercises], [exercises, customExercises]);
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
   const filteredExercises = programExerciseIds
-    ? exercises.filter((exercise) => programExerciseIds.has(exercise.id))
-    : exercises;
+    ? allExercises.filter((exercise) => programExerciseIds.has(exercise.id))
+    : allExercises;
 
   return (
+    <>
+    <form id="create-cardio-exercise" action={createFormAction} />
     <form action={formAction} className="flex flex-col gap-5">
       {programs.length > 0 && (
         <div>
@@ -74,8 +100,26 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
       )}
 
       <div>
-        <label className={labelClass} htmlFor="exerciseId">Øvelse</label>
-        <select id="exerciseId" name="exerciseId" required defaultValue={state.values?.exerciseId} className={inputClass}>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="exerciseId">Øvelse</label>
+          {!showCreateForm && (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(true)}
+              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800"
+            >
+              + Opret ny øvelse
+            </button>
+          )}
+        </div>
+        <select
+          key={exerciseSelectKey}
+          id="exerciseId"
+          name="exerciseId"
+          required
+          defaultValue={pendingExerciseId ?? state.values?.exerciseId}
+          className={inputClass}
+        >
           {filteredExercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
               {exercise.name}
@@ -83,6 +127,16 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
           ))}
         </select>
       </div>
+
+      {showCreateForm && (
+        <CreateExerciseForm
+          formId="create-cardio-exercise"
+          type="cardio"
+          state={createState}
+          isPending={isCreatingExercise}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
 
       <div>
         <label className={labelClass} htmlFor="distanceKm">Distance (km)</label>
@@ -153,5 +207,6 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
         {isPending ? "Gemmer…" : "Gem cardio"}
       </button>
     </form>
+    </>
   );
 }
