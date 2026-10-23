@@ -71,6 +71,13 @@
       "when": 1792758637022,
       "tag": "0009_share_exercises",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792761443433,
+      "tag": "0010_exercise_equipment",
+      "breakpoints": true
     }
   ]
 }

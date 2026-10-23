@@ -7,7 +7,7 @@ import "server-only";
 import { and, eq, or, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
-import type { CardioEntry, Entry, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
+import type { CardioEntry, Entry, Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
 
 // Synlige øvelser: indbyggede (user_id null), brugerens egne, og andre
 // brugeres øvelser, der er delt (is_shared), se CLAUDE.md's datamodel. En øvelse kan have flere muskelgrupper, derfor en
@@ -22,6 +22,8 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
       user_id: exercise.user_id,
       name: exercise.name,
       type: exercise.type,
+      group_name: exercise.group_name,
+      equipment: exercise.equipment,
       muscle_groups: sql<MuscleGroup[]>`coalesce(json_agg(${exerciseMuscleGroup.muscle_group}) filter (where ${exerciseMuscleGroup.muscle_group} is not null), '[]'::json)`,
     })
     .from(exercise)
@@ -37,11 +39,24 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
 // synlige øvelsesliste.
 export async function createExercise(
   userId: string,
-  input: { name: string; type: ExerciseType; muscleGroups: MuscleGroup[] },
+  input: {
+    name: string;
+    type: ExerciseType;
+    muscleGroups: MuscleGroup[];
+    groupName: string | null;
+    equipment: Equipment | null;
+  },
 ): Promise<Exercise> {
   const [created] = await db
     .insert(exercise)
-    .values({ user_id: userId, name: input.name, type: input.type, is_shared: true })
+    .values({
+      user_id: userId,
+      name: input.name,
+      type: input.type,
+      is_shared: true,
+      group_name: input.groupName,
+      equipment: input.equipment,
+    })
     .returning();
 
   if (input.muscleGroups.length > 0) {
@@ -56,6 +71,8 @@ export async function createExercise(
     name: created.name,
     type: created.type,
     muscle_groups: input.muscleGroups,
+    group_name: created.group_name,
+    equipment: created.equipment,
   };
 }
 

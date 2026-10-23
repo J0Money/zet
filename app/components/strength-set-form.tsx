@@ -4,6 +4,8 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createExerciseAction, logStrengthSet, type CreateExerciseState, type LogStrengthSetState } from "@/app/log/actions";
 import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
+import { EquipmentWheel } from "@/app/components/equipment-wheel";
+import { choiceKey, groupExercises } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
@@ -26,8 +28,10 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
-  const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
+  const [selectedChoiceKey, setSelectedChoiceKey] = useState<string | null>(null);
+  // Hvilken variant der sidst er valgt i hver gruppe, så valget huskes, hvis
+  // man skifter øvelse og tilbage igen.
+  const [variantByChoice, setVariantByChoice] = useState<Record<string, string>>({});
   const nextId = useRef(1);
   const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
@@ -42,20 +46,21 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   }, [state]);
 
   // Efter en oprettet øvelse: føj den til listen, nulstil filtrene (så den
-  // garanteret er synlig uanset hvad der var valgt), og tving <select> til
-  // at vælge den (samme key-remount-trick som konfettien bruger, da
-  // defaultValue kun virker ved selve monteringen).
+  // garanteret er synlig uanset hvad der var valgt), og vælg den, også på
+  // hjulet, hvis den er en ny variant i en gruppe.
   // Justeres under selve renderingen (ikke i en effect), som React anbefaler.
   const [prevCreateState, setPrevCreateState] = useState(createState);
   if (createState !== prevCreateState) {
     setPrevCreateState(createState);
-    if (createState.exercise) {
-      setCustomExercises((current) => [...current, createState.exercise!]);
+    const created = createState.exercise;
+    if (created) {
+      const key = choiceKey(created);
+      setCustomExercises((current) => [...current, created]);
       setSelectedProgramId(null);
       setSelectedTags(new Set());
       setSearchQuery("");
-      setPendingExerciseId(createState.exercise.id);
-      setExerciseSelectKey((count) => count + 1);
+      setSelectedChoiceKey(key);
+      setVariantByChoice((current) => ({ ...current, [key]: created.id }));
       setShowCreateForm(false);
     }
   }
@@ -83,6 +88,11 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
     .filter((exercise) => selectedTags.size === 0 || exercise.muscle_groups.some((group) => selectedTags.has(group)))
     .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id))
     .filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
+  const choices = groupExercises(filteredExercises);
+  const currentChoice = choices.find((choice) => choice.key === selectedChoiceKey) ?? choices[0];
+  const currentVariant =
+    currentChoice?.variants.find((variant) => variant.id === variantByChoice[currentChoice.key]) ??
+    currentChoice?.variants[0];
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -210,15 +220,31 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
             />
           </div>
           <div className="min-w-0 flex-1">
-            <select key={exerciseSelectKey} id="exerciseId" name="exerciseId" required defaultValue={pendingExerciseId} className={inputClass}>
-              {filteredExercises.map((exercise) => (
-                <option key={exercise.id} value={exercise.id}>
-                  {exercise.name}
+            <select
+              id="exerciseId"
+              value={currentChoice?.key ?? ""}
+              onChange={(event) => setSelectedChoiceKey(event.target.value)}
+              className={inputClass}
+            >
+              {choices.map((choice) => (
+                <option key={choice.key} value={choice.key}>
+                  {choice.label}
                 </option>
               ))}
             </select>
           </div>
         </div>
+        {/* Selve øvelsen (varianten) sendes her, ikke valglisten, der kun viser grupper. */}
+        <input type="hidden" name="exerciseId" value={currentVariant?.id ?? ""} />
+        {currentChoice && currentChoice.variants.length > 1 && currentVariant && (
+          <div className="mt-3">
+            <EquipmentWheel
+              options={currentChoice.variants.map((variant) => ({ id: variant.id, equipment: variant.equipment ?? "other" }))}
+              selectedId={currentVariant.id}
+              onSelect={(id) => setVariantByChoice((current) => ({ ...current, [currentChoice.key]: id }))}
+            />
+          </div>
+        )}
         {filteredExercises.length === 0 && (
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
         )}
