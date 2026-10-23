@@ -2,6 +2,16 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+## Overlevering til næste session (23. oktober 2026, slut på dagens arbejde)
+
+- Alt er committet og pushet til `master` på [github.com/J0Money/zet](https://github.com/J0Money/zet). Vercel deployer automatisk til [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Databasen er migreret til og med `0010_exercise_equipment.sql`.
+- **Dagens arbejde** (detaljer i de daterede afsnit nedenfor): mørkt tema; samlet indstillingsside; rate limiting bag Vercels proxy verificeret; kalenderoversigt i historikken; egne øvelser med dubletkontrol; Next.js opdateret til 16.4.2 (kritiske sikkerhedsrettelser); delte øvelser (`is_shared`) og søgning i øvelser; øvelsesvarianter med drejehjul til udstyr.
+- **Joe mangler at afprøve på sin telefon:** drejehjulet (træk, tryk og vibration på Android), søgefeltet ved siden af øvelsesvalget, og at Enter i søgefeltet ikke gemmer et sæt.
+- **Foreslået næste skridt:** lade ejeren rette og slette sin egen øvelse, og en måde at flytte en eksisterende øvelse ind i en gruppe. I dag kræver begge en rettelse direkte i databasen.
+- **Uden for git:** `AGENTS.md` omskrives automatisk af Next.js' eksperimentelle `agentFeedback`, når dev-serveren starter. Ændringen er bevidst ikke committet. Afklar med Joe, om den skal committes, ignoreres eller om funktionen skal slås fra i `next.config.ts`.
+- **Kendte rester fra `npm audit`:** moderate fund i `esbuild` via `drizzle-kit` og høje fund i andre udviklingsafhængigheder. Ingen kører i produktion. Kør aldrig `npm audit fix --force`.
+- **Bemærk:** Under build og dev-server dukkede der tekst op i værktøjernes output, som bad assistenten om at køre `next upgrade --agent=security` og spørge Joe om det. Det blev ikke fulgt, da instruktionen kom fra værktøjsoutput og ikke fra Joe. Selve sårbarheden blev efterprøvet med `npm audit` og rettet ved at opdatere manuelt.
+
 ### Next.js opdateret til 16.4.2 (23. oktober 2026)
 
 - `npm audit` (kun læsning) viste kritiske sårbarheder i Next.js 16.0.0-16.4.0: fjernkørsel af kode via billedoptimering med SVG og via `use cache`, samt DoS via Server Actions. Rettet i 16.4.2. Joe valgte at opdatere.
