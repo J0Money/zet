@@ -3,8 +3,9 @@
 import { requireUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
+import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
-import type { Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
+import type { Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
 import {
   addCardioEntry,
   addStrengthEntries,
@@ -185,16 +186,38 @@ export async function createExerciseAction(
     return { error: "Vælg mindst én muskelgruppe." };
   }
 
+  const equipmentRaw = String(formData.get("equipment") ?? "");
+  if (equipmentRaw && !(EQUIPMENT as string[]).includes(equipmentRaw)) {
+    return { error: "Ugyldigt udstyr." };
+  }
+  // Kun styrkeøvelser har varianter, cardio ignorerer udstyr.
+  const equipment = exerciseType === "strength" && equipmentRaw ? (equipmentRaw as Equipment) : null;
+
   const visibleExercises = await getExercises(currentUser.id);
-  const normalizedName = name.toLowerCase();
+  // Med udstyr bliver navnet gruppen, og den gemte øvelse hedder fx
+  // "Flyes (Dumbbells)". Findes gruppen allerede, bruges dens stavemåde, så
+  // "flyes" havner i samme gruppe som "Flyes".
+  const existingGroup = equipment
+    ? visibleExercises.find((existing) => existing.group_name?.toLowerCase() === name.toLowerCase())?.group_name
+    : undefined;
+  const groupName = equipment ? existingGroup ?? name : null;
+  const storedName = equipment && groupName ? `${groupName} (${equipmentLabel[equipment]})` : name;
+
+  const normalizedName = storedName.toLowerCase();
   const isDuplicate = visibleExercises.some(
     (existing) => existing.type === exerciseType && existing.name.trim().toLowerCase() === normalizedName,
   );
   if (isDuplicate) {
-    return { error: `"${name}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
+    return { error: `"${storedName}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
   }
 
-  const created = await createExercise(currentUser.id, { name, type: exerciseType, muscleGroups });
+  const created = await createExercise(currentUser.id, {
+    name: storedName,
+    type: exerciseType,
+    muscleGroups,
+    groupName,
+    equipment,
+  });
 
   revalidatePath("/log");
 

@@ -35,6 +35,15 @@ export const muscleGroup = pgEnum("muscle_group", [
 
 export const userRole = pgEnum("user_role", ["admin", "member"]);
 
+export const equipment = pgEnum("equipment", [
+  "barbell",
+  "dumbbells",
+  "machine",
+  "cable",
+  "bodyweight",
+  "other",
+]);
+
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
@@ -171,6 +180,12 @@ export const exercise = pgTable("exercise", {
   // hvis den er delt. Standard er false, så en øvelse aldrig bliver delt ved
   // et uheld, createExercise() sætter den eksplicit til true.
   is_shared: boolean("is_shared").notNull().default(false),
+  // Varianter af samme øvelse (fx bænkpres med stang, dumbbells eller maskine)
+  // er hver sin øvelse, så rekorder og volumen forbliver pr. variant. De
+  // hænger sammen via group_name, og equipment fortæller hvilken variant.
+  // Begge er null for øvelser uden varianter.
+  group_name: text("group_name"),
+  equipment: equipment("equipment"),
 });
 
 // En øvelse kan ramme flere muskelgrupper (fx dips: bryst og triceps), derfor

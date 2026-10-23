@@ -18,12 +18,17 @@ export type MuscleGroup =
   | "core"
   | "full_body";
 
+export type Equipment = "barbell" | "dumbbells" | "machine" | "cable" | "bodyweight" | "other";
+
 export type Exercise = {
   id: string;
   user_id: string | null; // null means shared across all users
   name: string;
   type: ExerciseType;
   muscle_groups: MuscleGroup[]; // e.g. dips is both chest and triceps
+  // Varianter af samme øvelse deler group_name, fx "Bænkpres" med stang og maskine.
+  group_name: string | null;
+  equipment: Equipment | null;
 };
 
 export type Workout = {
