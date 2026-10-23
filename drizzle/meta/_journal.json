@@ -64,6 +64,13 @@
       "when": 1792655525557,
       "tag": "0008_add_training_programs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792758637022,
+      "tag": "0009_share_exercises",
+      "breakpoints": true
     }
   ]
 }

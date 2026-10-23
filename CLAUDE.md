@@ -9,6 +9,15 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - Efter opdateringen: TypeScript, ESLint, produktionsbuild og `tests/access.integration.test.ts` (7 deltests) bestod. `npm audit --omit=dev` viser ikke længere Next.js. Tilbage er 4 moderate fund i `esbuild` via `drizzle-kit` (et udviklingsværktøj, ikke en del af den kørende app), og i alt 5 høje fund i udviklingsafhængigheder (fx `braces`) der ikke kører i produktion. Ingen af dem er rettet; `npm audit fix --force` må ikke bruges (breaking changes, fx nedgradering af `drizzle-kit`).
 - Bemærkning: Når dev-serveren starter, omskriver Next.js' eksperimentelle `agentFeedback` selv `AGENTS.md`. Den ændring er ikke en del af Joes arbejde og committes ikke med.
 
+### Delte øvelser og søgning i øvelser (23. oktober 2026)
+
+- Joe ville, at en øvelse en bruger opretter, kan ses af alle (overstyrer valget i "Egne øvelser" nedenfor om kun private), og ønskede en søgefunktion. Valgt: alle nye øvelser er delt med det samme, men kender stadig sin ejer (så en ejer senere kan få lov at rette/slette sin egen), og et søgefelt over øvelseslisten på log-siden. Ikke valgt: delt uden ejer, og et valg pr. øvelse.
+- Migrationen `0009_share_exercises.sql` er kørt i Neon (godkendt af Joe): ny kolonne `exercise.is_shared` (standard `false`), og en dataændring der gjorde de tre eksisterende brugeroprettede øvelser delte ("Motor cyklen", "Flue smækkeren", "Skrå bænk (dumbells)", alle Joes). Bekræftet bagefter: alle øvelser med ejer er delt, de indbyggede er urørt.
+- Standarden er bevidst `false` i databasen: en øvelse indsat direkte (fx i `tests/access.integration.test.ts`) bliver aldrig delt ved et uheld. `createExercise()` i `lib/workout-store.ts` sætter `is_shared: true` eksplicit. Synligheden afgøres ét sted, `getExercises()`, som også bruges til at validere logning og programmer, så de følger med automatisk. Dublettjekket i `createExerciseAction` dækker derfor også øvelser andre har delt.
+- Søgning: et søgefelt (`type="search"`) over `<select>`-listen i både `StrengthSetForm` og `CardioEntryForm`. Filtrerer på navnet (indeholder teksten, uanset store/små bogstaver) sammen med de eksisterende filtre for program og muskelgruppe. Viser en besked, hvis intet matcher, og nulstilles, når man opretter en ny øvelse. Enter i søgefeltet er slået fra, ellers ville det sende den omkringliggende log-formular og gemme et halvt udfyldt sæt.
+- Testet: i browseren (søgning, store bogstaver, ingen match, oprettelse, automatisk valg, kun én forekomst) og direkte mod databasen med to testbrugere (slettet bagefter): B kan se og logge på A's delte øvelse, men hverken se eller logge på en øvelse med `is_shared = false`. TypeScript, ESLint, produktionsbuild og `tests/access.integration.test.ts` (7 deltests) bestod. Enter-beskyttelsen er kun testet med en simuleret tastetryk.
+- Kendt konsekvens: delte øvelser kan ikke slettes af andre end ejeren, og en ejers bruger kan ikke slettes, hvis andre har logget på hans øvelse (sæt refererer til øvelsen uden cascade, så databasen afviser det, i stedet for stille at slette andres data). Der er endnu ingen funktion til at rette eller slette en øvelse.
+
 ### Egne øvelser (23. oktober 2026)
 
 - Joe ville selv kunne skrive en øvelse ind. Valgt: oprettelse direkte fra log-siden ("+ Opret ny øvelse" ved øvelsesvalget), øvelser er private (`user_id` = den der opretter dem, ingen udgiv-funktion endnu, Joe var usikker på deling), og mindst én muskelgruppe er påkrævet for styrkeøvelser. Joe tilføjede selv kravet om dubletkontrol.
@@ -263,7 +272,7 @@ Joe er praktikant og lærer webudvikling. Svar altid på dansk. Dokumentation, o
 ## Datamodel
 
 - `user`: `id` (UUID), `email`, `name`.
-- `exercise`: `id` (UUID), `user_id` (`null` for fælles øvelser), `name`, `type` (`strength` eller `cardio`).
+- `exercise`: `id` (UUID), `user_id` (`null` for indbyggede øvelser uden ejer), `name`, `type` (`strength` eller `cardio`), `is_shared` (boolean, standard `false`). En øvelse er synlig for en bruger, hvis `user_id` er `null`, hvis brugeren selv ejer den, eller hvis `is_shared` er sand. Øvelser oprettet i appen får `is_shared = true` og beholder deres ejer.
 - `exercise_muscle_group`: `exercise_id` (UUID), `muscle_group`. En øvelse kan have flere rækker, fx Dips har både bryst og triceps. Unik på kombinationen (`exercise_id`, `muscle_group`).
 - `workout`: `id` (UUID), `user_id`, `date`, `notes`. Kombinationen (`user_id`, `date`) er unik: én træning pr. bruger pr. dag.
 - `workout_set`: `id` (UUID), `workout_id`, `exercise_id`, `reps`, `weight_kg` (styrke).

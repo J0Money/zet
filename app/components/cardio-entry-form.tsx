@@ -19,6 +19,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
   const [seconds, setSeconds] = useState(state.values?.seconds ?? "0");
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
   const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
@@ -33,6 +34,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
     if (createState.exercise) {
       setCustomExercises((current) => [...current, createState.exercise!]);
       setSelectedProgramId(null);
+      setSearchQuery("");
       setPendingExerciseId(createState.exercise.id);
       setExerciseSelectKey((count) => count + 1);
       setShowCreateForm(false);
@@ -63,9 +65,11 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
   }, [exercises, customExercises]);
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
-  const filteredExercises = programExerciseIds
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredExercises = (programExerciseIds
     ? allExercises.filter((exercise) => programExerciseIds.has(exercise.id))
-    : allExercises;
+    : allExercises
+  ).filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
 
   return (
     <>
@@ -117,6 +121,15 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
             </button>
           )}
         </div>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+          placeholder="Søg i øvelser…"
+          aria-label="Søg i øvelser"
+          className={`${inputClass} mb-2`}
+        />
         <select
           key={exerciseSelectKey}
           id="exerciseId"
@@ -131,6 +144,9 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
             </option>
           ))}
         </select>
+        {filteredExercises.length === 0 && (
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
+        )}
       </div>
 
       {showCreateForm && (

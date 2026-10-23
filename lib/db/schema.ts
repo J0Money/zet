@@ -163,10 +163,14 @@ export const accountRelations = relations(account, ({ one }) => ({
 
 export const exercise = pgTable("exercise", {
   id: uuid("id").primaryKey().defaultRandom(),
-  // null means shared across all users.
+  // null means a built-in exercise shared across all users, with no owner.
   user_id: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: exerciseType("type").notNull(),
+  // En øvelse en bruger har oprettet (user_id sat) er kun synlig for andre,
+  // hvis den er delt. Standard er false, så en øvelse aldrig bliver delt ved
+  // et uheld, createExercise() sætter den eksplicit til true.
+  is_shared: boolean("is_shared").notNull().default(false),
 });
 
 // En øvelse kan ramme flere muskelgrupper (fx dips: bryst og triceps), derfor
