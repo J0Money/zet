@@ -121,29 +121,35 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
             </button>
           )}
         </div>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
-          placeholder="Søg i øvelser…"
-          aria-label="Søg i øvelser"
-          className={`${inputClass} mb-2`}
-        />
-        <select
-          key={exerciseSelectKey}
-          id="exerciseId"
-          name="exerciseId"
-          required
-          defaultValue={pendingExerciseId ?? state.values?.exerciseId}
-          className={inputClass}
-        >
-          {filteredExercises.map((exercise) => (
-            <option key={exercise.id} value={exercise.id}>
-              {exercise.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2">
+          <div className="w-1/3 shrink-0">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+              placeholder="Søg…"
+              aria-label="Søg i øvelser"
+              className={inputClass}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <select
+              key={exerciseSelectKey}
+              id="exerciseId"
+              name="exerciseId"
+              required
+              defaultValue={pendingExerciseId ?? state.values?.exerciseId}
+              className={inputClass}
+            >
+              {filteredExercises.map((exercise) => (
+                <option key={exercise.id} value={exercise.id}>
+                  {exercise.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {filteredExercises.length === 0 && (
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
         )}
