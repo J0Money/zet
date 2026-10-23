@@ -9,8 +9,8 @@ import { db } from "@/lib/db";
 import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
 import type { CardioEntry, Entry, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
 
-// Shared or belonging to this user (user_id null means shared, see
-// CLAUDE.md's data model). En øvelse kan have flere muskelgrupper, derfor en
+// Synlige øvelser: indbyggede (user_id null), brugerens egne, og andre
+// brugeres øvelser, der er delt (is_shared), se CLAUDE.md's datamodel. En øvelse kan have flere muskelgrupper, derfor en
 // left join: json_agg samler dem i én liste pr. øvelse, og filter udelader
 // null, når en øvelse (endnu) ikke har nogen tags. array_agg ville virke i
 // ren SQL, men neon-http-driveren parser ikke Postgres' array-tekstformat
@@ -26,13 +26,13 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
     })
     .from(exercise)
     .leftJoin(exerciseMuscleGroup, eq(exerciseMuscleGroup.exercise_id, exercise.id))
-    .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId)))
+    .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId), eq(exercise.is_shared, true)))
     .groupBy(exercise.id);
 }
 
-// Opretter en privat øvelse (user_id sat til den aktuelle bruger), som
-// derefter opfører sig som enhver anden øvelse: den kan vælges igen, og den
-// tæller med i personlige rekorder, volumen osv. Dubletter tjekkes af
+// Opretter en øvelse, der er delt med alle (is_shared), men stadig kender sin
+// ejer (user_id). Den opfører sig derefter som enhver anden øvelse: den kan
+// vælges igen, og den tæller med i personlige rekorder, volumen osv. Dubletter tjekkes af
 // kaldende kode (app/log/actions.ts), ikke her, da det kræver den fulde,
 // synlige øvelsesliste.
 export async function createExercise(
@@ -41,7 +41,7 @@ export async function createExercise(
 ): Promise<Exercise> {
   const [created] = await db
     .insert(exercise)
-    .values({ user_id: userId, name: input.name, type: input.type })
+    .values({ user_id: userId, name: input.name, type: input.type, is_shared: true })
     .returning();
 
   if (input.muscleGroups.length > 0) {

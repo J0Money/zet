@@ -24,6 +24,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   const [selectedTags, setSelectedTags] = useState<Set<MuscleGroup>>(new Set());
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
   const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
@@ -52,6 +53,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
       setCustomExercises((current) => [...current, createState.exercise!]);
       setSelectedProgramId(null);
       setSelectedTags(new Set());
+      setSearchQuery("");
       setPendingExerciseId(createState.exercise.id);
       setExerciseSelectKey((count) => count + 1);
       setShowCreateForm(false);
@@ -74,10 +76,13 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
   // Flere valgte tags virker som "eller": en øvelse vises, hvis den matcher
   // mindst ét af dem, fx "Ryg" + "Biceps" viser øvelser med enten tag. Et
-  // valgt program indskrænker yderligere til kun dets egne øvelser.
+  // valgt program indskrænker yderligere til kun dets egne øvelser, og
+  // søgningen til dem, hvis navn indeholder teksten (uanset store/små bogstaver).
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredExercises = allExercises
     .filter((exercise) => selectedTags.size === 0 || exercise.muscle_groups.some((group) => selectedTags.has(group)))
-    .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id));
+    .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id))
+    .filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -192,6 +197,15 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
             </button>
           )}
         </div>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+          placeholder="Søg i øvelser…"
+          aria-label="Søg i øvelser"
+          className={`${inputClass} mb-2`}
+        />
         <select key={exerciseSelectKey} id="exerciseId" name="exerciseId" required defaultValue={pendingExerciseId} className={inputClass}>
           {filteredExercises.map((exercise) => (
             <option key={exercise.id} value={exercise.id}>
@@ -199,6 +213,9 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
             </option>
           ))}
         </select>
+        {filteredExercises.length === 0 && (
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
+        )}
       </div>
 
       {showCreateForm && (
