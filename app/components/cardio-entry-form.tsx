@@ -55,7 +55,12 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
 
   const durationSec = (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
   const pace = formatPace(Number(distanceKm), durationSec);
-  const allExercises = useMemo(() => [...exercises, ...customExercises], [exercises, customExercises]);
+  // Serveren sender den nye øvelse med igen, når siden genindlæses efter
+  // oprettelsen, så den lokale kopi skal ud, hvis den allerede er med.
+  const allExercises = useMemo(() => {
+    const serverIds = new Set(exercises.map((exercise) => exercise.id));
+    return [...exercises, ...customExercises.filter((exercise) => !serverIds.has(exercise.id))];
+  }, [exercises, customExercises]);
   const selectedProgram = programs.find((program) => program.id === selectedProgramId);
   const programExerciseIds = selectedProgram ? new Set(selectedProgram.exercise_ids) : null;
   const filteredExercises = programExerciseIds

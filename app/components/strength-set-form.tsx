@@ -58,7 +58,12 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
     }
   }
 
-  const allExercises = useMemo(() => [...exercises, ...customExercises], [exercises, customExercises]);
+  // Serveren sender den nye øvelse med igen, når siden genindlæses efter
+  // oprettelsen, så den lokale kopi skal ud, hvis den allerede er med.
+  const allExercises = useMemo(() => {
+    const serverIds = new Set(exercises.map((exercise) => exercise.id));
+    return [...exercises, ...customExercises.filter((exercise) => !serverIds.has(exercise.id))];
+  }, [exercises, customExercises]);
 
   // Kun tags, der rent faktisk findes på en af øvelserne, vises som knapper.
   const availableTags = useMemo(
