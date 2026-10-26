@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
+import { draftKey, emptyCardioDraft, isCardioDraft } from "@/lib/log-draft";
 import { createExerciseAction, logCardioEntry, type CreateExerciseState, type LogCardioEntryState } from "@/app/log/actions";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { formatPace } from "@/lib/format";
@@ -11,22 +13,22 @@ const initialCreateState: CreateExerciseState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
-export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
+export function CardioEntryForm({ userId, exercises, programs }: { userId: string; exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const [distanceKm, setDistanceKm] = useState(state.values?.distanceKm ?? "");
-  const [minutes, setMinutes] = useState(state.values?.minutes ?? "");
-  const [seconds, setSeconds] = useState(state.values?.seconds ?? "0");
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, isCardioDraft);
+  const { distanceKm, minutes, seconds, selectedProgramId, searchQuery, exerciseId } = draft;
+  const setDistanceKm = draftField(setDraft, "distanceKm");
+  const setMinutes = draftField(setDraft, "minutes");
+  const setSeconds = draftField(setDraft, "seconds");
+  const setSelectedProgramId = draftField(setDraft, "selectedProgramId");
+  const setSearchQuery = draftField(setDraft, "searchQuery");
+  const setExerciseId = draftField(setDraft, "exerciseId");
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [exerciseSelectKey, setExerciseSelectKey] = useState(0);
-  const [pendingExerciseId, setPendingExerciseId] = useState<string | undefined>(undefined);
 
   // Efter en oprettet øvelse: føj den til listen, nulstil program-filteret,
-  // og tving <select> til at vælge den (key-remount, da defaultValue kun
-  // virker ved selve monteringen).
+  // og vælg den i den kontrollerede formular.
   // Justeres under selve renderingen (ikke i en effect), som React anbefaler.
   const [prevCreateState, setPrevCreateState] = useState(createState);
   if (createState !== prevCreateState) {
@@ -35,8 +37,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
       setCustomExercises((current) => [...current, createState.exercise!]);
       setSelectedProgramId(null);
       setSearchQuery("");
-      setPendingExerciseId(createState.exercise.id);
-      setExerciseSelectKey((count) => count + 1);
+      setExerciseId(createState.exercise.id);
       setShowCreateForm(false);
     }
   }
@@ -48,12 +49,19 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
   const [prevState, setPrevState] = useState(state);
   if (state !== prevState) {
     setPrevState(state);
+    if (state.success) setDraft({ ...draft, distanceKm: "", minutes: "", seconds: "0" });
     if (state.values) {
       setDistanceKm(state.values.distanceKm);
       setMinutes(state.values.minutes);
       setSeconds(state.values.seconds);
     }
   }
+
+  useEffect(() => {
+    if (state.success) clearDraft({ ...draft, distanceKm: "", minutes: "", seconds: "0" });
+    // Kun et nyt svar fra serveren må rydde kladden, ikke næste indtastning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, clearDraft]);
 
   const durationSec = (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
   const pace = formatPace(Number(distanceKm), durationSec);
@@ -74,7 +82,9 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
   return (
     <>
     <form id="create-cardio-exercise" action={createFormAction} />
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} inert={isPending} className="flex flex-col gap-5" onChangeCapture={() => {
+      setExerciseId(filteredExercises.some((exercise) => exercise.id === exerciseId) ? exerciseId : (filteredExercises[0]?.id ?? ""));
+    }}>
       {programs.length > 0 && (
         <div>
           <p className={labelClass}>Program</p>
@@ -110,7 +120,7 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="exerciseId">Øvelse</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="cardioExerciseId">Øvelse</label>
           {!showCreateForm && (
             <button
               type="button"
@@ -135,11 +145,11 @@ export function CardioEntryForm({ exercises, programs }: { exercises: Exercise[]
           </div>
           <div className="min-w-0 flex-1">
             <select
-              key={exerciseSelectKey}
-              id="exerciseId"
+              id="cardioExerciseId"
               name="exerciseId"
               required
-              defaultValue={pendingExerciseId ?? state.values?.exerciseId}
+              value={filteredExercises.some((exercise) => exercise.id === exerciseId) ? exerciseId : (filteredExercises[0]?.id ?? "")}
+              onChange={(event) => setExerciseId(event.target.value)}
               className={inputClass}
             >
               {filteredExercises.map((exercise) => (
