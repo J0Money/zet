@@ -21,6 +21,45 @@ export type LogStrengthSetState = {
   newRecord?: boolean;
 };
 
+// Finder varianten af den valgte øvelse med det ønskede udstyr, og opretter den,
+// hvis den ikke findes endnu (fx "Squat (Kabel)" første gang man vælger kabel på
+// Squat). "none" er øvelsen uden udstyr. Den nye variant får samme muskelgrupper
+// og gruppe som den valgte, så den dukker op i samme linje i listen.
+async function resolveVariant(
+  userId: string,
+  visible: Exercise[],
+  selected: Exercise,
+  equipmentRaw: string,
+): Promise<{ exercise: Exercise } | { error: string }> {
+  if (!equipmentRaw) return { exercise: selected };
+  if (equipmentRaw !== "none" && !(EQUIPMENT as string[]).includes(equipmentRaw)) {
+    return { error: "Ugyldigt udstyr." };
+  }
+  const wanted = equipmentRaw === "none" ? null : (equipmentRaw as Equipment);
+  const groupName = selected.group_name ?? selected.name;
+  const members = visible.filter(
+    (exercise) => exercise.type === "strength" && (exercise.group_name ?? exercise.name) === groupName,
+  );
+  const found = members.find((member) => member.equipment === wanted);
+  if (found) return { exercise: found };
+  if (wanted === null) return { error: "Øvelsen findes ikke uden udstyr." };
+
+  const name = `${groupName} (${equipmentLabel[wanted]})`;
+  const sameName = visible.find(
+    (exercise) => exercise.type === "strength" && exercise.name.toLowerCase() === name.toLowerCase(),
+  );
+  if (sameName) return { exercise: sameName };
+
+  const created = await createExercise(userId, {
+    name,
+    type: "strength",
+    muscleGroups: selected.muscle_groups,
+    groupName,
+    equipment: wanted,
+  });
+  return { exercise: created };
+}
+
 export async function logStrengthSet(
   _prevState: LogStrengthSetState,
   formData: FormData,
@@ -32,8 +71,8 @@ export async function logStrengthSet(
   const weightKgRaw = formData.getAll("weightKg");
 
   const exercises = await getExercises(currentUser.id);
-  const exercise = exercises.find((exercise) => exercise.id === exerciseId);
-  if (!exercise || exercise.type !== "strength") {
+  const selected = exercises.find((exercise) => exercise.id === exerciseId);
+  if (!selected || selected.type !== "strength") {
     return { error: "Vælg en gyldig styrkeøvelse." };
   }
   if (repsRaw.length === 0 || repsRaw.length !== weightKgRaw.length) {
@@ -53,6 +92,14 @@ export async function logStrengthSet(
     }
     sets.push({ reps, weight_kg: weightKg });
   }
+
+  // Først efter at sættene er godkendt, så en fejl ikke efterlader en ny
+  // variant, der aldrig blev brugt.
+  const resolved = await resolveVariant(currentUser.id, exercises, selected, String(formData.get("equipment") ?? ""));
+  if ("error" in resolved) {
+    return { error: resolved.error };
+  }
+  const exercise = resolved.exercise;
 
   // Tjek for en ny rekord, før sættene gemmes, samme sammenligning som
   // getPersonalRecords() i lib/workouts.ts (tungest vinder, lige vægt
@@ -186,37 +233,29 @@ export async function createExerciseAction(
     return { error: "Vælg mindst én muskelgruppe." };
   }
 
-  const equipmentRaw = String(formData.get("equipment") ?? "");
-  if (equipmentRaw && !(EQUIPMENT as string[]).includes(equipmentRaw)) {
-    return { error: "Ugyldigt udstyr." };
-  }
-  // Kun styrkeøvelser har varianter, cardio ignorerer udstyr.
-  const equipment = exerciseType === "strength" && equipmentRaw ? (equipmentRaw as Equipment) : null;
-
+  // Udstyr vælges først, når man logger et sæt (på hjulet), så en ny øvelse
+  // oprettes uden udstyr. Et navn tæller som optaget, både hvis en øvelse hedder
+  // det, og hvis det er navnet på en gruppe af varianter (fx "Flyes", hvor kun
+  // "Flyes (Kabel)" og "Flyes (Maskine)" findes), ellers ville der komme en
+  // ekstra linje med næsten samme navn.
   const visibleExercises = await getExercises(currentUser.id);
-  // Med udstyr bliver navnet gruppen, og den gemte øvelse hedder fx
-  // "Flyes (Dumbbells)". Findes gruppen allerede, bruges dens stavemåde, så
-  // "flyes" havner i samme gruppe som "Flyes".
-  const existingGroup = equipment
-    ? visibleExercises.find((existing) => existing.group_name?.toLowerCase() === name.toLowerCase())?.group_name
-    : undefined;
-  const groupName = equipment ? existingGroup ?? name : null;
-  const storedName = equipment && groupName ? `${groupName} (${equipmentLabel[equipment]})` : name;
-
-  const normalizedName = storedName.toLowerCase();
+  const normalizedName = name.toLowerCase();
   const isDuplicate = visibleExercises.some(
-    (existing) => existing.type === exerciseType && existing.name.trim().toLowerCase() === normalizedName,
+    (existing) =>
+      existing.type === exerciseType &&
+      (existing.name.trim().toLowerCase() === normalizedName ||
+        existing.group_name?.trim().toLowerCase() === normalizedName),
   );
   if (isDuplicate) {
-    return { error: `"${storedName}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
+    return { error: `"${name}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
   }
 
   const created = await createExercise(currentUser.id, {
-    name: storedName,
+    name,
     type: exerciseType,
     muscleGroups,
-    groupName,
-    equipment,
+    groupName: null,
+    equipment: null,
   });
 
   revalidatePath("/log");

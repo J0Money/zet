@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
-import { Barbell, DotsThree, Gear, HandGrabbing, Path, PersonSimple } from "@phosphor-icons/react";
+import { Barbell, CircleDashed, DotsThree, Gear, HandGrabbing, Path, PersonSimple } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { equipmentLabel } from "@/lib/equipment";
+import type { WheelKey, WheelOption } from "@/lib/exercise-groups";
 import type { Equipment } from "@/lib/types";
 
 const STEP_DEG = 38;
@@ -22,18 +23,16 @@ const equipmentIcon: Record<Equipment, Icon> = {
   other: DotsThree,
 };
 
-type Option = { id: string; equipment: Equipment };
-
 export function EquipmentWheel({
   options,
-  selectedId,
+  selectedKey,
   onSelect,
 }: {
-  options: Option[];
-  selectedId: string;
-  onSelect: (id: string) => void;
+  options: WheelOption[];
+  selectedKey: WheelKey;
+  onSelect: (key: WheelKey) => void;
 }) {
-  const index = Math.max(0, options.findIndex((option) => option.id === selectedId));
+  const index = Math.max(0, options.findIndex((option) => option.key === selectedKey));
   // Under et træk følger hjulet fingeren direkte; null betyder "i hvile",
   // hvor det står på den valgte variant og fjedrer på plads.
   const [dragRotation, setDragRotation] = useState<number | null>(null);
@@ -43,7 +42,7 @@ export function EquipmentWheel({
   function select(nextIndex: number) {
     const clamped = Math.max(0, Math.min(options.length - 1, nextIndex));
     if (clamped !== index) navigator.vibrate?.(10);
-    onSelect(options[clamped].id);
+    onSelect(options[clamped].key);
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -113,11 +112,12 @@ export function EquipmentWheel({
         }}
       >
         {options.map((option, optionIndex) => {
-          const ItemIcon = equipmentIcon[option.equipment];
+          const ItemIcon = option.equipment ? equipmentIcon[option.equipment] : CircleDashed;
+          const label = option.equipment ? equipmentLabel[option.equipment] : "Uden udstyr";
           const isSelected = optionIndex === index;
           return (
             <div
-              key={option.id}
+              key={option.key}
               className="absolute left-1/2 top-1/2 h-0 w-0"
               style={{ transform: `rotate(${optionIndex * STEP_DEG}deg) translateY(-${RADIUS_PX}px)` }}
             >
@@ -125,14 +125,15 @@ export function EquipmentWheel({
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
+                aria-label={option.variant ? label : `${label} (ny variant)`}
                 tabIndex={isSelected ? 0 : -1}
                 data-wheel-index={optionIndex}
                 className={`absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5 whitespace-nowrap rounded-xl px-2 py-1 text-xs transition-colors ${
                   isSelected ? "font-semibold text-indigo-600 dark:text-indigo-400" : "text-zinc-500 dark:text-zinc-400"
-                }`}
+                } ${option.variant ? "" : "opacity-60"}`}
               >
                 <ItemIcon aria-hidden="true" size={26} weight={isSelected ? "fill" : "regular"} />
-                {equipmentLabel[option.equipment]}
+                {label}
               </button>
             </div>
           );

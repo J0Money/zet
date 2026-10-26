@@ -5,7 +5,8 @@ import { createExerciseAction, logStrengthSet, type CreateExerciseState, type Lo
 import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
-import { choiceKey, groupExercises } from "@/lib/exercise-groups";
+import { choiceKey, defaultWheelKey, groupExercises, wheelOptions } from "@/lib/exercise-groups";
+import type { WheelKey } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 
@@ -29,9 +30,10 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedChoiceKey, setSelectedChoiceKey] = useState<string | null>(null);
-  // Hvilken variant der sidst er valgt i hver gruppe, så valget huskes, hvis
-  // man skifter øvelse og tilbage igen.
-  const [variantByChoice, setVariantByChoice] = useState<Record<string, string>>({});
+  // Hvilket udstyr (plads på hjulet) der sidst er valgt i hver gruppe, så valget
+  // huskes, hvis man skifter øvelse og tilbage igen. Gemt som udstyr og ikke som
+  // id, så valget består, når en ny variant er blevet oprettet.
+  const [slotByChoice, setSlotByChoice] = useState<Record<string, WheelKey>>({});
   const nextId = useRef(1);
   const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
@@ -60,7 +62,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
       setSelectedTags(new Set());
       setSearchQuery("");
       setSelectedChoiceKey(key);
-      setVariantByChoice((current) => ({ ...current, [key]: created.id }));
+      setSlotByChoice((current) => ({ ...current, [key]: "none" }));
       setShowCreateForm(false);
     }
   }
@@ -90,9 +92,11 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
     .filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
   const choices = groupExercises(filteredExercises);
   const currentChoice = choices.find((choice) => choice.key === selectedChoiceKey) ?? choices[0];
-  const currentVariant =
-    currentChoice?.variants.find((variant) => variant.id === variantByChoice[currentChoice.key]) ??
-    currentChoice?.variants[0];
+  const wheelSlots = currentChoice ? wheelOptions(currentChoice) : [];
+  const currentSlot = currentChoice
+    ? wheelSlots.find((slot) => slot.key === slotByChoice[currentChoice.key]) ??
+      wheelSlots.find((slot) => slot.key === defaultWheelKey(wheelSlots))
+    : undefined;
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -234,15 +238,21 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
             </select>
           </div>
         </div>
-        {/* Selve øvelsen (varianten) sendes her, ikke valglisten, der kun viser grupper. */}
-        <input type="hidden" name="exerciseId" value={currentVariant?.id ?? ""} />
-        {currentChoice && currentChoice.variants.length > 1 && currentVariant && (
+        {/* Valglisten viser kun grupper. Serveren finder (eller opretter) varianten ud fra et medlem af gruppen og udstyret. */}
+        <input type="hidden" name="exerciseId" value={(currentSlot?.variant ?? currentChoice?.variants[0])?.id ?? ""} />
+        <input type="hidden" name="equipment" value={currentSlot?.key ?? ""} />
+        {currentChoice && currentSlot && (
           <div className="mt-3">
             <EquipmentWheel
-              options={currentChoice.variants.map((variant) => ({ id: variant.id, equipment: variant.equipment ?? "other" }))}
-              selectedId={currentVariant.id}
-              onSelect={(id) => setVariantByChoice((current) => ({ ...current, [currentChoice.key]: id }))}
+              options={wheelSlots}
+              selectedKey={currentSlot.key}
+              onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: key }))}
             />
+            {!currentSlot.variant && (
+              <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                Ny variant, den oprettes, når du gemmer sættet.
+              </p>
+            )}
           </div>
         )}
         {filteredExercises.length === 0 && (
