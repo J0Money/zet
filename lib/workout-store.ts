@@ -219,7 +219,7 @@ export async function getOrStartActiveWorkout(userId: string, today: string): Pr
 }
 
 // Afslutter det aktive pas. Returnerer false, hvis der ikke var et.
-export async function endActiveWorkout(userId: string): Promise<boolean> {
+export async function endActiveWorkout(userId: string, workoutId?: string): Promise<boolean> {
   const rows = await db
     .update(workoutTable)
     .set({ ended_at: sql`now()` })
@@ -228,6 +228,7 @@ export async function endActiveWorkout(userId: string): Promise<boolean> {
         eq(workoutTable.user_id, userId),
         isNotNull(workoutTable.started_at),
         isNull(workoutTable.ended_at),
+        workoutId ? eq(workoutTable.id, workoutId) : undefined,
       ),
     )
     .returning({ id: workoutTable.id });

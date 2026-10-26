@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { requireUser } from "@/lib/session";
-import { endActiveWorkout, getOrStartActiveWorkout } from "@/lib/workout-store";
+import { endActiveWorkout, getActiveWorkout, getOrStartActiveWorkout } from "@/lib/workout-store";
 
 function refreshPages() {
   revalidatePath("/log");
@@ -19,6 +20,8 @@ export async function startWorkoutAction() {
 
 export async function endWorkoutAction() {
   const currentUser = await requireUser();
-  await endActiveWorkout(currentUser.id);
+  const active = await getActiveWorkout(currentUser.id);
+  const ended = active ? await endActiveWorkout(currentUser.id, active.id) : false;
   refreshPages();
+  if (active && ended) redirect(`/history/${active.id}`);
 }
