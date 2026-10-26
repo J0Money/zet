@@ -2,6 +2,15 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Udstyr på alle øvelser (27. oktober 2026)
+
+- Joe ville have udstyrsvalget (drejehjulet) på alle styrkeøvelser, ikke kun de syv grupperede, og at man ikke skal vælge udstyr, når man opretter en ny øvelse. Valgt: varianten oprettes af sig selv, første gang man logger på den (frem for udstyr som felt på hvert sæt, som ville have krævet en stor migration og ombygning af rekorder), og hjulet starter på en neutral plads "Uden udstyr". Ingen migration, felterne `group_name` og `equipment` fandtes fra før.
+- Hjulet viser nu alt udstyr (stang, dumbbells, maskine, kabel, kropsvægt, andet) på alle øvelser. En variant, der ikke findes endnu, står nedtonet med teksten "Ny variant, den oprettes, når du gemmer sættet". "Uden udstyr" er kun med, hvis øvelsen findes uden udstyr (fx "Squat"). Standardvalget er den første plads, der findes. Valget huskes pr. gruppe som udstyr (ikke som id), så det består, når en ny variant er blevet oprettet.
+- `logStrengthSet` sender den valgte plads's udstyr med (`equipment`, eller "none") og et medlem af gruppen (`exerciseId`). Serveren (`resolveVariant` i `app/log/actions.ts`) finder varianten i gruppen eller opretter den med navnet "Gruppe (Udstyr)", samme muskelgrupper og gruppe som den valgte øvelse, og sørger for at sættene er godkendt, før noget oprettes. Uden `equipment` virker den som før (adgangstesten sender ikke feltet).
+- Gruppering (`lib/exercise-groups.ts`): en øvelse uden gruppe hører til gruppen med sit eget navn, så "Squat" og en senere "Squat (Kabel)" står som én linje. `wheelOptions()` bygger pladserne. Oprettelsesformularen har mistet udstyrsvalget, og `createExerciseAction` afviser nu også et navn, der er navnet på en eksisterende gruppe (fx "flyes", når "Flyes (Kabel)" findes).
+- Konsekvens: rekorder, volumen og diagrammer er fortsat pr. variant, så "Squat" og "Squat (Kabel)" har hver deres rekord. Muskelgruppe-filter og søgning virker på varianterne. Cardio er uændret. To samtidige gem på samme nye variant kan i teorien oprette to rækker (der er ingen unik regel på navnet); usandsynligt med få brugere.
+- Testet i browseren på mobilbredde med en testbruger (slettet bagefter, inkl. de oprettede varianter): hjulet har alle pladser og står på "Uden udstyr" på Squat, logning uden udstyr, kabel/kropsvægt giver en ny variant under samme linje, Bænkpres (uden neutral plads) med dumbbells, ny øvelse uden udstyrsvalg, og dublet af gruppenavnet afvises. TypeScript, ESLint, build og adgangstesten (7 deltests) bestod.
+
 ### Træningspas (26. oktober 2026)
 
 - Joe ville oprette et rigtigt træningspas, fordi alt, man loggede på en dag, før blev samlet i én træning. Valgt: start og afslut selv, og logger man uden at have startet, starter et pas automatisk (frem for kun automatiske pas eller kun at omdøbe dagens træning).

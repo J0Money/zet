@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import type { CreateExerciseState } from "@/app/log/actions";
-import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
-import type { Equipment, ExerciseType, MuscleGroup } from "@/lib/types";
+import type { ExerciseType, MuscleGroup } from "@/lib/types";
 
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
@@ -30,7 +29,6 @@ export function CreateExerciseForm({
   // Kontrolleret, så navnet bevares efter en fejl (React nulstiller ellers
   // ukontrollerede felter efter hver formularhandling).
   const [name, setName] = useState("");
-  const [equipment, setEquipment] = useState<Equipment | null>(null);
 
   function toggleGroup(group: MuscleGroup) {
     setSelectedGroups((current) => {
@@ -46,7 +44,6 @@ export function CreateExerciseForm({
       {[...selectedGroups].map((group) => (
         <input key={group} form={formId} type="hidden" name="muscleGroups" value={group} />
       ))}
-      {equipment && <input form={formId} type="hidden" name="equipment" value={equipment} />}
 
       <div>
         <label className={labelClass} htmlFor={`${formId}-name`}>Navn på ny øvelse</label>
@@ -83,33 +80,6 @@ export function CreateExerciseForm({
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {type === "strength" && (
-        <div>
-          <p className={labelClass}>Udstyr (valgfrit)</p>
-          <div className="flex flex-wrap gap-2">
-            {EQUIPMENT.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setEquipment((current) => (current === item ? null : item))}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                  equipment === item
-                    ? "bg-indigo-600 text-white"
-                    : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
-                }`}
-              >
-                {equipmentLabel[item]}
-              </button>
-            ))}
-          </div>
-          {equipment && (
-            <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              Gemmes som &quot;{name.trim() || "Navn"} ({equipmentLabel[equipment]})&quot;. Hedder en eksisterende øvelsesgruppe det samme, kommer den med i gruppen.
-            </p>
-          )}
         </div>
       )}
 
