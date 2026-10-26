@@ -5,6 +5,7 @@ import { createExerciseAction, logStrengthSet, type CreateExerciseState, type Lo
 import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
+import { ExerciseNote } from "@/app/components/exercise-note";
 import { choiceKey, defaultWheelKey, groupExercises, wheelOptions } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
@@ -25,11 +26,12 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ userId, exercises, programs, exerciseHistory }: {
+export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, exerciseNotes }: {
   userId: string;
   exercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
+  exerciseNotes: Record<string, string>;
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
@@ -289,7 +291,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory }
             />
             {!currentSlot.variant && (
               <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                Ny variant, den oprettes, når du gemmer sættet.
+                Ny variant, den oprettes, når du gemmer et sæt eller en note.
               </p>
             )}
           </div>
@@ -376,13 +378,23 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory }
             )}
           </div>
         ))}
-        <button
+        {currentChoice && currentSlot ? (
+          <ExerciseNote key={`${currentChoice.key}:${currentSlot.key}`}
+            exerciseId={(currentSlot.variant ?? currentChoice.variants[0]).id}
+            equipment={currentSlot.key}
+            note={currentSlot.variant ? exerciseNotes[currentSlot.variant.id] ?? "" : ""}>
+            <button type="button" onClick={addSet}
+              className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600">
+              + Tilføj sæt
+            </button>
+          </ExerciseNote>
+        ) : <button
           type="button"
           onClick={addSet}
           className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600"
         >
           + Tilføj sæt
-        </button>
+        </button>}
       </div>
 
       {state.error && (

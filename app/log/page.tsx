@@ -9,6 +9,7 @@ import { getPrograms } from "@/lib/programs";
 import type { Entry } from "@/lib/types";
 import { getActiveWorkout, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 import { getExerciseHistory } from "@/lib/workouts";
+import { getExerciseNotes } from "@/lib/exercise-notes";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -19,6 +20,7 @@ export default async function LogPage() {
   // forhåndsgenereres statisk. connection() gør siden dynamisk pr. besøg.
   await connection();
   const currentUser = await requireUser();
+  const exerciseNotes = await getExerciseNotes(currentUser.id);
 
   const exercises = await getExercises(currentUser.id);
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
@@ -75,6 +77,7 @@ export default async function LogPage() {
         cardioExercises={cardioExercises}
         programs={programs}
         exerciseHistory={exerciseHistory}
+        exerciseNotes={exerciseNotes}
       />
 
       <section className="zet-panel">

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/session";
+import { setExerciseNote } from "@/lib/exercise-notes";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
@@ -58,6 +59,38 @@ async function resolveVariant(
     equipment: wanted,
   });
   return { exercise: created };
+}
+
+export type ExerciseNoteState = { error?: string; savedNote?: string };
+
+export async function saveExerciseNote(
+  _previous: ExerciseNoteState,
+  input: { exerciseId: string; equipment: string; note: string },
+): Promise<ExerciseNoteState> {
+  const currentUser = await requireUser();
+  if (!input || typeof input.exerciseId !== "string" || typeof input.equipment !== "string"
+    || typeof input.note !== "string" || input.note.length > 500) {
+    return { error: "Noten må højst være 500 tegn." };
+  }
+  const visible = await getExercises(currentUser.id);
+  const selected = visible.find((item) => item.id === input.exerciseId && item.type === "strength");
+  if (!selected) return { error: "Vælg en gyldig styrkeøvelse." };
+  if (input.equipment !== "none" && !(EQUIPMENT as string[]).includes(input.equipment)) {
+    return { error: "Vælg gyldigt udstyr." };
+  }
+  const note = input.note.trim();
+  // En tom note må ikke oprette en ubrugt variant.
+  const wanted = input.equipment === "none" ? null : input.equipment;
+  const existing = visible.find((item) => item.type === "strength"
+    && (item.group_name ?? item.name) === (selected.group_name ?? selected.name)
+    && item.equipment === wanted);
+  if (!note && !existing) return { savedNote: "" };
+  const resolved = existing ? { exercise: existing }
+    : await resolveVariant(currentUser.id, visible, selected, input.equipment);
+  if ("error" in resolved) return { error: resolved.error };
+  await setExerciseNote(currentUser.id, resolved.exercise.id, note);
+  revalidatePath("/log");
+  return { savedNote: note };
 }
 
 export async function logStrengthSet(
