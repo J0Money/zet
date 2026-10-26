@@ -2,6 +2,16 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Sidste træning og PR på log-siden (26. oktober 2026)
+
+- Codex har efter Joes godkendelse færdiggjort Claudes påbegyndte funktioner i `lib/workouts.ts` og `lib/format.ts`. Under udstyrshjulet vises nu sæt og dato fra seneste afsluttede pas samt en lille PR (personlig rekord) for den præcise valgte variant. Kun sessionsbrugerens træninger og sæt sendes fra log-siden. En ny variant låner aldrig historik fra andre varianter.
+- Det aktive pas tæller ikke som "Sidst", men indgår i PR. Ældre træninger uden start/sluttid tæller som afsluttede. Flere pas samme dag sorteres efter starttid. PR bruger højeste vægt, derefter flest gentagelser; den vises også, hvis øvelsen kun findes i det aktive pas.
+- "Brug sidste sæt" tager den sidst registrerede række fra det seneste afsluttede pas. Den udfylder sidste række, hvis den er helt tom, ellers tilføjes en række. Eksisterende indtastninger bevares. Knappen er ikke en submit-knap og gemmer intet; normal Gem bruges bagefter. Knappen er deaktiveret under gemning.
+- Ændrede filer: `app/log/page.tsx`, `app/components/log-form-tabs.tsx`, `app/components/strength-set-form.tsx`, `lib/workouts.ts`, `lib/format.ts` og denne fil. Ny test: `tests/exercise-history.test.ts` (kør med `node --import tsx --test tests/exercise-history.test.ts`). Ingen migration eller ny pakke.
+- Kontrol: tre beregningstests, TypeScript, ESLint og produktionsbuild består. Browser med midlertidig testkonto: sidste sæt genbruges med decimalvægt, udstyrsskift ændrer historik/PR, indtastninger bevares, ubrugt variant viser tom tilstand, mørkt tema og mobilbredde uden vandret overløb. Databasen havde stadig kun de tre oprindelige testsæt efter knaptesten. Testkonto, testøvelser og testtræning er slettet.
+- Build ramte først en Turbopack-fejl i CSS-hjælpeprocessen, også ved gentagelse uden sandbox. Efter oprydning af den genererede `.next`-mappe bestod samme build uden kildekodeændringer. Det er ikke nødvendigt at ændre projektets buildopsætning.
+- Joe har efter godkendt kontrol bedt om commit og push til `master`. Den automatiske opdatering af `AGENTS.md` medtages efter filens egen instruktion, så arbejdstræet er rent. Ingen kildefiler foreslås fjernet.
+
 ### Udstyr på alle øvelser (27. oktober 2026)
 
 - Joe ville have udstyrsvalget (drejehjulet) på alle styrkeøvelser, ikke kun de syv grupperede, og at man ikke skal vælge udstyr, når man opretter en ny øvelse. Valgt: varianten oprettes af sig selv, første gang man logger på den (frem for udstyr som felt på hvert sæt, som ville have krævet en stor migration og ombygning af rekorder), og hjulet starter på en neutral plads "Uden udstyr". Ingen migration, felterne `group_name` og `equipment` fandtes fra før.

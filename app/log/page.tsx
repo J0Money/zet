@@ -7,7 +7,8 @@ import { SessionBar } from "@/app/components/session-bar";
 import { StrengthEntryRow } from "@/app/components/strength-entry-row";
 import { getPrograms } from "@/lib/programs";
 import type { Entry } from "@/lib/types";
-import { getActiveWorkout, getEntries, getExercises } from "@/lib/workout-store";
+import { getActiveWorkout, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
+import { getExerciseHistory } from "@/lib/workouts";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -26,8 +27,11 @@ export default async function LogPage() {
   const programs = await getPrograms(currentUser.id);
 
   const activeWorkout = await getActiveWorkout(currentUser.id);
+  const entries = await getEntries(currentUser.id);
+  const workouts = await getWorkouts(currentUser.id);
+  const exerciseHistory = getExerciseHistory(workouts, entries, activeWorkout?.id);
   const sessionEntries = activeWorkout
-    ? (await getEntries(currentUser.id)).filter(
+    ? entries.filter(
         (entry) => entry.workout_id === activeWorkout.id,
       )
     : [];
@@ -68,6 +72,7 @@ export default async function LogPage() {
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
         programs={programs}
+        exerciseHistory={exerciseHistory}
       />
 
       <section className="zet-panel">

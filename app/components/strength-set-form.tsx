@@ -9,6 +9,9 @@ import { choiceKey, defaultWheelKey, groupExercises, wheelOptions } from "@/lib/
 import type { WheelKey } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
+import type { ExerciseHistory } from "@/lib/workouts";
+import { formatSetsSummary } from "@/lib/format";
+import { formatDateDanish } from "@/lib/dates";
 
 const initialState: LogStrengthSetState = {};
 const initialCreateState: CreateExerciseState = {};
@@ -21,7 +24,11 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]; programs: TrainingProgram[] }) {
+export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
+  exercises: Exercise[];
+  programs: TrainingProgram[];
+  exerciseHistory: Record<string, ExerciseHistory>;
+}) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
   const [selectedTags, setSelectedTags] = useState<Set<MuscleGroup>>(new Set());
@@ -103,6 +110,22 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
       const next = new Set(current);
       if (next.has(group)) next.delete(group); else next.add(group);
       return next;
+    });
+  }
+
+  // Brug kun den præcise variant, aldrig en anden plads i samme gruppe.
+  const selectedHistory = currentSlot?.variant ? exerciseHistory[currentSlot.variant.id] : undefined;
+  const lastSet = selectedHistory?.lastSets.at(-1);
+
+  function reuseLastSet() {
+    if (!lastSet || isPending) return;
+    const row = { id: nextId.current++, reps: String(lastSet.reps), weightKg: String(lastSet.weight_kg) };
+    setSets((current) => {
+      const last = current.at(-1);
+      // Bevar alle indtastninger. Udfyld en tom sidste række, ellers tilføj én.
+      return last && last.reps === "" && last.weightKg === ""
+        ? [...current.slice(0, -1), row]
+        : [...current, row];
     });
   }
 
@@ -258,6 +281,28 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
         {filteredExercises.length === 0 && (
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
         )}
+        {currentChoice && (
+          <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-3 text-sm" aria-label="Din øvelseshistorik">
+            <div aria-live="polite" className="space-y-2">
+              <p className="text-zinc-600 dark:text-zinc-300">
+                {selectedHistory?.lastDate
+                  ? <><span className="font-medium">Sidst {formatDateDanish(selectedHistory.lastDate)}:</span> {formatSetsSummary(selectedHistory.lastSets)}</>
+                  : selectedHistory ? "Ingen tidligere afsluttede pas med denne variant." : "Ingen tidligere sæt med denne variant."}
+              </p>
+              {selectedHistory && (
+                <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                  <abbr title="Personlig rekord" className="no-underline">PR</abbr>: {formatSetsSummary([selectedHistory.best])}
+                </p>
+              )}
+            </div>
+            {lastSet && (
+              <button type="button" onClick={reuseLastSet} disabled={isPending}
+                className="mt-2 min-h-11 rounded-lg border border-indigo-200 dark:border-indigo-800 px-3 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950 disabled:opacity-50">
+                Brug sidste sæt
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showCreateForm && (
@@ -277,6 +322,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
               {index === 0 && <p className={labelClass}>Reps</p>}
               <input
                 name="reps"
+                aria-label={`Gentagelser, sæt ${index + 1}`}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -291,6 +337,7 @@ export function StrengthSetForm({ exercises, programs }: { exercises: Exercise[]
               {index === 0 && <p className={labelClass}>Vægt (kg)</p>}
               <input
                 name="weightKg"
+                aria-label={`Vægt i kg, sæt ${index + 1}`}
                 type="number"
                 inputMode="decimal"
                 min={0}

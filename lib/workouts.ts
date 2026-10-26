@@ -258,3 +258,56 @@ export function getWeightProgression(
     .map(([date, weightKg]) => ({ date, weightKg }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+export type LoggedSet = { reps: number; weight_kg: number };
+
+export type ExerciseHistory = {
+  lastDate: string | null; // null, hvis øvelsen kun findes i det aktive pas
+  lastSets: LoggedSet[];
+  best: LoggedSet; // samme rekordregel som getPersonalRecords
+};
+
+// Pr. styrkeøvelse: sæt fra det seneste afsluttede pas og den bedste rekord.
+// Det aktive pas (excludeWorkoutId) tæller ikke som "sidst", men er med i
+// rekorden, så oversigten viser det forrige pas, mens man træner.
+export function getExerciseHistory(
+  workouts: Workout[],
+  entries: Entry[],
+  excludeWorkoutId?: string,
+): Record<string, ExerciseHistory> {
+  const workoutById = new Map(workouts.map((workout) => [workout.id, workout]));
+  const latestWorkoutByExercise = new Map<string, Workout>();
+  const best = new Map<string, LoggedSet>();
+
+  for (const entry of entries) {
+    if (entry.kind !== "strength") continue;
+    const workout = workoutById.get(entry.workout_id);
+    if (!workout) continue;
+    const current = best.get(entry.exercise_id);
+    if (
+      !current ||
+      entry.weight_kg > current.weight_kg ||
+      (entry.weight_kg === current.weight_kg && entry.reps > current.reps)
+    ) {
+      best.set(entry.exercise_id, { reps: entry.reps, weight_kg: entry.weight_kg });
+    }
+
+    if (workout.id === excludeWorkoutId || (workout.started_at && !workout.ended_at)) continue;
+    const latest = latestWorkoutByExercise.get(entry.exercise_id);
+    const isNewer =
+      !latest ||
+      workout.date.localeCompare(latest.date) > 0 ||
+      (workout.date === latest.date && (workout.started_at ?? "").localeCompare(latest.started_at ?? "") > 0);
+    if (isNewer) latestWorkoutByExercise.set(entry.exercise_id, workout);
+  }
+
+  const history: Record<string, ExerciseHistory> = {};
+  for (const [exerciseId, record] of best) {
+    const latest = latestWorkoutByExercise.get(exerciseId);
+    const lastSets = entries
+      .filter((entry): entry is StrengthEntry => entry.kind === "strength" && entry.exercise_id === exerciseId && entry.workout_id === latest?.id)
+      .map((entry) => ({ reps: entry.reps, weight_kg: entry.weight_kg }));
+    history[exerciseId] = { lastDate: latest?.date ?? null, lastSets, best: record };
+  }
+  return history;
+}
