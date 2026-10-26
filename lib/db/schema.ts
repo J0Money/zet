@@ -17,6 +17,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -216,11 +217,18 @@ export const workout = pgTable(
     // formatDateDanish()/getTodayInCopenhagen().
     date: date("date", { mode: "string" }).notNull(),
     notes: text("notes").notNull().default(""),
+    // Et træningspas: started_at sættes, når passet starter, ended_at når det
+    // afsluttes. Begge er null for ældre træninger fra dengang, der kun var én
+    // pr. dag, de tæller ikke som "i gang". `date` er dagen, passet startede.
+    started_at: timestamp("started_at", { withTimezone: true }),
+    ended_at: timestamp("ended_at", { withTimezone: true }),
   },
   (table) => [
-    // One workout per user per day. Lets getOrCreateWorkoutForDate use a
-    // single upsert instead of a check-then-insert that could race.
-    unique("workout_user_id_date_unique").on(table.user_id, table.date),
+    // Højst ét aktivt pas pr. bruger. Gør det sikkert at starte et pas i en
+    // enkelt indsættelse uden at et opslag og en indsættelse kan løbe i spænd.
+    uniqueIndex("workout_one_active_per_user")
+      .on(table.user_id)
+      .where(sql`${table.started_at} is not null and ${table.ended_at} is null`),
   ],
 );
 

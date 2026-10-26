@@ -3,18 +3,18 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { CardioEntryRow } from "@/app/components/cardio-entry-row";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
+import { SessionBar } from "@/app/components/session-bar";
 import { StrengthEntryRow } from "@/app/components/strength-entry-row";
-import { getTodayInCopenhagen } from "@/lib/dates";
 import { getPrograms } from "@/lib/programs";
 import type { Entry } from "@/lib/types";
-import { getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
+import { getActiveWorkout, getEntries, getExercises } from "@/lib/workout-store";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
 export const instant = false;
 
 export default async function LogPage() {
-  // Siden viser "i dag" og dine egne loggede sæt, det kan ikke
+  // Siden viser dit aktive pas og dine egne loggede sæt, det kan ikke
   // forhåndsgenereres statisk. connection() gør siden dynamisk pr. besøg.
   await connection();
   const currentUser = await requireUser();
@@ -25,21 +25,19 @@ export default async function LogPage() {
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
   const programs = await getPrograms(currentUser.id);
 
-  const today = getTodayInCopenhagen();
-  const workouts = await getWorkouts(currentUser.id);
-  const todaysWorkout = workouts.find((workout) => workout.date === today);
-  const todaysEntries = todaysWorkout
+  const activeWorkout = await getActiveWorkout(currentUser.id);
+  const sessionEntries = activeWorkout
     ? (await getEntries(currentUser.id)).filter(
-        (entry) => entry.workout_id === todaysWorkout.id,
+        (entry) => entry.workout_id === activeWorkout.id,
       )
     : [];
 
-  // Grupperer dagens sæt pr. øvelse (fx "Bænkpres" med sæt 1, 2, 3 under sig),
+  // Grupperer passets sæt pr. øvelse (fx "Bænkpres" med sæt 1, 2, 3 under sig),
   // i stedet for én flad linje pr. sæt. Rækkefølgen følger, hvornår hver
-  // øvelse først blev logget i dag.
+  // øvelse først blev logget i passet.
   const groupedEntries: { exerciseId: string; exerciseName: string; entries: Entry[] }[] = [];
   const groupIndexByExerciseId = new Map<string, number>();
-  for (const entry of todaysEntries) {
+  for (const entry of sessionEntries) {
     let index = groupIndexByExerciseId.get(entry.exercise_id);
     if (index === undefined) {
       index = groupedEntries.length;
@@ -64,6 +62,8 @@ export default async function LogPage() {
         Administrer programmer →
       </Link>
 
+      <SessionBar startedAt={activeWorkout?.started_at ?? null} />
+
       <LogFormTabs
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
@@ -71,9 +71,11 @@ export default async function LogPage() {
       />
 
       <section className="zet-panel">
-        <h2 className="zet-sectionTitle mb-4">Dagens sæt</h2>
+        <h2 className="zet-sectionTitle mb-4">{activeWorkout ? "Sæt i dette pas" : "Sæt"}</h2>
         {groupedEntries.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen sæt logget i dag endnu.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {activeWorkout ? "Ingen sæt logget i dette pas endnu." : "Ingen træning i gang."}
+          </p>
         ) : (
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {groupedEntries.map((group) => (

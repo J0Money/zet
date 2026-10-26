@@ -22,8 +22,9 @@ export function getLatestWorkouts(
     exercises.map((exercise) => [exercise.id, exercise.name]),
   );
 
+  // Nyeste dag først, og flere pas samme dag med det seneste startede først.
   return [...workouts]
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.started_at ?? "").localeCompare(a.started_at ?? ""))
     .slice(0, limit)
     .map((workout) => {
       const workoutEntries = entries.filter((entry) => entry.workout_id === workout.id);

@@ -43,3 +43,14 @@ export function formatShortDateDanish(date: string): string {
     month: "short",
   }).format(new Date(date));
 }
+
+// Klokkeslæt i dansk tid for et gemt tidspunkt (ISO), fx "18.42". Her bruges
+// Europe/Copenhagen med vilje, i modsætning til formatDateDanish: et
+// tidspunkt er et ægte øjeblik, ikke en kalenderdato uden tidszone.
+export function formatTimeDanish(iso: string): string {
+  return new Intl.DateTimeFormat("da-DK", {
+    timeZone: COPENHAGEN_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}

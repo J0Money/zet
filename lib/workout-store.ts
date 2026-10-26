@@ -4,7 +4,7 @@
 // henter dette id fra requireUser(), aldrig fra formularer eller URL-parametre.
 
 import "server-only";
-import { and, eq, or, isNull, sql } from "drizzle-orm";
+import { and, eq, or, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
 import type { CardioEntry, Entry, Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
@@ -76,8 +76,22 @@ export async function createExercise(
   };
 }
 
+// Tidspunkterne gives videre som ISO-tekst, så de kan sendes som props til
+// klientkomponenter, og så resten af koden ikke skal kende Drizzles Date-type.
+function toWorkout(row: typeof workoutTable.$inferSelect): Workout {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    date: row.date,
+    notes: row.notes,
+    started_at: row.started_at ? row.started_at.toISOString() : null,
+    ended_at: row.ended_at ? row.ended_at.toISOString() : null,
+  };
+}
+
 export async function getWorkouts(userId: string): Promise<Workout[]> {
-  return db.select().from(workoutTable).where(eq(workoutTable.user_id, userId));
+  const rows = await db.select().from(workoutTable).where(eq(workoutTable.user_id, userId));
+  return rows.map(toWorkout);
 }
 
 export async function getEntries(userId: string): Promise<Entry[]> {
@@ -139,31 +153,95 @@ export async function getWorkoutById(
     .from(workoutTable)
     .where(and(eq(workoutTable.id, workoutId), eq(workoutTable.user_id, userId)))
     .limit(1);
-  return row;
+  return row ? toWorkout(row) : undefined;
 }
 
-// Reuses the user's workout for that date if one already exists, so sets
-// logged one at a time on the same day end up grouped in a single workout.
-// A single upsert instead of check-then-insert, relying on the
-// (user_id, date) unique constraint: ON CONFLICT DO UPDATE always returns a
-// row via .returning(), DO NOTHING would not. The update itself is a no-op,
-// it re-assigns user_id to the value it already has, since it's part of the
-// conflict target, there is nothing meaningful left to change when the
-// workout already exists, we only need *some* column to update so Postgres
-// treats this as a real UPDATE instead of skipping it.
-export async function getOrCreateWorkoutForDate(
-  userId: string,
-  date: string,
-): Promise<Workout> {
+// Et pas, der ikke har fået en eneste registrering i så lang tid, regnes for
+// glemt og lukkes af sig selv, med sluttidspunktet sat til den seneste
+// registrering (eller starten, hvis der ingen er). Det sker i én SQL-sætning.
+// created_at på sæt og cardio er uden tidszone og gemt i databasens tid (UTC
+// hos Neon), derfor AT TIME ZONE 'UTC'.
+const STALE_AFTER_HOURS = 12;
+
+async function closeStaleWorkouts(userId: string): Promise<void> {
+  await db.execute(sql`
+    UPDATE workout AS w
+    SET ended_at = a.last_activity
+    FROM (
+      SELECT w2.id,
+        greatest(
+          w2.started_at,
+          (SELECT max(created_at) FROM workout_set WHERE workout_id = w2.id) AT TIME ZONE 'UTC',
+          (SELECT max(created_at) FROM workout_cardio WHERE workout_id = w2.id) AT TIME ZONE 'UTC'
+        ) AS last_activity
+      FROM workout AS w2
+      WHERE w2.user_id = ${userId} AND w2.started_at IS NOT NULL AND w2.ended_at IS NULL
+    ) AS a
+    WHERE w.id = a.id AND a.last_activity < now() - make_interval(hours => ${STALE_AFTER_HOURS})
+  `);
+}
+
+// Det pas, brugeren er i gang med, eller undefined.
+export async function getActiveWorkout(userId: string): Promise<Workout | undefined> {
+  await closeStaleWorkouts(userId);
+  const [row] = await db
+    .select()
+    .from(workoutTable)
+    .where(
+      and(
+        eq(workoutTable.user_id, userId),
+        isNotNull(workoutTable.started_at),
+        isNull(workoutTable.ended_at),
+      ),
+    )
+    .limit(1);
+  return row ? toWorkout(row) : undefined;
+}
+
+// Starter et nyt pas, eller returnerer det aktive, hvis der allerede er et.
+// Højst ét aktivt pas pr. bruger håndhæves af en unik delvis indeks i databasen
+// (workout_one_active_per_user), så ON CONFLICT DO NOTHING er nok: taber vi et
+// kapløb (fx to hurtige tryk på "Start"), hentes det pas, der vandt.
+export async function getOrStartActiveWorkout(userId: string, today: string): Promise<Workout> {
+  const active = await getActiveWorkout(userId);
+  if (active) return active;
+
+  const [inserted] = await db
+    .insert(workoutTable)
+    .values({ user_id: userId, date: today, notes: "", started_at: sql`now()` })
+    .onConflictDoNothing()
+    .returning();
+  if (inserted) return toWorkout(inserted);
+
+  const raced = await getActiveWorkout(userId);
+  if (!raced) throw new Error("Kunne ikke starte et træningspas.");
+  return raced;
+}
+
+// Afslutter det aktive pas. Returnerer false, hvis der ikke var et.
+export async function endActiveWorkout(userId: string): Promise<boolean> {
+  const rows = await db
+    .update(workoutTable)
+    .set({ ended_at: sql`now()` })
+    .where(
+      and(
+        eq(workoutTable.user_id, userId),
+        isNotNull(workoutTable.started_at),
+        isNull(workoutTable.ended_at),
+      ),
+    )
+    .returning({ id: workoutTable.id });
+  return rows.length > 0;
+}
+
+// Opretter en afsluttet træning uden starttid på en given dag. Kun til test og
+// engangsscripts, appen selv starter pas via getOrStartActiveWorkout.
+export async function createWorkoutOnDate(userId: string, date: string): Promise<Workout> {
   const [row] = await db
     .insert(workoutTable)
     .values({ user_id: userId, date, notes: "" })
-    .onConflictDoUpdate({
-      target: [workoutTable.user_id, workoutTable.date],
-      set: { user_id: sql`excluded.user_id` },
-    })
     .returning();
-  return row;
+  return toWorkout(row);
 }
 
 export async function addStrengthEntry(

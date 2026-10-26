@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatDateDanish } from "@/lib/dates";
+import { formatDateDanish, formatTimeDanish } from "@/lib/dates";
 import { HistoryCalendar } from "@/app/components/history-calendar";
 import type { WorkoutSummary } from "@/lib/workouts";
 
@@ -61,6 +61,11 @@ export function HistoryView({ workoutSummaries, today }: { workoutSummaries: Wor
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-zinc-900 dark:text-zinc-50 group-hover:text-indigo-600">
                       {formatDateDanish(workout.date)}
+                      {workout.started_at && (
+                        <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">
+                          kl. {formatTimeDanish(workout.started_at)}
+                        </span>
+                      )}
                     </p>
                     <span className="shrink-0 text-xs text-zinc-400">{countParts.join(" · ")}</span>
                   </div>

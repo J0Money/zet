@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CardioEntryRow } from "@/app/components/cardio-entry-row";
 import { StrengthEntryRow } from "@/app/components/strength-entry-row";
-import { formatDateDanish } from "@/lib/dates";
+import { formatDateDanish, formatTimeDanish } from "@/lib/dates";
+import { formatWorkoutDuration } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
 
@@ -55,6 +56,13 @@ export default async function WorkoutDetailPage({
       <header className="zet-pageHeader">
         <p className="zet-brand">ZET</p>
         <h1>{formatDateDanish(workout.date)}</h1>
+        {workout.started_at && (
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            {workout.ended_at
+              ? `Kl. ${formatTimeDanish(workout.started_at)} til ${formatTimeDanish(workout.ended_at)} · ${formatWorkoutDuration(workout.started_at, workout.ended_at)}`
+              : `Startet kl. ${formatTimeDanish(workout.started_at)} · i gang`}
+          </p>
+        )}
         {workout.notes && (
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{workout.notes}</p>
         )}

@@ -35,3 +35,25 @@ export function formatPace(distanceKm: number, durationSec: number): string | nu
   const roundedUp = seconds === 60;
   return `${roundedUp ? minutes + 1 : minutes}:${String(roundedUp ? 0 : seconds).padStart(2, "0")} /km`;
 }
+
+// Varigheden af et afsluttet pas, fx "1 t 9 min" eller "42 min". Under et
+// minut vises "under 1 min" i stedet for 0.
+export function formatWorkoutDuration(startedAt: string, endedAt: string): string {
+  const totalMinutes = Math.max(0, Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 60000));
+  if (totalMinutes < 1) return "under 1 min";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes} min`;
+  return minutes > 0 ? `${hours} t ${minutes} min` : `${hours} t`;
+}
+
+// Et ur, der tæller, fx "09:05" eller "1:09:05".
+export function formatClock(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+}
