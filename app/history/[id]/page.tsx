@@ -8,6 +8,8 @@ import { formatDateDanish, formatTimeDanish } from "@/lib/dates";
 import { formatWorkoutDuration } from "@/lib/format";
 import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
+import { getSharePreview, getSharedPost } from "@/lib/community";
+import { ShareWorkout } from "@/app/components/community-controls";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -36,6 +38,9 @@ export default async function WorkoutDetailPage({
   const entries = await getEntries(currentUser.id);
   const workoutEntries = entries.filter((entry) => entry.workout_id === workout.id);
   const exercises = await getExercises(currentUser.id);
+  const [sharePreview, sharedPost] = await Promise.all([
+    getSharePreview(currentUser.id, id), getSharedPost(currentUser.id, id),
+  ]);
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
 
   const entriesByExercise = new Map<string, Entry[]>();
@@ -67,6 +72,8 @@ export default async function WorkoutDetailPage({
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{workout.notes}</p>
         )}
       </header>
+
+      <ShareWorkout workoutId={id} name={currentUser.name} summary={sharePreview} shared={sharedPost} />
 
       {entriesByExercise.size === 0 ? (
         <div className="zet-panel">

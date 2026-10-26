@@ -5,6 +5,7 @@
 // lib/types.ts needs to change.
 
 import { relations, sql } from "drizzle-orm";
+import type { CommunitySummary } from "../community-summary";
 import {
   bigint,
   boolean,
@@ -12,6 +13,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -240,6 +242,21 @@ export const workout = pgTable(
       .where(sql`${table.started_at} is not null and ${table.ended_at} is null`),
   ],
 );
+
+// Deling gemmer kun den opsummering, brugeren har set og godkendt.
+export const communityPost = pgTable("community_post", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  workout_id: uuid("workout_id").notNull().unique().references(() => workout.id, { onDelete: "cascade" }),
+  summary: jsonb("summary").$type<CommunitySummary>().notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("community_post_created_at_idx").on(table.created_at)]);
+
+export const communityReaction = pgTable("community_reaction", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  post_id: uuid("post_id").notNull().references(() => communityPost.id, { onDelete: "cascade" }),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+}, (table) => [unique("community_reaction_post_user_unique").on(table.post_id, table.user_id)]);
 
 export const workoutSet = pgTable("workout_set", {
   id: uuid("id").primaryKey().defaultRandom(),
