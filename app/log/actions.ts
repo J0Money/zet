@@ -137,6 +137,7 @@ export async function logStrengthSet(
 
 export type LogCardioEntryState = {
   error?: string;
+  success?: boolean;
   values?: {
     exerciseId: string;
     distanceKm: string;
@@ -196,7 +197,7 @@ export async function logCardioEntry(
   revalidatePath("/history");
   revalidatePath("/log");
 
-  return {};
+  return { success: true };
 }
 
 export type CreateExerciseState = {

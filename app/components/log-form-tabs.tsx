@@ -1,25 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
+import { useLocalDraft } from "@/app/components/use-local-draft";
+import { draftKey } from "@/lib/log-draft";
 import { CardioEntryForm } from "@/app/components/cardio-entry-form";
 import { StrengthSetForm } from "@/app/components/strength-set-form";
 import type { Exercise, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
 
 type Tab = "strength" | "cardio";
+const isTab = (value: unknown): value is Tab => value === "strength" || value === "cardio";
 
-export function LogFormTabs({
-  strengthExercises,
-  cardioExercises,
-  programs,
-  exerciseHistory,
-}: {
+const subscribe = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
+type Props = {
+  userId: string;
   strengthExercises: Exercise[];
   cardioExercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
-}) {
-  const [tab, setTab] = useState<Tab>("strength");
+};
+
+export function LogFormTabs(props: Props) {
+  const ready = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+  if (!ready) return <p className="text-sm text-zinc-500">Henter formular…</p>;
+  return <DraftLogFormTabs key={props.userId} {...props} />;
+}
+
+function DraftLogFormTabs({
+  userId,
+  strengthExercises,
+  cardioExercises,
+  programs,
+  exerciseHistory,
+}: Props) {
+  const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), "strength", isTab);
 
   return (
     <div className="flex flex-col gap-5">
@@ -49,11 +66,12 @@ export function LogFormTabs({
       </div>
 
       <div className="zet-panel">
-        {tab === "strength" ? (
-          <StrengthSetForm exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} />
-        ) : (
-          <CardioEntryForm exercises={cardioExercises} programs={programs} />
-        )}
+        <div hidden={tab !== "strength"}>
+          <StrengthSetForm userId={userId} exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} />
+        </div>
+        <div hidden={tab !== "cardio"}>
+          <CardioEntryForm userId={userId} exercises={cardioExercises} programs={programs} />
+        </div>
       </div>
     </div>
   );

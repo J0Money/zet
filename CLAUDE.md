@@ -2,6 +2,16 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Lokal kladde på log-siden (26. oktober 2026)
+
+- Joe valgte lokal kladdelagring først. Personlige maskinindstillinger er ønsket som næste, separate trin og er endnu ikke implementeret. Ingen migration eller ny pakke i dette trin.
+- Styrke husker øvelse, udstyr, filtre og alle sæt. Cardio husker øvelse, filtre, distance og tid. Fanen huskes også. Kladder ligger i browserens `localStorage` under versionsstyrede nøgler med sessionsbrugerens id og formularens type. De synkroniseres ikke mellem enheder og kan forsvinde, hvis browserdata slettes. Blokeret lokal lagring må ikke forhindre almindelig indtastning eller gemning.
+- `LogFormTabs` venter på hydrering, inden kladder læses. Bruger-id som komponentnøgle sikrer ny lokal tilstand ved brugerskift. Begge formularer forbliver monteret ved faneskift, så en igangværende gemning stadig kan afsluttes og rydde sin kladde. Formularen låses under gemning.
+- En bekræftet gemning rydder kun den pågældende kladde og dens talfelter; øvelsesvalget bevares på skærmen. Cardio-action returnerer nu eksplicit `success: true`. Fejl rydder ikke kladden. Gemte JSON-data valideres før brug, og gendannede sætrækker får fortsat unikke id'er ved tilføjelse.
+- Nye filer: `lib/log-draft.ts`, `app/components/use-local-draft.ts`, `tests/log-draft.test.ts`. Ændret: begge logformularer, `app/components/log-form-tabs.tsx`, `app/log/page.tsx`, `app/log/actions.ts` og denne fil. Den eksisterende datorettelse længere nede er bevaret.
+- Kontrol: TypeScript, målrettet ESLint og produktionsbuild består. Seks tests består med `node --import tsx --test tests/log-draft.test.ts tests/exercise-history.test.ts`. Browserkontrol med midlertidig konto: styrke med flere sæt og decimalvægt, øvelse/udstyr efter genindlæsning, nye sæt efter gendannelse, separate kladder ved faneskift, cardio og aktiv fane efter genindlæsning, rydning efter succes for begge formularer samt bevaret cardio efter servervalideringsfejl og genindlæsning. Testkonto og dens træningsdata er fjernet, ligesom det midlertidige opsætningsscript.
+- Joe har godkendt commit og push til `master`. Ingen eksisterende kildefiler foreslås fjernet.
+
 ### Sidste træning og PR på log-siden (26. oktober 2026)
 
 - Codex har efter Joes godkendelse færdiggjort Claudes påbegyndte funktioner i `lib/workouts.ts` og `lib/format.ts`. Under udstyrshjulet vises nu sæt og dato fra seneste afsluttede pas samt en lille PR (personlig rekord) for den præcise valgte variant. Kun sessionsbrugerens træninger og sæt sendes fra log-siden. En ny variant låner aldrig historik fra andre varianter.
@@ -12,7 +22,7 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 - Build ramte først en Turbopack-fejl i CSS-hjælpeprocessen, også ved gentagelse uden sandbox. Efter oprydning af den genererede `.next`-mappe bestod samme build uden kildekodeændringer. Det er ikke nødvendigt at ændre projektets buildopsætning.
 - Joe har efter godkendt kontrol bedt om commit og push til `master`. Den automatiske opdatering af `AGENTS.md` medtages efter filens egen instruktion, så arbejdstræet er rent. Ingen kildefiler foreslås fjernet.
 
-### Udstyr på alle øvelser (27. oktober 2026)
+### Udstyr på alle øvelser (26. oktober 2026)
 
 - Joe ville have udstyrsvalget (drejehjulet) på alle styrkeøvelser, ikke kun de syv grupperede, og at man ikke skal vælge udstyr, når man opretter en ny øvelse. Valgt: varianten oprettes af sig selv, første gang man logger på den (frem for udstyr som felt på hvert sæt, som ville have krævet en stor migration og ombygning af rekorder), og hjulet starter på en neutral plads "Uden udstyr". Ingen migration, felterne `group_name` og `equipment` fandtes fra før.
 - Hjulet viser nu alt udstyr (stang, dumbbells, maskine, kabel, kropsvægt, andet) på alle øvelser. En variant, der ikke findes endnu, står nedtonet med teksten "Ny variant, den oprettes, når du gemmer sættet". "Uden udstyr" er kun med, hvis øvelsen findes uden udstyr (fx "Squat"). Standardvalget er den første plads, der findes. Valget huskes pr. gruppe som udstyr (ikke som id), så det består, når en ny variant er blevet oprettet.

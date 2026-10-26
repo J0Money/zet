@@ -6,12 +6,13 @@ import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
 import { choiceKey, defaultWheelKey, groupExercises, wheelOptions } from "@/lib/exercise-groups";
-import type { WheelKey } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
 import { formatSetsSummary } from "@/lib/format";
 import { formatDateDanish } from "@/lib/dates";
+import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
+import { draftKey, emptyStrengthDraft, isStrengthDraft } from "@/lib/log-draft";
 
 const initialState: LogStrengthSetState = {};
 const initialCreateState: CreateExerciseState = {};
@@ -24,35 +25,46 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
+export function StrengthSetForm({ userId, exercises, programs, exerciseHistory }: {
+  userId: string;
   exercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const [selectedTags, setSelectedTags] = useState<Set<MuscleGroup>>(new Set());
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, isStrengthDraft);
+  const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets } = draft;
+  const setSelectedTags = draftField(setDraft, "selectedTags");
+  const setSelectedProgramId = draftField(setDraft, "selectedProgramId");
+  const setSearchQuery = draftField(setDraft, "searchQuery");
+  const setSelectedChoiceKey = draftField(setDraft, "selectedChoiceKey");
+  const setSlotByChoice = draftField(setDraft, "slotByChoice");
+  const setSets = draftField(setDraft, "sets");
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedChoiceKey, setSelectedChoiceKey] = useState<string | null>(null);
   // Hvilket udstyr (plads på hjulet) der sidst er valgt i hver gruppe, så valget
   // huskes, hvis man skifter øvelse og tilbage igen. Gemt som udstyr og ikke som
   // id, så valget består, når en ny variant er blevet oprettet.
-  const [slotByChoice, setSlotByChoice] = useState<Record<string, WheelKey>>({});
   const nextId = useRef(1);
-  const [sets, setSets] = useState<SetRow[]>(() => [emptySet(0)]);
+  const newRowId = () => Math.max(nextId.current++, ...sets.map((row) => row.id + 1));
   const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   // Efter et vellykket gem starter listen af sæt forfra, klar til næste
   // øvelse, og en ny rekord udløser konfetti.
-  useEffect(() => {
+  const [previousResult, setPreviousResult] = useState(state);
+  if (state !== previousResult) {
+    setPreviousResult(state);
     if (state.success) {
-      setSets([emptySet(nextId.current++)]);
+      setDraft({ ...draft, sets: [emptySet(0)] });
       if (state.newRecord) setConfettiTrigger((count) => count + 1);
     }
-  }, [state]);
+  }
+  useEffect(() => {
+    if (state.success) clearDraft({ ...draft, sets: [emptySet(0)] });
+    // Kun et nyt svar fra serveren må rydde kladden, ikke næste indtastning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, clearDraft]);
 
   // Efter en oprettet øvelse: føj den til listen, nulstil filtrene (så den
   // garanteret er synlig uanset hvad der var valgt), og vælg den, også på
@@ -66,7 +78,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
       const key = choiceKey(created);
       setCustomExercises((current) => [...current, created]);
       setSelectedProgramId(null);
-      setSelectedTags(new Set());
+      setSelectedTags([]);
       setSearchQuery("");
       setSelectedChoiceKey(key);
       setSlotByChoice((current) => ({ ...current, [key]: "none" }));
@@ -94,7 +106,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
   // søgningen til dem, hvis navn indeholder teksten (uanset store/små bogstaver).
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredExercises = allExercises
-    .filter((exercise) => selectedTags.size === 0 || exercise.muscle_groups.some((group) => selectedTags.has(group)))
+    .filter((exercise) => selectedTags.length === 0 || exercise.muscle_groups.some((group) => selectedTags.includes(group)))
     .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id))
     .filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
   const choices = groupExercises(filteredExercises);
@@ -107,9 +119,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
-      const next = new Set(current);
-      if (next.has(group)) next.delete(group); else next.add(group);
-      return next;
+      return current.includes(group) ? current.filter((tag) => tag !== group) : [...current, group];
     });
   }
 
@@ -119,7 +129,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
 
   function reuseLastSet() {
     if (!lastSet || isPending) return;
-    const row = { id: nextId.current++, reps: String(lastSet.reps), weightKg: String(lastSet.weight_kg) };
+    const row = { id: newRowId(), reps: String(lastSet.reps), weightKg: String(lastSet.weight_kg) };
     setSets((current) => {
       const last = current.at(-1);
       // Bevar alle indtastninger. Udfyld en tom sidste række, ellers tilføj én.
@@ -132,7 +142,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
   function addSet() {
     // Nye sæt arver reps/vægt fra det forrige, de fleste sæt i træk ligner hinanden.
     const last = sets[sets.length - 1];
-    setSets([...sets, { id: nextId.current++, reps: last?.reps ?? "", weightKg: last?.weightKg ?? "" }]);
+    setSets([...sets, { id: newRowId(), reps: last?.reps ?? "", weightKg: last?.weightKg ?? "" }]);
   }
 
   function removeSet(id: number) {
@@ -140,13 +150,19 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
   }
 
   function updateSet(id: number, field: "reps" | "weightKg", value: string) {
-    setSets((current) => current.map((set) => set.id === id ? { ...set, [field]: value } : set));
+    setDraft((current) => ({
+      ...current,
+      selectedChoiceKey: currentChoice?.key ?? null,
+      slotByChoice: currentChoice && currentSlot
+        ? { ...current.slotByChoice, [currentChoice.key]: currentSlot.key } : current.slotByChoice,
+      sets: current.sets.map((set) => set.id === id ? { ...set, [field]: value } : set),
+    }));
   }
 
   return (
     <>
     <form id="create-strength-exercise" action={createFormAction} />
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} inert={isPending} className="flex flex-col gap-5">
       <Confetti trigger={confettiTrigger} />
 
       {state.success && state.newRecord && (
@@ -194,9 +210,9 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setSelectedTags(new Set())}
+              onClick={() => setSelectedTags([])}
               className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                selectedTags.size === 0
+                selectedTags.length === 0
                   ? "bg-indigo-600 text-white"
                   : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
               }`}
@@ -209,7 +225,7 @@ export function StrengthSetForm({ exercises, programs, exerciseHistory }: {
                 type="button"
                 onClick={() => toggleTag(group)}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                  selectedTags.has(group)
+                  selectedTags.includes(group)
                     ? "bg-indigo-600 text-white"
                     : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
                 }`}

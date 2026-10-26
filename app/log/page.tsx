@@ -69,6 +69,8 @@ export default async function LogPage() {
       <SessionBar startedAt={activeWorkout?.started_at ?? null} />
 
       <LogFormTabs
+        key={currentUser.id}
+        userId={currentUser.id}
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
         programs={programs}
