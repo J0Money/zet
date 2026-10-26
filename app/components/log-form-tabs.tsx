@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CardioEntryForm } from "@/app/components/cardio-entry-form";
 import { StrengthSetForm } from "@/app/components/strength-set-form";
 import type { Exercise, TrainingProgram } from "@/lib/types";
+import type { ExerciseHistory } from "@/lib/workouts";
 
 type Tab = "strength" | "cardio";
 
@@ -11,10 +12,12 @@ export function LogFormTabs({
   strengthExercises,
   cardioExercises,
   programs,
+  exerciseHistory,
 }: {
   strengthExercises: Exercise[];
   cardioExercises: Exercise[];
   programs: TrainingProgram[];
+  exerciseHistory: Record<string, ExerciseHistory>;
 }) {
   const [tab, setTab] = useState<Tab>("strength");
 
@@ -47,7 +50,7 @@ export function LogFormTabs({
 
       <div className="zet-panel">
         {tab === "strength" ? (
-          <StrengthSetForm exercises={strengthExercises} programs={programs} />
+          <StrengthSetForm exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} />
         ) : (
           <CardioEntryForm exercises={cardioExercises} programs={programs} />
         )}
