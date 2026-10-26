@@ -2,9 +2,20 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Valgfrie private huskenoter (26. oktober 2026)
+
+- Joe valgte mulighed 2: en valgfri huskenote på alle styrkevarianter, frem for faste maskinfelter. Efter Joes layoutjustering ligger "+ Tilføj note" ved siden af "+ Tilføj sæt" med samme diskrete knapstil. Noten og redigeringen vises under knapperne. En gemt note kan redigeres eller fjernes. Noten er privat, højst 500 tegn, og gælder den præcise variant (fx forskellig note på maskine og dumbbells).
+- Migration `0012_exercise_notes.sql` er vist til Joe og kørt efter hans udtrykkelige godkendelse. Ny tabel `exercise_note` med UUID-id, bruger, øvelsesvariant, note og opdateringstid; unik bruger/variant og cascade ved sletning af bruger eller øvelse. Eksisterende træningsdata ændres ikke.
+- Serverhandlingen henter bruger-id fra sessionen og kontrollerer, at styrkeøvelsen er synlig for brugeren. Noter læses, opdateres og fjernes altid med brugerafgrænsning. Tom tekst fjerner noten. En note på en endnu ubrugt variant genbruger den eksisterende variantoprettelse; tom note opretter ingen variant. Det starter ikke et træningspas eller logger sæt.
+- Noteeditoren bruger knapper med `type="button"` og egen Server Action, så den kan ligge i styrkeformularen uden indlejrede formularer eller validering af tomme sæt. Den nulstilles ved skift af gruppe/udstyr. Noter er gemt i Neon og følger kontoen mellem enheder; ufærdig tekst i noteeditoren er ikke del af sættets lokale kladde.
+- Nye filer: `app/components/exercise-note.tsx`, `lib/exercise-notes.ts`, `tests/exercise-notes.integration.test.ts`, `drizzle/0012_exercise_notes.sql`, `drizzle/meta/0012_snapshot.json`. Ændret: `app/components/strength-set-form.tsx`, `app/components/log-form-tabs.tsx`, `app/log/page.tsx`, `app/log/actions.ts`, `lib/db/schema.ts`, `drizzle/meta/_journal.json` og denne fil.
+- Kontrol: TypeScript, målrettet ESLint og produktionsbuild består. Neon-integrationstest med to midlertidige brugere bekræfter adskillelse mellem brugere og varianter, opdatering samt fjernelse uden at ramme andres noter. Kør med `ZET_RUN_NOTE_TESTS=1` og `node --conditions=react-server --import tsx --test tests/exercise-notes.integration.test.ts` (PowerShell: sæt miljøvariablen separat). Testen rydder sine data op og springes over uden tilvalg.
+- Browserkontrol: opret note uden udfyldte sæt, gendan efter reload, rediger, skift variant uden at låne den forkerte note, og gem/gendan note på en ny kabelvariant. Ingen træning blev startet. Browserens testkonto, varianter og noter samt opsætningsscriptet er fjernet.
+- Joe har afprøvet den nye placering og godkendt commit og push af hele notefunktionen til `master`. Ingen yderligere kildefiler foreslås fjernet.
+
 ### Lokal kladde på log-siden (26. oktober 2026)
 
-- Joe valgte lokal kladdelagring først. Personlige maskinindstillinger er ønsket som næste, separate trin og er endnu ikke implementeret. Ingen migration eller ny pakke i dette trin.
+- Joe valgte lokal kladdelagring først. Det efterfølgende trin med valgfrie huskenoter er beskrevet ovenfor. Ingen migration eller ny pakke i dette kladdetrin.
 - Styrke husker øvelse, udstyr, filtre og alle sæt. Cardio husker øvelse, filtre, distance og tid. Fanen huskes også. Kladder ligger i browserens `localStorage` under versionsstyrede nøgler med sessionsbrugerens id og formularens type. De synkroniseres ikke mellem enheder og kan forsvinde, hvis browserdata slettes. Blokeret lokal lagring må ikke forhindre almindelig indtastning eller gemning.
 - `LogFormTabs` venter på hydrering, inden kladder læses. Bruger-id som komponentnøgle sikrer ny lokal tilstand ved brugerskift. Begge formularer forbliver monteret ved faneskift, så en igangværende gemning stadig kan afsluttes og rydde sin kladde. Formularen låses under gemning.
 - En bekræftet gemning rydder kun den pågældende kladde og dens talfelter; øvelsesvalget bevares på skærmen. Cardio-action returnerer nu eksplicit `success: true`. Fejl rydder ikke kladden. Gemte JSON-data valideres før brug, og gendannede sætrækker får fortsat unikke id'er ved tilføjelse.

@@ -189,6 +189,15 @@ export const exercise = pgTable("exercise", {
   equipment: equipment("equipment"),
 });
 
+// En privat huskenote pr. bruger og præcis øvelsesvariant.
+export const exerciseNote = pgTable("exercise_note", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  exercise_id: uuid("exercise_id").notNull().references(() => exercise.id, { onDelete: "cascade" }),
+  note: text("note").notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique("exercise_note_user_exercise_unique").on(table.user_id, table.exercise_id)]);
+
 // En øvelse kan ramme flere muskelgrupper (fx dips: bryst og triceps), derfor
 // en separat tabel i stedet for ét fast felt på exercise.
 export const exerciseMuscleGroup = pgTable(

@@ -21,6 +21,7 @@ type Props = {
   cardioExercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
+  exerciseNotes: Record<string, string>;
 };
 
 export function LogFormTabs(props: Props) {
@@ -35,6 +36,7 @@ function DraftLogFormTabs({
   cardioExercises,
   programs,
   exerciseHistory,
+  exerciseNotes,
 }: Props) {
   const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), "strength", isTab);
 
@@ -67,7 +69,7 @@ function DraftLogFormTabs({
 
       <div className="zet-panel">
         <div hidden={tab !== "strength"}>
-          <StrengthSetForm userId={userId} exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} />
+          <StrengthSetForm userId={userId} exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} exerciseNotes={exerciseNotes} />
         </div>
         <div hidden={tab !== "cardio"}>
           <CardioEntryForm userId={userId} exercises={cardioExercises} programs={programs} />
