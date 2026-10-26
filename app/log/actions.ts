@@ -12,7 +12,7 @@ import {
   createExercise,
   getEntries,
   getExercises,
-  getOrCreateWorkoutForDate,
+  getOrStartActiveWorkout,
 } from "@/lib/workout-store";
 
 export type LogStrengthSetState = {
@@ -73,7 +73,7 @@ export async function logStrengthSet(
   );
 
   const today = getTodayInCopenhagen();
-  const workout = await getOrCreateWorkoutForDate(currentUser.id, today);
+  const workout = await getOrStartActiveWorkout(currentUser.id, today);
 
   await addStrengthEntries(currentUser.id, {
     workout_id: workout.id,
@@ -136,7 +136,7 @@ export async function logCardioEntry(
   }
 
   const today = getTodayInCopenhagen();
-  const workout = await getOrCreateWorkoutForDate(currentUser.id, today);
+  const workout = await getOrStartActiveWorkout(currentUser.id, today);
 
   await addCardioEntry(currentUser.id, {
     workout_id: workout.id,

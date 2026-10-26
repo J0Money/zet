@@ -36,6 +36,10 @@ export type Workout = {
   user_id: string;
   date: string; // ISO date string, e.g. "2026-10-09"
   notes: string;
+  // Tidspunkter (ISO) for et træningspas. Begge er null for ældre træninger fra
+  // dengang, der kun var én pr. dag. "I gang" = started_at sat og ended_at null.
+  started_at: string | null;
+  ended_at: string | null;
 };
 
 export type TrainingProgram = {

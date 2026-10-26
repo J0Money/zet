@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { formatDateDanish, formatTimeDanish } from "@/lib/dates";
 import type { Workout } from "@/lib/types";
 
 const WEEKDAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
@@ -39,15 +40,26 @@ export function HistoryCalendar({ workouts, today }: { workouts: Workout[]; toda
   const [todayYear, todayMonth] = today.split("-").map(Number);
   const [cursor, setCursor] = useState({ year: todayYear, month: todayMonth - 1 });
 
-  const workoutIdByDate = useMemo(
-    () => new Map(workouts.map((workout) => [workout.date, workout.id])),
-    [workouts],
-  );
+  // En dag kan nu have flere træningspas, ældste først. Én: direkte link. Flere:
+  // et tryk viser dagens pas under kalenderen, så man kan vælge.
+  const workoutsByDate = useMemo(() => {
+    const map = new Map<string, Workout[]>();
+    for (const workout of workouts) {
+      map.set(workout.date, [...(map.get(workout.date) ?? []), workout]);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => (a.started_at ?? "").localeCompare(b.started_at ?? ""));
+    }
+    return map;
+  }, [workouts]);
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const pickedWorkouts = pickedDate ? workoutsByDate.get(pickedDate) ?? [] : [];
   const weeks = useMemo(() => buildMonthGrid(cursor.year, cursor.month), [cursor]);
 
   const isCurrentOrFutureMonth = cursor.year > todayYear || (cursor.year === todayYear && cursor.month >= todayMonth - 1);
 
   function changeMonth(delta: number) {
+    setPickedDate(null);
     setCursor((current) => {
       const total = current.year * 12 + current.month + delta;
       return { year: Math.floor(total / 12), month: ((total % 12) + 12) % 12 };
@@ -90,22 +102,45 @@ export function HistoryCalendar({ workouts, today }: { workouts: Workout[]; toda
           <div key={weekIndex} className="grid grid-cols-7 gap-1">
             {week.map((cell, cellIndex) => {
               if (!cell) return <div key={cellIndex} className="h-9" />;
-              const workoutId = workoutIdByDate.get(cell.date);
+              const dayWorkouts = workoutsByDate.get(cell.date);
               const isToday = cell.date === today;
               const isFuture = cell.date > today;
+              const dayClass = `flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 ${
+                isToday ? "ring-2 ring-indigo-300 dark:ring-indigo-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900" : ""
+              }`;
 
-              if (workoutId) {
+              if (dayWorkouts && dayWorkouts.length === 1) {
                 return (
                   <div key={cell.date} className="flex items-center justify-center py-0.5">
                     <Link
-                      href={`/history/${workoutId}`}
+                      href={`/history/${dayWorkouts[0].id}`}
                       aria-label={`Se træningen fra ${cell.date}`}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 ${
-                        isToday ? "ring-2 ring-indigo-300 dark:ring-indigo-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900" : ""
-                      }`}
+                      className={dayClass}
                     >
                       {cell.day}
                     </Link>
+                  </div>
+                );
+              }
+
+              if (dayWorkouts) {
+                return (
+                  <div key={cell.date} className="relative flex items-center justify-center py-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPickedDate(cell.date === pickedDate ? null : cell.date)}
+                      aria-label={`${dayWorkouts.length} træninger den ${cell.date}`}
+                      aria-expanded={pickedDate === cell.date}
+                      className={dayClass}
+                    >
+                      {cell.day}
+                    </button>
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute right-0.5 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-zinc-900"
+                    >
+                      {dayWorkouts.length}
+                    </span>
                   </div>
                 );
               }
@@ -125,6 +160,25 @@ export function HistoryCalendar({ workouts, today }: { workouts: Workout[]; toda
           </div>
         ))}
       </div>
+
+      {pickedWorkouts.length > 1 && pickedDate && (
+        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+          <p className="mb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">{formatDateDanish(pickedDate)}</p>
+          <ul className="flex flex-col gap-1">
+            {pickedWorkouts.map((workout, index) => (
+              <li key={workout.id}>
+                <Link
+                  href={`/history/${workout.id}`}
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  <span>Træning {index + 1}{workout.started_at ? ` · kl. ${formatTimeDanish(workout.started_at)}` : ""}</span>
+                  <span aria-hidden="true" className="text-zinc-400">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

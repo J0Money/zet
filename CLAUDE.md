@@ -2,6 +2,31 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Træningspas (26. oktober 2026)
+
+- Joe ville oprette et rigtigt træningspas, fordi alt, man loggede på en dag, før blev samlet i én træning. Valgt: start og afslut selv, og logger man uden at have startet, starter et pas automatisk (frem for kun automatiske pas eller kun at omdøbe dagens træning).
+- Migrationen `0011_workout_sessions.sql` er kørt i Neon (godkendt af Joe): reglen om én træning pr. bruger pr. dag er fjernet, `started_at` og `ended_at` er tilføjet, og der er en unik delvis indeks for højst ét aktivt pas pr. bruger. De 13 eksisterende træninger er urørt (tomme tider, vises som før uden klokkeslæt). To valg blev forelagt Joe sammen med migrationen, og han svarede, at det lød fint: glemte pas lukkes efter 12 timer uden registreringer, og et pas hører til den dag, det startede (også hvis det varer over midnat).
+- **Vigtigt ved udgivelse:** Migrationen fjernede den regel, den gamle kode brugte til at oprette dagens træning, så logning på Vercel fejler, indtil denne kode er deployet. Migrationen blev kørt før koden blev pushet, hvilket var den forkerte rækkefølge for en ændring, der ikke er bagudkompatibel. Næste gang: gør koden kompatibel med både gammelt og nyt skema, eller push og migrer i samme øjeblik.
+- `lib/workout-store.ts`: `getActiveWorkout`, `getOrStartActiveWorkout`, `endActiveWorkout`, `createWorkoutOnDate` (kun test), og `toWorkout` der giver tidspunkterne videre som ISO-tekst. `getOrCreateWorkoutForDate` er fjernet. `app/log/session-actions.ts` har Server Actions til Start og Afslut. `app/components/session-bar.tsx` viser enten "Start træning" eller "Træning i gang" med et ur, der tæller hvert sekund (`useSyncExternalStore`, så der hverken er en effect med setState eller forskel mellem server og browser) og en "Afslut"-knap.
+- Log-siden viser det aktive pas' sæt ("Sæt i dette pas") i stedet for "Dagens sæt". Historikken viser klokkeslæt ved hvert pas, detaljesiden viser fx "Kl. 11.09 til 11.10 · under 1 min" (`formatTimeDanish` i `lib/dates.ts`, i dansk tid, og `formatWorkoutDuration` og `formatClock` i `lib/format.ts`). Flere pas samme dag sorteres med det seneste først.
+- Kalenderen: en dag med ét pas linker direkte, som før. En dag med flere har et lille tal ved siden af datoen, og et tryk viser dagens pas som en liste under kalenderen ("Træning 1 · kl. 11.09").
+- Testet i browseren med en midlertidig testbruger (slettet bagefter): start, uret tæller, sæt logges i passet, afslut, log uden at starte giver et nyt pas, historik og kalender med to pas samme dag (mobilbredde), detaljesiden. Mod databasen: tre samtidige starter giver præcis ét aktivt pas, et pas uden aktivitet i 13 timer lukkes og et nyt startes, og et pas med nylig aktivitet lukkes ikke selv om det startede for 14 timer siden. TypeScript, ESLint, produktionsbuild og `tests/access.integration.test.ts` (7 deltests, `getOrCreateWorkoutForDate` erstattet af `createWorkoutOnDate`) bestod.
+- Ikke gjort, men naturligt næste: ur med runder/hvile, maskinindstillinger og at gemme en halvt udfyldt formular, se idélisten nedenfor. Der er stadig ingen måde at flytte et sæt til et andet pas eller rette start- og sluttid.
+
+## Idéliste (gemt 26. oktober 2026, ikke afklaret eller bygget endnu)
+
+Skrevet ned af Joe. Afklar hver idé med Joe, før noget bygges.
+
+Joes egne:
+- Ur med "omgang" (fx et stopur til runder eller hvile mellem sæt).
+- Maskinens indstilling (gemme fx sædehøjde eller position til en maskineøvelse).
+- At det, man er i gang med at logge, gemmes, hvis telefonen låses eller lukkes mellem sættene.
+
+Fra Erik:
+- At man kan se sine venners træning og kg.
+- En indstilling til at slette sin konto.
+- PB (personlige rekorder; afklar hvad der mangler i forhold til de rekorder, dashboardet allerede viser).
+
 ## Overlevering til næste session (23. oktober 2026, slut på dagens arbejde)
 
 - Alt er committet og pushet til `master` på [github.com/J0Money/zet](https://github.com/J0Money/zet). Vercel deployer automatisk til [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Databasen er migreret til og med `0010_exercise_equipment.sql`.
@@ -295,7 +320,7 @@ Joe er praktikant og lærer webudvikling. Svar altid på dansk. Dokumentation, o
 - `user`: `id` (UUID), `email`, `name`.
 - `exercise`: `id` (UUID), `user_id` (`null` for indbyggede øvelser uden ejer), `name`, `type` (`strength` eller `cardio`), `is_shared` (boolean, standard `false`). En øvelse er synlig for en bruger, hvis `user_id` er `null`, hvis brugeren selv ejer den, eller hvis `is_shared` er sand. Øvelser oprettet i appen får `is_shared = true` og beholder deres ejer. `group_name` (tekst) og `equipment` (`barbell`, `dumbbells`, `machine`, `cable`, `bodyweight`, `other`) er begge `null` for øvelser uden varianter. Varianter af samme øvelse er hver sin række med samme `group_name`, fx "Bænkpres (Stang)" og "Bænkpres (Maskine)", så rekorder og volumen forbliver pr. variant.
 - `exercise_muscle_group`: `exercise_id` (UUID), `muscle_group`. En øvelse kan have flere rækker, fx Dips har både bryst og triceps. Unik på kombinationen (`exercise_id`, `muscle_group`).
-- `workout`: `id` (UUID), `user_id`, `date`, `notes`. Kombinationen (`user_id`, `date`) er unik: én træning pr. bruger pr. dag.
+- `workout` (et træningspas): `id` (UUID), `user_id`, `date` (dagen passet startede), `notes`, `started_at` og `ended_at` (tidspunkter med tidszone, begge `null` for ældre træninger fra dengang, der kun var én pr. dag). En bruger kan have flere pas samme dag, men højst ét aktivt (`started_at` sat og `ended_at` `null`), håndhævet af en unik delvis indeks `workout_one_active_per_user`.
 - `workout_set`: `id` (UUID), `workout_id`, `exercise_id`, `reps`, `weight_kg` (styrke).
 - `workout_cardio`: `id` (UUID), `workout_id`, `exercise_id`, `distance_km`, `duration_sec` (cardio).
 - `invitation`: `id` (UUID), `email`, `token_hash` (unik), `created_at`, `expires_at`, `used_at`, `revoked_at`. Gem kun hash af invitationskoden. Tidsstempler har tidszone.
@@ -311,7 +336,7 @@ Datamodellen er implementeret i Postgres via Drizzle. Schemaet ligger i `lib/db/
 
 - **Rendering:** Sider, der læser fra datalaget eller afhænger af tidspunktet eller den aktuelle bruger, bruger `await connection()` og `export const instant = false` med en kort forklarende kommentar. Projektet har `cacheComponents` slået til i `next.config.ts`, så sider ellers som udgangspunkt forudrenderes statisk.
 - **Dataadgang:** Alle læsninger og skrivninger af træningsdata går gennem `lib/workout-store.ts`, som bruger Postgres via Drizzle. Sider afventer datalagets funktioner med `await` og sender data videre som props til visningskomponenter. Komponenterne importerer aldrig datalaget eller databaseklienten direkte.
-- **Én træning pr. dag:** Databasen håndhæver en unik kombination af `workout(user_id, date)`. `getOrCreateWorkoutForDate` bruger én upsert (`ON CONFLICT ... DO UPDATE` med en opdatering, der ikke ændrer værdien). Det undgår et separat opslag efterfulgt af indsættelse, da Neons HTTP-driver ikke understøtter interaktive transaktioner.
+- **Træningspas:** Al logning går ind i brugerens aktive pas. `getOrStartActiveWorkout` finder det eller starter et nyt med én indsættelse (`ON CONFLICT DO NOTHING` mod den unikke delvise indeks, og ved tabt kapløb hentes vinderen), da Neons HTTP-driver ikke understøtter interaktive transaktioner. Et pas uden registreringer i mere end 12 timer lukkes automatisk (`closeStaleWorkouts`) med sluttidspunkt lig den seneste registrering. `createWorkoutOnDate` findes kun til test og engangsscripts.
 - **Ejerskab:** Kontrol af ejerskab ligger i datalaget (`getWorkoutById`), aldrig på en side. Et ukendt id og en anden brugers id skal give samme resultat (`notFound()`), så siden ikke afslører, om et id findes.
 - **Aktuel bruger:** Sider og Server Actions bruger `requireUser()` fra `lib/session.ts`. Send kun sessionens bruger-id til datalaget. `SEEDED_USER_ID` må ikke bruges til almindelig dataadgang.
 - **Datoer:** Begge hjælpefunktioner ligger i `lib/dates.ts`. `getTodayInCopenhagen()` finder dags dato i tidszonen Europe/Copenhagen, også hvis serveren kører i UTC. `formatDateDanish()` formaterer en gemt `"YYYY-MM-DD"`-streng med UTC som fast tidszone. Strengen har ikke selv en tidszone, og en anden tidszone kan forskyde den viste dag.

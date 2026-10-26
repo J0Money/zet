@@ -1,4 +1,4 @@
-import { formatDateDanish } from "@/lib/dates";
+import { formatDateDanish, formatTimeDanish } from "@/lib/dates";
 import type { Entry, Exercise, Workout } from "@/lib/types";
 import { getLatestWorkouts } from "@/lib/workouts";
 import Link from "next/link";
@@ -26,7 +26,12 @@ export function LatestWorkoutsCard({
           <li key={workout.id} className="text-sm">
             <Link href={`/history/${workout.id}`} className="group flex items-center justify-between gap-3 rounded-lg py-4">
               <div>
-                <div className="font-medium group-hover:text-indigo-600">{formatDateDanish(workout.date)}</div>
+                <div className="font-medium group-hover:text-indigo-600">
+                  {formatDateDanish(workout.date)}
+                  {workout.started_at && (
+                    <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">kl. {formatTimeDanish(workout.started_at)}</span>
+                  )}
+                </div>
                 <div className="mt-1 text-zinc-500 dark:text-zinc-400">{exerciseNames.join(", ") || "Ingen øvelser registreret"}</div>
               </div>
               <span aria-hidden="true" className="text-zinc-400 group-hover:text-indigo-600">→</span>

@@ -61,7 +61,7 @@ test("Sessionsbeskyttelse og dataadskillelse mellem to brugere", {
         { id: strength, user_id: id, name: `Privat styrke ${id}`, type: "strength" },
         { id: cardio, user_id: id, name: `Privat cardio ${id}`, type: "cardio" },
       ]);
-      const workout = await store.getOrCreateWorkoutForDate(id, "2020-01-02");
+      const workout = await store.createWorkoutOnDate(id, "2020-01-02");
       await store.addStrengthEntry(id, { workout_id: workout.id, exercise_id: strength, reps: 5, weight_kg: 20 });
       await store.addCardioEntry(id, { workout_id: workout.id, exercise_id: cardio, distance_km: 2, duration_sec: 600 });
       fixtures.push({ id, cookie, strength, cardio, workoutId: workout.id });
