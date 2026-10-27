@@ -25,8 +25,11 @@ function useElapsedSeconds(startedAt: string): number | null {
 
 function ActiveSession({ startedAt }: { startedAt: string }) {
   const elapsed = useElapsedSeconds(startedAt);
+  // Sticky: linjen bliver stående øverst, mens man scroller ned til formularen
+  // og sættene, så uret altid kan ses. Toppen tager højde for udskæringen på
+  // telefoner (safe-area), når appen er installeret på hjemmeskærmen.
   return (
-    <div className="zet-panel flex items-center justify-between gap-3">
+    <div className="zet-panel sticky top-[max(0.5rem,env(safe-area-inset-top))] z-10 flex items-center justify-between gap-3 shadow-sm">
       <div>
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Træning i gang</p>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Startet kl. {formatTimeDanish(startedAt)}</p>
