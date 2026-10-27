@@ -2,6 +2,13 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Uret følger med, når man scroller (27. oktober 2026)
+
+- Fra Eriks idéer (gemt i idélisten): uret skulle følge med ned, når man scroller, ellers ser man det ikke. Valgt af Joe at gøre linjen fast øverst, frem for at flytte uret et andet sted.
+- `app/components/session-bar.tsx`: linjen "Træning i gang" (med uret og "Afslut") er nu `position: sticky` øverst (`top-[max(0.5rem,env(safe-area-inset-top))]`, så den tager højde for udskæringen på telefoner, når appen er installeret på hjemmeskærmen) med `z-10`, så den ligger over indholdet, men under bundnavigationen, og en let skygge. Kun den aktive linje er fast; "Start træning"-linjen scroller som før. Ingen ændring i data, ingen migration.
+- Testet i browseren på mobilbredde med en testbruger (slettet bagefter): linjen står på 8 px fra toppen efter scroll til bunden af siden, uret tæller stadig, intet vandret overløb, mørkt tema har korrekt baggrund. TypeScript, ESLint og produktionsbuild bestod.
+- Kendt afvejning: "Afslut" er nu altid inden for tommelens rækkevidde, så et uheldigt tryk under scroll afslutter passet. Det er ikke destruktivt (næste sæt starter et nyt pas), men det splitter træningen i to. Kan løses senere med en bekræftelse eller ved kun at have uret fast og lade "Afslut" scrolle med.
+
 ### Community med frivillig deling (26. oktober 2026)
 
 - Joe valgte et fælles lukket fællesskab for alle ZET-konti, med sin egen Community-side i bundnavigationen. Fem faner: Overblik, Log, Historik, Community, Indstillinger. Intet deles automatisk. Ingen pushnotifikationer, kommentarer, billeder eller venneliste i denne første version.
@@ -78,6 +85,14 @@ Fra Erik:
 - At man kan se sine venners træning og kg.
 - En indstilling til at slette sin konto.
 - PB (personlige rekorder; afklar hvad der mangler i forhold til de rekorder, dashboardet allerede viser).
+
+Fra Erik (indsat 27. oktober 2026):
+- Forslag om at gå op i vægt: efter 3-5 træninger med de samme gentagelser og kg kommer appen med et forslag som "er det tid til at gå et par kg op?".
+- De sæt, man har gemt i passet, skal stå med det senest tagne øverst, så man lige under kan se, hvilke kg man var på, når man skal logge et sidste sæt.
+- Muligheden for at have et supersæt i gang (to øvelser skiftevis).
+- ~~Uret skal følge med ned, når man scroller (ellers ser man det ikke), eller flyttes et andet sted hen.~~ Lavet 27. oktober 2026, se afsnittet "Uret følger med, når man scroller".
+
+Bemærk: Flere af de ældre punkter kan være dækket af Codex' nyere arbejde (lokale kladder, huskenoter til varianter, Community med deling af træning). Tjek dem mod CLAUDE.md, før noget bygges to gange.
 
 ## Overlevering til næste session (23. oktober 2026, slut på dagens arbejde)
 
