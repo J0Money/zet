@@ -15,6 +15,8 @@ Migration `0014_community_comments_push.sql` er kørt den 27. oktober 2026 efter
 
 ## Adfærd
 
+Kommentarer kan læses og skrives direkte under opslagene i Community. Nye delinger indeholder et snapshot af øvelser og sæt inklusive vægt/gentagelser eller distance/tid, som kan foldes ud med "Vis træningen". Gamle opslag udvides kun efter ejerens forhåndsvisning og godkendelse via "Tilføj træningsdetaljer". Det bevarer kommentarer og reaktioner. Ændringer i kildetræningen opdaterer ikke det delte snapshot automatisk. Ingen ekstra migration kræves.
+
 Tekst ved deling og kommentarer er højst 1000 tegn og deles med alle indloggede brugere. Private træningsnoter forbliver private. Kommentarerne er flade, uden svartråde. Kun forfatteren kan slette sin kommentar eller opslagstekst. Tilbagetrækning af opslaget sletter kommentarerne.
 
 Push er frivilligt pr. browser/enhed. Kun ejeren af træningen modtager besked om andres nye kommentarer. Egne kommentarer giver ingen besked. Beskeden indeholder ikke kommentarteksten eller navne. Abonnementet er bundet til en login-session, og udløbne sessioner udelades. Logout sletter abonnementet via sessionens cascade; efter nyt login skal brugeren slå push til igen. Beskeder, der allerede er afsendt, kan stadig blive leveret.

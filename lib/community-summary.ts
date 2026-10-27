@@ -2,6 +2,8 @@ import type { Entry, Exercise, StrengthEntry, Workout } from "./types";
 import { formatWorkoutDuration } from "./format";
 
 export type CommunitySummary = {
+  // Mangler på gamle opslag, indtil ejeren vælger at dele detaljerne.
+  exercises?: { name: string; sets: ({ kind: "strength"; weightKg: number; reps: number } | { kind: "cardio"; distanceKm: number; durationSec: number })[] }[];
   date: string;
   duration: string | null;
   strengthSets: number;
@@ -31,6 +33,14 @@ export function buildCommunitySummary(workout: Workout, workouts: Workout[], ent
     if (!best || stronger(entry, best)) target.set(entry.exercise_id, entry);
   }
   const names = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
+  const sharedExercises = new Map<string, NonNullable<CommunitySummary["exercises"]>[number]>();
+  for (const entry of ownEntries) {
+    const group = sharedExercises.get(entry.exercise_id) ?? { name: names.get(entry.exercise_id) ?? "Øvelse", sets: [] };
+    group.sets.push(entry.kind === "strength"
+      ? { kind: "strength", weightKg: entry.weight_kg, reps: entry.reps }
+      : { kind: "cardio", distanceKm: entry.distance_km, durationSec: entry.duration_sec });
+    sharedExercises.set(entry.exercise_id, group);
+  }
   const records: CommunitySummary["records"] = [];
   for (const [id, best] of current) {
     const before = previous.get(id);
@@ -45,5 +55,6 @@ export function buildCommunitySummary(workout: Workout, workouts: Workout[], ent
     strengthSets: ownEntries.filter((entry) => entry.kind === "strength").length,
     cardioSessions: ownEntries.filter((entry) => entry.kind === "cardio").length,
     records,
+    exercises: [...sharedExercises.values()],
   };
 }

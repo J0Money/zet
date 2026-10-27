@@ -1,6 +1,6 @@
 import type { CommunitySummary } from "@/lib/community-summary";
 import { formatDateDanish } from "@/lib/dates";
-import { formatSetsSummary } from "@/lib/format";
+import { formatCardio, formatSetsSummary } from "@/lib/format";
 
 export function CommunitySummaryCard({ summary }: { summary: CommunitySummary }) {
   return <div className="space-y-3">
@@ -18,5 +18,14 @@ export function CommunitySummaryCard({ summary }: { summary: CommunitySummary })
         <p className="text-xs text-zinc-500 dark:text-zinc-400">Tidligere: {formatSetsSummary([{ weight_kg: record.previousWeightKg, reps: record.previousReps }])}</p>
       </li>)}</ul>
     </div>}
+    {summary.exercises && <details className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+      <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Vis træningen ({summary.exercises.length} øvelser)</summary>
+      <ul className="space-y-4 pt-3">{summary.exercises.map((exercise, index) => <li key={index}>
+        <p className="break-words text-sm font-semibold">{exercise.name}</p>
+        <ol className="mt-1 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">{exercise.sets.map((set, setIndex) => <li key={setIndex}>
+          {set.kind === "strength" ? `Sæt ${setIndex + 1}: ${formatSetsSummary([{ weight_kg: set.weightKg, reps: set.reps }])}` : formatCardio(set.distanceKm, set.durationSec)}
+        </li>)}</ol>
+      </li>)}</ul>
+    </details>}
   </div>;
 }
