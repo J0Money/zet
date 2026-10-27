@@ -1,7 +1,8 @@
 import "server-only";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { communityPost, communityReaction, user } from "@/lib/db/schema";
+import { communityComment, communityPost, communityReaction, user } from "@/lib/db/schema";
+import { communityText, isCommunityId } from "@/lib/community-input";
 import { buildCommunitySummary } from "@/lib/community-summary";
 import { getEntries, getExercises, getWorkoutById, getWorkouts } from "@/lib/workout-store";
 
@@ -16,17 +17,19 @@ export async function getSharePreview(userId: string, workoutId: string) {
 
 export async function getSharedPost(userId: string, workoutId: string) {
   if (!isUuid(workoutId)) return null;
-  const [post] = await db.select({ id: communityPost.id, summary: communityPost.summary }).from(communityPost)
+  const [post] = await db.select({ id: communityPost.id, summary: communityPost.summary, caption: communityPost.caption }).from(communityPost)
     .where(and(eq(communityPost.user_id, userId), eq(communityPost.workout_id, workoutId)));
   return post ?? null;
 }
 
-export async function shareWorkout(userId: string, workoutId: string, preview: string) {
+export async function shareWorkout(userId: string, workoutId: string, preview: string, caption = "") {
+  const parsed = communityText(caption);
+  if (parsed.error) return { error: parsed.error };
   const summary = await getSharePreview(userId, workoutId);
   if (!summary) return { error: "Kun dine egne afsluttede træninger med indhold kan deles." };
   if (JSON.stringify(summary) !== preview) return { error: "Træningen er ændret. Genindlæs siden og gennemgå opsummeringen igen." };
   // Dobbeltklik og gentagne requests må ikke give flere opslag eller ændre et delt opslag.
-  await db.insert(communityPost).values({ user_id: userId, workout_id: workoutId, summary }).onConflictDoNothing();
+  await db.insert(communityPost).values({ user_id: userId, workout_id: workoutId, summary, caption: parsed.text }).onConflictDoNothing();
   return { success: true };
 }
 
@@ -53,6 +56,7 @@ export async function getCommunityFeed(userId: string) {
   const posts = await db.select({
     id: communityPost.id, authorId: communityPost.user_id, name: user.name,
     summary: communityPost.summary,
+    caption: communityPost.caption,
   }).from(communityPost).innerJoin(user, eq(user.id, communityPost.user_id))
     .orderBy(desc(communityPost.created_at), desc(communityPost.id)).limit(50);
   const reactions = posts.length ? await db.select({ postId: communityReaction.post_id, userId: communityReaction.user_id })
@@ -62,4 +66,47 @@ export async function getCommunityFeed(userId: string) {
     count: reactions.filter((reaction) => reaction.postId === post.id).length,
     reacted: reactions.some((reaction) => reaction.postId === post.id && reaction.userId === userId),
   }));
+}
+
+export async function getCommunityPost(postId: string) {
+  if (!isCommunityId(postId)) return null;
+  const [post] = await db.select({ id: communityPost.id, userId: communityPost.user_id, name: user.name,
+    summary: communityPost.summary, caption: communityPost.caption }).from(communityPost)
+    .innerJoin(user, eq(user.id, communityPost.user_id)).where(eq(communityPost.id, postId));
+  return post ?? null;
+}
+
+export async function getComments(postId: string) {
+  if (!isCommunityId(postId)) return [];
+  return db.select({ id: communityComment.id, userId: communityComment.user_id, name: user.name,
+    body: communityComment.body, createdAt: communityComment.created_at }).from(communityComment)
+    .innerJoin(user, eq(user.id, communityComment.user_id)).where(eq(communityComment.post_id, postId))
+    .orderBy(asc(communityComment.created_at), asc(communityComment.id));
+}
+
+export async function addComment(userId: string, postId: string, commentId: string, body: string) {
+  const parsed = communityText(body, true);
+  if (parsed.error) return { error: parsed.error };
+  if (!isCommunityId(postId) || !isCommunityId(commentId)) return { error: "Opslaget kunne ikke findes." };
+  // INSERT SELECT undgår at kommentere et opslag, der er trukket tilbage.
+  // Klientens UUID gør gentagne indsendelser idempotente.
+  const rows = await db.insert(communityComment).select(db.select({
+    id: sql<string>`${commentId}::uuid`.as("id"), post_id: communityPost.id,
+    user_id: sql<string>`${userId}::uuid`.as("user_id"), body: sql<string>`${parsed.text}`.as("body"),
+    created_at: sql<Date>`now()`.as("created_at"),
+  }).from(communityPost).where(eq(communityPost.id, postId))).onConflictDoNothing().returning({ id: communityComment.id });
+  if (rows.length) return { success: true, insertedId: rows[0].id };
+  const [existing] = await db.select({ id: communityComment.id }).from(communityComment)
+    .where(and(eq(communityComment.id, commentId), eq(communityComment.user_id, userId), eq(communityComment.post_id, postId)));
+  return existing ? { success: true } : { error: "Opslaget er ikke længere tilgængeligt. Genindlæs siden." };
+}
+
+export async function deleteComment(userId: string, commentId: string) {
+  if (!isCommunityId(commentId)) return;
+  await db.delete(communityComment).where(and(eq(communityComment.id, commentId), eq(communityComment.user_id, userId)));
+}
+
+export async function deleteCaption(userId: string, postId: string) {
+  if (!isCommunityId(postId)) return;
+  await db.update(communityPost).set({ caption: "" }).where(and(eq(communityPost.id, postId), eq(communityPost.user_id, userId)));
 }

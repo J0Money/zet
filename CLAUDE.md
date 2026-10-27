@@ -4,6 +4,14 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 
 ## Overlevering til Codex (27. oktober 2026)
 
+### Igangværende lokalt: kommentarer og push (27. oktober 2026)
+
+- Joe har godkendt tekst ved deling, flade kommentarer, sletning af egne kommentarer og push til træningens ejer ved andres kommentarer. Implementeret og godkendt til commit og push sammen med bekræftelse ved "Afslut".
+- Migration `0014_community_comments_push.sql` er vist og kørt efter Joes udtrykkelige godkendelse. Bekræftet: 15 registrerede migrationer, seneste er 0014, og alle 12 nye kolonner findes. Tilføjer `community_post.caption`, `community_comment` og `push_subscription`; bagudkompatibel med den udgivne kode.
+- Push-nøgler er genereret direkte i den ignorerede `.env.local`, aldrig udskrevet. Alle tre VAPID-miljøvariabler er sat i Vercels Production-miljø; den private nøgle er gemt som Secret. Se `docs/community-push.md` for opsætning, test og udgivelsesrækkefølge. Push-tilmelding sker i Indstillinger, gælder den aktuelle login-session og bruger standard Web Push. Ingen privat tekst i notifikationen.
+- TypeScript, målrettet ESLint, 12 enhedstests og produktionsbuild består. Build ramte den kendte CSS-hjælpeprocesfejl både med og uden sandbox; rydning af den genererede `.next`-mappe løste den. Den udvidede databaseintegrationstest består efter migrationen: ejerafgrænsning, dubletter, kommentarer, sletning, cascade samt push til ejer med aktiv session, ingen selvnotifikation og ingen push efter logout. Push-afsendelsen er simuleret i testen; ingen rigtige notifikationer er sendt. Testdata er ryddet op. Telefon og browserforløb er ikke testet endnu.
+- `npm audit` viste også en eksisterende høj Zod-advarsel (4.6.5 via Better Auth) ud over de kendte moderate udviklingsafhængigheder. Ingen automatisk audit-fix er kørt.
+
 Denne overlevering afløser de to ældre "Overlevering til næste session"-afsnit længere nede. Læs den først, dernæst de daterede afsnit (nyeste øverst), før noget bygges.
 
 **Status**
