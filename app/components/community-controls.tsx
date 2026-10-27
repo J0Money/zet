@@ -37,7 +37,7 @@ export function ShareWorkout({ workoutId, name, summary, shared }: {
     <h2 className="zet-sectionTitle">{shared ? "Delt med fællesskabet" : "Del med fællesskabet"}</h2>
     <p className="text-sm text-zinc-500 dark:text-zinc-400">{shared
       ? "Dette er den delte opsummering. Senere rettelser i træningen ændrer ikke opslaget. Træk delingen tilbage og del igen for at opdatere det."
-      : "Din træning er privat. Hvis du deler, kan alle med en ZET-konto se dit navn og opsummeringen nedenfor. Dine noter deles aldrig."}</p>
+      : "Din træning er privat. Hvis du deler, kan alle med en ZET-konto se dit navn, øvelser, sæt, kg, gentagelser og cardio samt opsummeringen nedenfor. Dine noter deles aldrig."}</p>
     <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 space-y-2">
       <p className="font-semibold">{name}</p>
       {shared?.caption && <p className="whitespace-pre-wrap break-words text-sm">{shared.caption}</p>}

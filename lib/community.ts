@@ -77,11 +77,37 @@ export async function getCommunityPost(postId: string) {
 }
 
 export async function getComments(postId: string) {
-  if (!isCommunityId(postId)) return [];
-  return db.select({ id: communityComment.id, userId: communityComment.user_id, name: user.name,
+  return getCommentsForPosts([postId]);
+}
+
+export async function getCommentsForPosts(postIds: string[]) {
+  const ids = postIds.filter(isCommunityId);
+  if (!ids.length) return [];
+  return db.select({ id: communityComment.id, postId: communityComment.post_id, userId: communityComment.user_id, name: user.name,
     body: communityComment.body, createdAt: communityComment.created_at }).from(communityComment)
-    .innerJoin(user, eq(user.id, communityComment.user_id)).where(eq(communityComment.post_id, postId))
+    .innerJoin(user, eq(user.id, communityComment.user_id)).where(inArray(communityComment.post_id, ids))
     .orderBy(asc(communityComment.created_at), asc(communityComment.id));
+}
+
+export async function getDetailsPreview(userId: string, postId: string) {
+  if (!isCommunityId(postId)) return null;
+  const [post] = await db.select({ workoutId: communityPost.workout_id, summary: communityPost.summary }).from(communityPost)
+    .where(and(eq(communityPost.id, postId), eq(communityPost.user_id, userId)));
+  if (!post || post.summary.exercises) return null;
+  const current = await getSharePreview(userId, post.workoutId);
+  return current?.exercises ?? null;
+}
+
+export async function addWorkoutDetails(userId: string, postId: string, preview: string) {
+  const exercises = await getDetailsPreview(userId, postId);
+  if (!exercises) return { error: "Detaljerne kan ikke tilføjes. Genindlæs opslaget." };
+  if (JSON.stringify(exercises) !== preview) return { error: "Træningen er ændret. Hent forhåndsvisningen igen." };
+  // Tilføj kun detaljer. Bevar oprindelig opsummering, kommentarer og reaktioner.
+  const updated = await db.update(communityPost).set({
+    summary: sql`${communityPost.summary} || jsonb_build_object('exercises', ${JSON.stringify(exercises)}::jsonb)`,
+  }).where(and(eq(communityPost.id, postId), eq(communityPost.user_id, userId), sql`not (${communityPost.summary} ? 'exercises')`))
+    .returning({ id: communityPost.id });
+  return updated.length ? { success: true } : { error: "Opslaget er ændret. Genindlæs siden." };
 }
 
 export async function addComment(userId: string, postId: string, commentId: string, body: string) {

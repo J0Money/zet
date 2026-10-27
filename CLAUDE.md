@@ -4,6 +4,15 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 
 ## Overlevering til Codex (27. oktober 2026)
 
+### Community direkte i feedet og træningsdetaljer (27. oktober 2026)
+
+- Joe har godkendt kommentarer direkte under opslagene samt fold-ud-visning af øvelser, sæt, kg, gentagelser og cardio. Implementeret og godkendt til commit og push.
+- Nye opslag gemmer detaljerne i det eksisterende JSON-snapshot, og forhåndsvisningen forklarer, hvad der deles. Private noter og interne trænings-id'er deles ikke. Ingen ny migration.
+- Gamle opslag ændres ikke automatisk. Kun ejeren kan vælge "Tilføj træningsdetaljer", gennemgå en frisk forhåndsvisning og bekræfte. Serveren kontrollerer ejerskab og ændringer siden forhåndsvisningen. Oprindelig opsummering, tekst, kommentarer og reaktioner bevares, og detaljer kan kun tilføjes én gang.
+- Kommentarerne hentes samlet for opslagene i feedet. Den eksisterende opslagsside bevares til push-links og gamle opslag uden for de seneste 50.
+- Enhedstests, TypeScript, målrettet ESLint, produktionsbuild og udvidet Neon-integrationstest består. Integrationstesten dækker også afvisning af forældet forhåndsvisning, ejerafgrænsning og bevarelse af kommentarer, reaktioner og snapshot. Midlertidige testdata er ryddet op.
+- Joe har bekræftet, at rigtig push-levering virker på hans iPhone efter den foregående udgivelse.
+
 ### Igangværende lokalt: kommentarer og push (27. oktober 2026)
 
 - Joe har godkendt tekst ved deling, flade kommentarer, sletning af egne kommentarer og push til træningens ejer ved andres kommentarer. Implementeret og godkendt til commit og push sammen med bekræftelse ved "Afslut".

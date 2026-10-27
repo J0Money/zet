@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
-import { addComment, deleteCaption, deleteComment, setReaction, shareWorkout, withdrawPost } from "@/lib/community";
+import { addComment, addWorkoutDetails, getDetailsPreview, deleteCaption, deleteComment, setReaction, shareWorkout, withdrawPost } from "@/lib/community";
 import { notifyComment } from "@/lib/push";
 
 export type CommunityActionState = { error?: string; success?: boolean };
@@ -54,4 +54,16 @@ export async function deleteCaptionAction(data: FormData) {
   const user = await requireUser();
   await deleteCaption(user.id, String(data.get("postId") ?? ""));
   refresh();
+}
+
+export async function previewDetailsAction(postId: string) {
+  const user = await requireUser();
+  return getDetailsPreview(user.id, postId);
+}
+
+export async function addDetailsAction(_state: CommunityActionState, data: FormData): Promise<CommunityActionState> {
+  const user = await requireUser();
+  const result = await addWorkoutDetails(user.id, String(data.get("postId") ?? ""), String(data.get("preview") ?? ""));
+  if (result.success) refresh();
+  return result;
 }

@@ -10,7 +10,7 @@ test("Community deler kun godkendte pas og afgrænser ændringer til den rigtige
   config({ path: ".env.local", quiet: true });
   const { db } = await import("../lib/db");
   const { user, exercise, workout, workoutSet, communityPost, communityReaction, communityComment, session, pushSubscription } = await import("../lib/db/schema");
-  const { getSharePreview, getCommunityFeed, getSharedPost, shareWorkout, withdrawPost, setReaction, addComment, deleteComment, deleteCaption, getComments } = await import("../lib/community");
+  const { getSharePreview, getCommunityFeed, getSharedPost, shareWorkout, withdrawPost, setReaction, addComment, deleteComment, deleteCaption, getComments, getCommentsForPosts, getDetailsPreview, addWorkoutDetails } = await import("../lib/community");
   const { endActiveWorkout } = await import("../lib/workout-store");
   const owner = randomUUID(), friend = randomUUID(), exerciseId = randomUUID();
   const past = randomUUID(), current = randomUUID(), active = randomUUID();
@@ -107,6 +107,28 @@ test("Community deler kun godkendte pas og afgrænser ændringer til den rigtige
     assert.ok(await getSharedPost(owner, current));
     await db.update(workoutSet).set({ weight_kg: 60 }).where(eq(workoutSet.workout_id, current));
     assert.deepEqual((await getSharedPost(owner, current))?.summary, preview);
+    const legacySummary = { ...preview };
+    delete legacySummary.exercises;
+    await db.update(communityPost).set({ summary: legacySummary }).where(eq(communityPost.id, post.id));
+    assert.equal(await getDetailsPreview(friend, post.id), null);
+    assert.ok((await addWorkoutDetails(friend, post.id, "[]")).error);
+    const details = await getDetailsPreview(owner, post.id);
+    assert.ok(details);
+    assert.ok((await addWorkoutDetails(owner, post.id, "[]")).error);
+    const commentCount = (await getComments(post.id)).length;
+    assert.equal((await getCommentsForPosts([post.id])).length, commentCount);
+    // Afvis en forældet forhåndsvisning, når træningen er rettet imens.
+    await db.update(workoutSet).set({ weight_kg: 65 }).where(eq(workoutSet.workout_id, current));
+    assert.ok((await addWorkoutDetails(owner, post.id, JSON.stringify(details))).error);
+    const freshDetails = await getDetailsPreview(owner, post.id);
+    assert.ok((await addWorkoutDetails(owner, post.id, JSON.stringify(freshDetails))).success);
+    const upgraded = (await getSharedPost(owner, current))!.summary;
+    assert.deepEqual(upgraded, { ...legacySummary, exercises: freshDetails });
+    assert.equal((await getComments(post.id)).length, commentCount);
+    assert.equal((await getCommunityFeed(friend)).find((item) => item.id === post.id)?.count, 1);
+    await db.update(workoutSet).set({ weight_kg: 70 }).where(eq(workoutSet.workout_id, current));
+    assert.ok((await addWorkoutDetails(owner, post.id, JSON.stringify(freshDetails))).error);
+    assert.deepEqual((await getSharedPost(owner, current))?.summary, upgraded);
     await setReaction(friend, post.id, false);
     assert.equal((await getCommunityFeed(friend)).find((item) => item.id === post.id)?.count, 0);
     await setReaction(friend, post.id, true);
