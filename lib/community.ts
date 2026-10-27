@@ -57,12 +57,13 @@ export async function getCommunityFeed(userId: string) {
     id: communityPost.id, authorId: communityPost.user_id, name: user.name,
     summary: communityPost.summary,
     caption: communityPost.caption,
+    image: user.image,
   }).from(communityPost).innerJoin(user, eq(user.id, communityPost.user_id))
     .orderBy(desc(communityPost.created_at), desc(communityPost.id)).limit(50);
   const reactions = posts.length ? await db.select({ postId: communityReaction.post_id, userId: communityReaction.user_id })
     .from(communityReaction).where(inArray(communityReaction.post_id, posts.map((post) => post.id))) : [];
   return posts.map(({ authorId, ...post }) => ({
-    ...post, isMine: authorId === userId,
+    ...post, authorId, isMine: authorId === userId,
     count: reactions.filter((reaction) => reaction.postId === post.id).length,
     reacted: reactions.some((reaction) => reaction.postId === post.id && reaction.userId === userId),
   }));
@@ -71,7 +72,7 @@ export async function getCommunityFeed(userId: string) {
 export async function getCommunityPost(postId: string) {
   if (!isCommunityId(postId)) return null;
   const [post] = await db.select({ id: communityPost.id, userId: communityPost.user_id, name: user.name,
-    summary: communityPost.summary, caption: communityPost.caption }).from(communityPost)
+    summary: communityPost.summary, caption: communityPost.caption, image: user.image }).from(communityPost)
     .innerJoin(user, eq(user.id, communityPost.user_id)).where(eq(communityPost.id, postId));
   return post ?? null;
 }
@@ -84,7 +85,7 @@ export async function getCommentsForPosts(postIds: string[]) {
   const ids = postIds.filter(isCommunityId);
   if (!ids.length) return [];
   return db.select({ id: communityComment.id, postId: communityComment.post_id, userId: communityComment.user_id, name: user.name,
-    body: communityComment.body, createdAt: communityComment.created_at }).from(communityComment)
+    body: communityComment.body, createdAt: communityComment.created_at, image: user.image }).from(communityComment)
     .innerJoin(user, eq(user.id, communityComment.user_id)).where(inArray(communityComment.post_id, ids))
     .orderBy(asc(communityComment.created_at), asc(communityComment.id));
 }

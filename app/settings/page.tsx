@@ -7,6 +7,8 @@ import { isCurrentUserAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/session";
 import { PushSettings } from "@/app/components/push-settings";
 import { pushConfigured } from "@/lib/push";
+import { getProfileImage } from "@/lib/avatars";
+import { ProfileImageSettings } from "@/app/components/profile-image-settings";
 
 // Siden afhænger af den aktuelle bruger (admin-status), så den kan ikke
 // forhåndsgenereres statisk.
@@ -14,7 +16,8 @@ export const instant = false;
 
 export default async function SettingsPage() {
   await connection();
-  await requireUser();
+  const currentUser = await requireUser();
+  const image = await getProfileImage(currentUser.id);
   const isAdmin = await isCurrentUserAdmin();
 
   return (
@@ -24,6 +27,7 @@ export default async function SettingsPage() {
         <h1>Indstillinger</h1>
       </header>
 
+      <ProfileImageSettings userId={currentUser.id} name={currentUser.name} image={image} configured={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
       <section className="flex flex-col gap-3">
         <h2 className="zet-sectionTitle">Udseende</h2>
         <ThemeToggle />

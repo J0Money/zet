@@ -8,6 +8,9 @@ import { ConfirmSubmitButton } from "@/app/components/confirm-submit-button";
 import { deleteCaptionAction } from "@/app/community/actions";
 import { CommunitySummaryCard } from "@/app/components/community-summary-card";
 import { CommunityReaction, WithdrawPost } from "@/app/components/community-controls";
+import { formatDateDanish } from "@/lib/dates";
+import "./community.css";
+import { ProfileAvatar } from "@/app/components/profile-avatar";
 
 export const instant = false;
 
@@ -16,30 +19,37 @@ export default async function CommunityPage() {
   const user = await requireUser();
   const posts = await getCommunityFeed(user.id);
   const comments = await getCommentsForPosts(posts.map((post) => post.id));
-  return <div className="zet-page flex flex-col gap-6">
+  return <div className="zet-page community-page flex flex-col gap-6">
     <header className="zet-pageHeader">
       <p className="zet-brand">ZET</p><h1>Community</h1>
-      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Jeres træninger og personlige rekorder. Kun for jer med en ZET-konto.</p>
+      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Små sejre. Gode træninger. Sammen.</p>
     </header>
-    <div className="zet-panel space-y-2">
-      <h2 className="zet-sectionTitle">Del en træning, giv et skulderklap</h2>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">Intet deles automatisk. Afslut et pas, eller åbn en afsluttet træning i historikken for at dele den.</p>
-      <Link href="/history" className="inline-flex min-h-11 items-center text-sm font-medium text-indigo-600 dark:text-indigo-400">Vælg fra din historik →</Link>
+    <div className="community-share">
+      <div><p className="community-eyebrow">DIT FÆLLESSKAB</p><h2>En træning værd at dele?</h2>
+      <p>Vælg et afsluttet pas fra din historik.</p></div>
+      <Link href="/history" className="community-share-button">Del træning <span aria-hidden="true">↗</span></Link>
     </div>
     {!posts.length ? <div className="zet-panel text-sm text-zinc-500 dark:text-zinc-400">Her er stille endnu. Den første delte træning starter fællesskabet.</div>
-      : <ul className="flex flex-col gap-4">{posts.map((post) => <li key={post.id}>
-        <article id={`post-${post.id}`} className="zet-panel scroll-mt-4 space-y-4">
-          <h2 className="font-semibold">{post.name}{post.isMine ? " (dig)" : ""}</h2>
-          {post.caption && <p className="whitespace-pre-wrap break-words text-sm">{post.caption}</p>}
-          {post.caption && post.isMine && <form action={deleteCaptionAction}>
+      : <ul className="community-feed">{posts.map((post) => <li key={post.id}>
+        <article id={`post-${post.id}`} className="zet-panel community-post scroll-mt-4">
+          <header className="community-post-header">
+            <div className="community-avatar"><ProfileAvatar userId={post.authorId} image={post.image} name={post.name} /></div>
+            <div className="community-author"><h2>{post.name}{post.isMine && <span className="community-you">Dig</span>}</h2><p>{formatDateDanish(post.summary.date)}</p></div>
+            {post.isMine && <details className="community-options"><summary aria-label="Administrer dit opslag">•••</summary><div className="community-options-menu">
+              {post.caption && <form action={deleteCaptionAction}>
             <input type="hidden" name="postId" value={post.id} />
             <ConfirmSubmitButton confirmMessage="Slet teksten til din træning?" className="min-h-11 text-sm text-red-600">Slet min tekst</ConfirmSubmitButton>
-          </form>}
-          <CommunitySummaryCard summary={post.summary} />
-          {post.isMine && !post.summary.exercises && <AddWorkoutDetails postId={post.id} summary={post.summary} />}
-          {post.isMine ? <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-zinc-500">{post.count} har sagt Stærkt!</p><WithdrawPost postId={post.id} />
+              </form>}
+              <WithdrawPost postId={post.id} />
+            </div></details>}
+          </header>
+          {post.caption && <p className="community-caption">{post.caption}</p>}
+          <div className="community-workout"><CommunitySummaryCard summary={post.summary} /></div>
+          {post.isMine && !post.summary.exercises && <div className="community-add-details"><AddWorkoutDetails postId={post.id} summary={post.summary} /></div>}
+          <div className="community-reactions">{post.isMine ? <div>
+            <p className="text-sm text-zinc-500">{post.count > 0 ? `${post.count} har sagt Stærkt!` : "Dit pas er delt med fællesskabet"}</p>
           </div> : <CommunityReaction postId={post.id} count={post.count} reacted={post.reacted} />}
+          </div>
           <CommunityComments postId={post.id} userId={user.id} comments={comments.filter((comment) => comment.postId === post.id)} />
         </article>
       </li>)}</ul>}
