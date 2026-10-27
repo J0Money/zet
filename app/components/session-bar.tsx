@@ -37,7 +37,14 @@ function ActiveSession({ startedAt }: { startedAt: string }) {
       <p className="font-mono text-2xl font-semibold tabular-nums text-indigo-600 dark:text-indigo-400" aria-label="Tid siden start">
         {elapsed === null ? "--:--" : formatClock(elapsed)}
       </p>
-      <form action={endWorkoutAction}>
+      <form
+        action={endWorkoutAction}
+        onSubmit={(event) => {
+          if (!window.confirm("Vil du afslutte træningen? Vælg Annuller for at fortsætte.")) {
+            event.preventDefault();
+          }
+        }}
+      >
         <button
           type="submit"
           className="min-h-11 rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:border-red-300 hover:text-red-600 dark:hover:text-red-400"

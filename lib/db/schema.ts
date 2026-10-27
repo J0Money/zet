@@ -249,6 +249,7 @@ export const communityPost = pgTable("community_post", {
   user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   workout_id: uuid("workout_id").notNull().unique().references(() => workout.id, { onDelete: "cascade" }),
   summary: jsonb("summary").$type<CommunitySummary>().notNull(),
+  caption: text("caption").notNull().default(""),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("community_post_created_at_idx").on(table.created_at)]);
 
@@ -257,6 +258,24 @@ export const communityReaction = pgTable("community_reaction", {
   post_id: uuid("post_id").notNull().references(() => communityPost.id, { onDelete: "cascade" }),
   user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
 }, (table) => [unique("community_reaction_post_user_unique").on(table.post_id, table.user_id)]);
+
+export const communityComment = pgTable("community_comment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  post_id: uuid("post_id").notNull().references(() => communityPost.id, { onDelete: "cascade" }),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("community_comment_post_created_idx").on(table.post_id, table.created_at)]);
+
+// Knyttet til login-sessionen: logout eller udløbet login stopper push.
+export const pushSubscription = pgTable("push_subscription", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  session_id: uuid("session_id").notNull().references(() => session.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+}, (table) => [index("push_subscription_user_idx").on(table.user_id)]);
 
 export const workoutSet = pgTable("workout_set", {
   id: uuid("id").primaryKey().defaultRandom(),

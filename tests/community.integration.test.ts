@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 import { config } from "dotenv";
 import { eq, inArray } from "drizzle-orm";
 
@@ -9,8 +9,8 @@ test("Community deler kun godkendte pas og afgrænser ændringer til den rigtige
 }, async () => {
   config({ path: ".env.local", quiet: true });
   const { db } = await import("../lib/db");
-  const { user, exercise, workout, workoutSet, communityPost, communityReaction } = await import("../lib/db/schema");
-  const { getSharePreview, getCommunityFeed, getSharedPost, shareWorkout, withdrawPost, setReaction } = await import("../lib/community");
+  const { user, exercise, workout, workoutSet, communityPost, communityReaction, communityComment, session, pushSubscription } = await import("../lib/db/schema");
+  const { getSharePreview, getCommunityFeed, getSharedPost, shareWorkout, withdrawPost, setReaction, addComment, deleteComment, deleteCaption, getComments } = await import("../lib/community");
   const { endActiveWorkout } = await import("../lib/workout-store");
   const owner = randomUUID(), friend = randomUUID(), exerciseId = randomUUID();
   const past = randomUUID(), current = randomUUID(), active = randomUUID();
@@ -35,12 +35,66 @@ test("Community deler kun godkendte pas og afgrænser ændringer til den rigtige
     assert.ok((await shareWorkout(friend, current, JSON.stringify(preview))).error);
     assert.ok((await shareWorkout(owner, active, "{}")).error);
     assert.ok((await shareWorkout(owner, current, "{}")).error);
-    await shareWorkout(owner, current, JSON.stringify(preview));
+    await shareWorkout(owner, current, JSON.stringify(preview), "Hurtig træning med Erik!");
     await shareWorkout(owner, current, JSON.stringify(preview));
     const [post] = await db.select().from(communityPost).where(eq(communityPost.workout_id, current));
     assert.ok(post);
     assert.equal((await db.select().from(communityPost).where(eq(communityPost.workout_id, current))).length, 1);
     assert.equal(JSON.stringify(post.summary).includes("Privat"), false);
+    assert.equal(post.caption, "Hurtig træning med Erik!");
+    const commentId = randomUUID();
+    assert.ok((await addComment(friend, post.id, randomUUID(), "  ")).error);
+    assert.ok((await addComment(friend, randomUUID(), randomUUID(), "Stærkt")).error);
+    assert.ok((await addComment(friend, post.id, commentId, "God træning!")).insertedId);
+    assert.equal((await addComment(friend, post.id, commentId, "God træning!")).insertedId, undefined);
+    assert.equal((await getComments(post.id)).length, 1);
+    const webpush = (await import("web-push")).default;
+    const { notifyComment } = await import("../lib/push");
+    const sent: string[] = [];
+    const sender = mock.method(webpush, "sendNotification", async (subscription: { endpoint: string }) => {
+      sent.push(subscription.endpoint);
+      return { statusCode: 201, body: "", headers: {} };
+    });
+    const pushEnv = { publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY, subject: process.env.VAPID_SUBJECT };
+    try {
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY = "test-public";
+      process.env.VAPID_PRIVATE_KEY = "test-private";
+      process.env.VAPID_SUBJECT = "https://example.invalid";
+      const activeSession = randomUUID(), expiredSession = randomUUID();
+      await db.insert(session).values([
+        { id: activeSession, userId: owner, token: randomUUID(), expiresAt: new Date(Date.now() + 60000), updatedAt: new Date() },
+        { id: expiredSession, userId: owner, token: randomUUID(), expiresAt: new Date(Date.now() - 60000), updatedAt: new Date() },
+      ]);
+      await db.insert(pushSubscription).values([
+        { user_id: owner, session_id: activeSession, endpoint: `https://fcm.googleapis.com/${activeSession}`, p256dh: "test", auth: "test" },
+        { user_id: owner, session_id: expiredSession, endpoint: `https://fcm.googleapis.com/${expiredSession}`, p256dh: "test", auth: "test" },
+      ]);
+      await notifyComment(commentId);
+      assert.deepEqual(sent, [`https://fcm.googleapis.com/${activeSession}`]);
+      const ownComment = randomUUID();
+      await addComment(owner, post.id, ownComment, "Tak!");
+      await notifyComment(ownComment);
+      assert.equal(sent.length, 1);
+      await deleteComment(owner, ownComment);
+      await db.delete(session).where(eq(session.id, activeSession));
+      await notifyComment(commentId);
+      assert.equal(sent.length, 1);
+      assert.equal((await db.select().from(pushSubscription).where(eq(pushSubscription.session_id, activeSession))).length, 0);
+    } finally {
+      sender.mock.restore();
+      for (const [key, value] of Object.entries({ NEXT_PUBLIC_VAPID_PUBLIC_KEY: pushEnv.publicKey, VAPID_PRIVATE_KEY: pushEnv.privateKey, VAPID_SUBJECT: pushEnv.subject })) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    }
+    await deleteComment(owner, commentId);
+    assert.equal((await getComments(post.id)).length, 1);
+    await deleteComment(friend, commentId);
+    assert.equal((await getComments(post.id)).length, 0);
+    await deleteCaption(friend, post.id);
+    assert.equal((await getSharedPost(owner, current))?.caption, "Hurtig træning med Erik!");
+    await deleteCaption(owner, post.id);
+    assert.equal((await getSharedPost(owner, current))?.caption, "");
+    await addComment(friend, post.id, randomUUID(), "Slettes sammen med opslaget");
     await setReaction(owner, post.id, true);
     assert.equal((await db.select().from(communityReaction).where(eq(communityReaction.post_id, post.id))).length, 0);
     await setReaction(friend, post.id, true);
@@ -58,6 +112,7 @@ test("Community deler kun godkendte pas og afgrænser ændringer til den rigtige
     await setReaction(friend, post.id, true);
     await withdrawPost(owner, post.id);
     assert.equal(await getSharedPost(owner, current), null);
+    assert.equal((await db.select().from(communityComment).where(eq(communityComment.post_id, post.id))).length, 0);
     assert.equal((await db.select().from(communityReaction).where(eq(communityReaction.post_id, post.id))).length, 0);
     assert.equal((await getCommunityFeed(friend)).some((item) => item.id === post.id), false);
     assert.equal(await endActiveWorkout(owner, current), false);

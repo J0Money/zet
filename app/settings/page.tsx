@@ -5,6 +5,8 @@ import { logout } from "@/app/components/logout-action";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/session";
+import { PushSettings } from "@/app/components/push-settings";
+import { pushConfigured } from "@/lib/push";
 
 // Siden afhænger af den aktuelle bruger (admin-status), så den kan ikke
 // forhåndsgenereres statisk.
@@ -26,6 +28,8 @@ export default async function SettingsPage() {
         <h2 className="zet-sectionTitle">Udseende</h2>
         <ThemeToggle />
       </section>
+
+      <PushSettings configured={pushConfigured()} />
 
       {isAdmin && (
         <section className="flex flex-col gap-3">

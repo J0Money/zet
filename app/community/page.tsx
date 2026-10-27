@@ -25,7 +25,9 @@ export default async function CommunityPage() {
       : <ul className="flex flex-col gap-4">{posts.map((post) => <li key={post.id}>
         <article className="zet-panel space-y-4">
           <h2 className="font-semibold">{post.name}{post.isMine ? " (dig)" : ""}</h2>
+          {post.caption && <p className="whitespace-pre-wrap break-words text-sm">{post.caption}</p>}
           <CommunitySummaryCard summary={post.summary} />
+          <Link href={`/community/${post.id}`} className="inline-flex min-h-11 items-center text-sm font-medium text-indigo-600 dark:text-indigo-400">Se og skriv kommentarer →</Link>
           {post.isMine ? <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-zinc-500">{post.count} har sagt Stærkt!</p><WithdrawPost postId={post.id} />
           </div> : <CommunityReaction postId={post.id} count={post.count} reacted={post.reacted} />}
