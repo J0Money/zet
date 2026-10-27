@@ -105,6 +105,7 @@ export async function getEntries(userId: string): Promise<Entry[]> {
       exercise_id: workoutSet.exercise_id,
       reps: workoutSet.reps,
       weight_kg: workoutSet.weight_kg,
+      created_at: workoutSet.created_at,
     })
     .from(workoutSet)
     .innerJoin(workoutTable, eq(workoutSet.workout_id, workoutTable.id))
@@ -118,22 +119,28 @@ export async function getEntries(userId: string): Promise<Entry[]> {
       exercise_id: workoutCardio.exercise_id,
       distance_km: workoutCardio.distance_km,
       duration_sec: workoutCardio.duration_sec,
+      created_at: workoutCardio.created_at,
     })
     .from(workoutCardio)
     .innerJoin(workoutTable, eq(workoutCardio.workout_id, workoutTable.id))
     .where(eq(workoutTable.user_id, userId))
     .orderBy(workoutCardio.created_at);
 
-  const strengthEntries: StrengthEntry[] = strengthRows.map((row) => ({
-    kind: "strength",
-    ...row,
-  }));
-  const cardioEntries: CardioEntry[] = cardioRows.map((row) => ({
-    kind: "cardio",
-    ...row,
-  }));
-
-  return [...strengthEntries, ...cardioEntries];
+  // Styrke og cardio ligger i hver sin tabel, så de to lister flettes efter
+  // created_at, ellers kom alle cardio-registreringer efter alle styrkesæt, uanset
+  // hvornår de blev logget. Begge kolonner har samme type, så tidspunkterne kan
+  // sammenlignes direkte. Sorteringen er stabil, så ens tider beholder rækkefølgen.
+  const timed: { at: number; entry: Entry }[] = [
+    ...strengthRows.map(({ created_at, ...row }) => ({
+      at: created_at.getTime(),
+      entry: { kind: "strength", ...row } as StrengthEntry,
+    })),
+    ...cardioRows.map(({ created_at, ...row }) => ({
+      at: created_at.getTime(),
+      entry: { kind: "cardio", ...row } as CardioEntry,
+    })),
+  ];
+  return timed.sort((a, b) => a.at - b.at).map((item) => item.entry);
 }
 
 // Returns the workout only if it exists and belongs to this user, undefined
