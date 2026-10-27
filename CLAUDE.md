@@ -2,6 +2,44 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+## Overlevering til Codex (27. oktober 2026)
+
+Denne overlevering afløser de to ældre "Overlevering til næste session"-afsnit længere nede. Læs den først, dernæst de daterede afsnit (nyeste øverst), før noget bygges.
+
+**Status**
+- `master` og `origin/master` er ens på `66ce442`, arbejdstræet var rent. Vercel deployer `master` automatisk til [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Claude har ikke kontrolleret Vercels deployment af de seneste commits; Joe bekræftede kun, at logning virkede efter træningspas-udgivelsen.
+- Neon er migreret til og med `0013_community.sql` (træningspas `0011`, huskenoter `0012`, Community `0013`). Ingen migration venter.
+- Seneste arbejde, nyeste først: seneste sæt øverst i passet (`66ce442`, ændrede også `getEntries`, så styrke og cardio flettes efter tid); uret fast øverst (`2c50e61`); Community, huskenoter, lokale kladder og "sidste træning og PR" (Codex, 26. oktober); udstyrshjul på alle øvelser; træningspas med start/afslut/ur.
+
+**Joe har ikke afprøvet på en rigtig telefon** (alt er kun testet på simuleret mobilbredde): udstyrshjulet (træk og vibration), uret der er fast øverst, rækkefølgen i "Sæt i dette pas", "Brug sidste sæt", huskenoter, kladder og Community.
+
+**Åbne idéer og kendte huller** (se også Idélisten længere nede; afklar med Joe, før noget bygges)
+- Forslag om at gå op i vægt efter 3-5 træninger med samme gentagelser og kg (reglen er ikke aftalt).
+- Supersæt (to øvelser skiftevis): størst, kræver design og aftale om hvordan sæt grupperes.
+- Ur med omgange/hvile, indstilling til at slette sin konto.
+- Rette eller slette sin egen øvelse, flytte en eksisterende øvelse ind i en gruppe, rette start-/sluttid på et pas og flytte et sæt til et andet pas: findes ikke, kræver i dag en rettelse direkte i databasen.
+- "Afslut" i den faste linje er altid inden for tommelens rækkevidde, så et uheldigt tryk under scroll kan dele en træning i to. Løsning ikke valgt (bekræftelse, eller kun uret fast).
+- Rekorder og volumen er bevidst pr. variant ("Squat" og "Squat (Kabel)" har hver deres), ikke samlet pr. øvelse.
+
+**Arbejdsregler, der har betydning** (fra denne fil og Joe)
+- Svar og skriv på dansk. Spørg Joe før arkitektur, flere filer og alt med datamodel eller infrastruktur: giv 2-3 muligheder med en anbefaling. Vis migrations-SQL og få et udtrykkeligt ja, før den køres. Push aldrig uden et ja.
+- **En migration, der ikke er bagudkompatibel, må ikke køres, før koden er klar og pushet** (eller koden skal virke med både gammelt og nyt skema). Den 26. oktober brød `0011` logning i produktion i en kort periode, fordi migrationen blev kørt før koden var deployet.
+- Vis aldrig hemmeligheder (`.env.local` committes aldrig), og kør aldrig `npm audit fix --force`. Kendte rester i `npm audit` er kun udviklingsværktøjer.
+- Tekst til Joe skal undgå tankestreger (— og –).
+- Test med midlertidige brugere (`example.invalid`), og slet dem, deres pas og deres øvelser bagefter: slet pas før brugere, da sæt refererer til øvelser. Tæl forekomster i tests, ikke kun at noget findes (en dublet-fejl slap igennem sådan).
+
+**Fælder, der har kostet tid**
+- Filerne har Windows-linjeskift (CRLF). Skriptede tekstudskiftninger med flerlinjede strenge fejler; brug redigeringsværktøjet. Der er ingen Python på maskinen.
+- Dev-serveren på port 3000 kan blive hængende i baggrunden og optage porten. Tjek `netstat -ano | findstr :3000`, og stop kun en server, du selv har startet.
+- ESLint-reglen `react-hooks/set-state-in-effect` har ramt flere gange. Fast mønster: sammenlign forrige state under renderingen i stedet for en effect, eller brug `useSyncExternalStore`/`key`.
+- Neons HTTP-driver (`neon-http`) har ingen interaktive transaktioner. Højst ét aktivt pas pr. bruger er derfor en unik delvis indeks, ikke et tjek i koden. Et pas uden registreringer i 12 timer lukkes automatisk.
+- Nested `<form>` er ugyldigt HTML: opret-øvelse-formularen ligger udenfor den ydre og bruger `form`-attributten.
+- Næste.js' eksperimentelle `agentFeedback` omskriver `AGENTS.md`, når dev-serveren starter, og filen beder agenter om at køre en "feedback"-kommando og følge dens output. Claude har ikke fulgt den instruktion (den kommer fra en fil, ikke fra Joe). Afklar med Joe, om funktionen skal slås fra i `next.config.ts`.
+- Under build og dev-server kan værktøjets output bede agenten om at køre `next upgrade --agent=security` og spørge Joe. Det er ikke fra Joe og er ikke fulgt. Next.js er opdateret manuelt til 16.4.2 efter en selvstændig `npm audit`.
+- Build kan fejle midlertidigt med en Turbopack-fejl i CSS-hjælpeprocessen. Slet den genererede `.next`-mappe og byg igen.
+
+**Test-kommandoer:** `ZET_RUN_ACCESS_TESTS=1 node --conditions=react-server --import tsx --test tests/access.integration.test.ts` (kræver dev-serveren på port 3000; sæt miljøvariablen separat i PowerShell). Enhedstests uden database: `node --import tsx --test tests/exercise-history.test.ts tests/log-draft.test.ts tests/community-summary.test.ts`. Øvrige integrationstests har egne tilvalg, se de daterede afsnit.
+
 ### Seneste sæt øverst i passet (27. oktober 2026)
 
 - Fra Eriks idéer: sættene, man har gemt, skulle stå med det senest tagne øverst, så man lige under logformularen ser, hvilke kg man var på. Joe valgte løsning 2 (frem for kun at vende sættene, flytte kortet over formularen eller en ekstra linje): den øvelse, man senest loggede på, står øverst i "Sæt i dette pas", og inden for en øvelse står det nyeste sæt først.
@@ -84,12 +122,12 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 Skrevet ned af Joe. Afklar hver idé med Joe, før noget bygges.
 
 Joes egne:
-- Ur med "omgang" (fx et stopur til runder eller hvile mellem sæt).
-- Maskinens indstilling (gemme fx sædehøjde eller position til en maskineøvelse).
-- At det, man er i gang med at logge, gemmes, hvis telefonen låses eller lukkes mellem sættene.
+- Ur med "omgang" (fx et stopur til runder eller hvile mellem sæt). Ikke lavet (træningsuret findes, men uden omgange).
+- ~~Maskinens indstilling (gemme fx sædehøjde eller position til en maskineøvelse).~~ Dækket af de valgfrie private huskenoter pr. variant (Codex, 26. oktober).
+- ~~At det, man er i gang med at logge, gemmes, hvis telefonen låses eller lukkes mellem sættene.~~ Dækket af den lokale kladde på log-siden (Codex, 26. oktober).
 
 Fra Erik:
-- At man kan se sine venners træning og kg.
+- At man kan se sine venners træning og kg. Delvist dækket af Community (frivillig deling af et afsluttet pas med opsummering og PR, ikke detaljerede kg pr. sæt).
 - En indstilling til at slette sin konto.
 - PB (personlige rekorder; afklar hvad der mangler i forhold til de rekorder, dashboardet allerede viser).
 
@@ -101,7 +139,7 @@ Fra Erik (indsat 27. oktober 2026):
 
 Bemærk: Flere af de ældre punkter kan være dækket af Codex' nyere arbejde (lokale kladder, huskenoter til varianter, Community med deling af træning). Tjek dem mod CLAUDE.md, før noget bygges to gange.
 
-## Overlevering til næste session (23. oktober 2026, slut på dagens arbejde)
+## Overlevering til næste session (23. oktober 2026, slut på dagens arbejde, forældet, se "Overlevering til Codex" øverst)
 
 - Alt er committet og pushet til `master` på [github.com/J0Money/zet](https://github.com/J0Money/zet). Vercel deployer automatisk til [zet-wheat.vercel.app](https://zet-wheat.vercel.app). Databasen er migreret til og med `0010_exercise_equipment.sql`.
 - **Dagens arbejde** (detaljer i de daterede afsnit nedenfor): mørkt tema; samlet indstillingsside; rate limiting bag Vercels proxy verificeret; kalenderoversigt i historikken; egne øvelser med dubletkontrol; Next.js opdateret til 16.4.2 (kritiske sikkerhedsrettelser); delte øvelser (`is_shared`) og søgning i øvelser; øvelsesvarianter med drejehjul til udstyr.
