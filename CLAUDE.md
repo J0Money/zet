@@ -2,6 +2,13 @@
 
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
+### Seneste sæt øverst i passet (27. oktober 2026)
+
+- Fra Eriks idéer: sættene, man har gemt, skulle stå med det senest tagne øverst, så man lige under logformularen ser, hvilke kg man var på. Joe valgte løsning 2 (frem for kun at vende sættene, flytte kortet over formularen eller en ekstra linje): den øvelse, man senest loggede på, står øverst i "Sæt i dette pas", og inden for en øvelse står det nyeste sæt først.
+- `app/log/page.tsx`: grupperne sorteres efter, hvornår deres seneste registrering blev logget, og sættene vendes. Sættene beholder deres nummer ("Sæt 3" er stadig det tredje man loggede), ikke deres plads i listen.
+- **Fejl fundet under test og rettet:** `getEntries()` i `lib/workout-store.ts` lagde alle styrkesæt først og alle cardio-registreringer bagefter, så en cardio-registrering altid stod som "nyeste", selv om den var logget før et senere styrkesæt. De to lister flettes nu efter `created_at` (stabil sortering). Typen `Entry` er uændret. Det gælder alle steder, der bruger `getEntries`, og gør rækkefølgen sand på tværs af typerne.
+- Testet i browseren med en testbruger (slettet bagefter): sæt logget i rækkefølgen bænk, bænk, squat, bænk, løb, squat giver Squat, Løb, Bænkpres øverst til nederst med nyeste sæt først; et nyt bænk-sæt logget i browseren hopper øverst som "Sæt 4". TypeScript, ESLint, build, `tests/access.integration.test.ts` (7) og `tests/exercise-history.test.ts` (3) bestod.
+
 ### Uret følger med, når man scroller (27. oktober 2026)
 
 - Fra Eriks idéer (gemt i idélisten): uret skulle følge med ned, når man scroller, ellers ser man det ikke. Valgt af Joe at gøre linjen fast øverst, frem for at flytte uret et andet sted.
@@ -88,7 +95,7 @@ Fra Erik:
 
 Fra Erik (indsat 27. oktober 2026):
 - Forslag om at gå op i vægt: efter 3-5 træninger med de samme gentagelser og kg kommer appen med et forslag som "er det tid til at gå et par kg op?".
-- De sæt, man har gemt i passet, skal stå med det senest tagne øverst, så man lige under kan se, hvilke kg man var på, når man skal logge et sidste sæt.
+- ~~De sæt, man har gemt i passet, skal stå med det senest tagne øverst, så man lige under kan se, hvilke kg man var på, når man skal logge et sidste sæt.~~ Lavet 27. oktober 2026, se afsnittet "Seneste sæt øverst i passet".
 - Muligheden for at have et supersæt i gang (to øvelser skiftevis).
 - ~~Uret skal følge med ned, når man scroller (ellers ser man det ikke), eller flyttes et andet sted hen.~~ Lavet 27. oktober 2026, se afsnittet "Uret følger med, når man scroller".
 

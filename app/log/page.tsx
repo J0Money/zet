@@ -39,11 +39,19 @@ export default async function LogPage() {
     : [];
 
   // Grupperer passets sæt pr. øvelse (fx "Bænkpres" med sæt 1, 2, 3 under sig),
-  // i stedet for én flad linje pr. sæt. Rækkefølgen følger, hvornår hver
-  // øvelse først blev logget i passet.
-  const groupedEntries: { exerciseId: string; exerciseName: string; entries: Entry[] }[] = [];
+  // i stedet for én flad linje pr. sæt. Det senest loggede står øverst: den
+  // øvelse, man sidst loggede på, står først, og inden for en øvelse står det
+  // nyeste sæt først, så man lige under formularen ser, hvad man var på. Sættene
+  // beholder deres nummer ("Sæt 3" er stadig det tredje, man loggede).
+  // sessionEntries er sorteret efter, hvornår de blev logget (ældst først).
+  const groupedEntries: {
+    exerciseId: string;
+    exerciseName: string;
+    entries: { entry: Entry; number: number }[];
+    lastLoggedIndex: number;
+  }[] = [];
   const groupIndexByExerciseId = new Map<string, number>();
-  for (const entry of sessionEntries) {
+  sessionEntries.forEach((entry, position) => {
     let index = groupIndexByExerciseId.get(entry.exercise_id);
     if (index === undefined) {
       index = groupedEntries.length;
@@ -52,10 +60,15 @@ export default async function LogPage() {
         exerciseId: entry.exercise_id,
         exerciseName: exerciseNameById.get(entry.exercise_id) ?? "Ukendt øvelse",
         entries: [],
+        lastLoggedIndex: position,
       });
     }
-    groupedEntries[index].entries.push(entry);
-  }
+    const group = groupedEntries[index];
+    group.entries.push({ entry, number: group.entries.length + 1 });
+    group.lastLoggedIndex = position;
+  });
+  groupedEntries.sort((a, b) => b.lastLoggedIndex - a.lastLoggedIndex);
+  for (const group of groupedEntries) group.entries.reverse();
 
   return (
     <div className="zet-page flex flex-col gap-6">
@@ -92,9 +105,9 @@ export default async function LogPage() {
               <li key={group.exerciseId} className="py-3 first:pt-0 last:pb-0">
                 <p className="font-medium text-zinc-900 dark:text-zinc-50">{group.exerciseName}</p>
                 <ul className="mt-1.5 flex flex-col gap-1">
-                  {group.entries.map((entry, index) =>
+                  {group.entries.map(({ entry, number }) =>
                     entry.kind === "strength" ? (
-                      <StrengthEntryRow key={entry.id} entry={entry} label={`Sæt ${index + 1}`} />
+                      <StrengthEntryRow key={entry.id} entry={entry} label={`Sæt ${number}`} />
                     ) : (
                       <CardioEntryRow key={entry.id} entry={entry} />
                     ),
