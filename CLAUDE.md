@@ -4,6 +4,21 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 
 ## Overlevering til Codex (27. oktober 2026)
 
+### Profilbilleder (27. oktober 2026)
+
+- Joe valgte upload via Vercel Blob. Privat lager `zet-profile-images` er oprettet i Frankfurt og forbundet til Production og Development. Token er hentet til ignoreret `.env.local` uden udskrift. Ingen migration: eksisterende `user.image` bruges.
+- Indstillinger har vælg/forhåndsvisning/gem/fjern. JPG/PNG/WebP op til 20 MB komprimeres og centerbeskæres i browseren. Serveren accepterer højst 800 KB, validerer med Sharp og gemmer 512×512 WebP uden metadata. Server Actions fastholder loginbaseret ejerskab. Samtidige ændringer bruger compare-and-set; tidligere blobs ryddes op efter en gemt ændring.
+- Billeder vises ved opslag og kommentarer, med initial som fallback. En loginbeskyttet billedrute streamer det private billede med `private, no-store`. Ingen eksterne billed-URL'er accepteres af ruten.
+- Tre billedtests og de øvrige målrettede tests består (10 i alt), begge databaseintegrationstests består, TypeScript, ESLint og produktionsbuild består. Browserkontrol af upload og genindlæsning består på separat testadresse, også ved 390 px uden overløb. Testprofiler og testbilleder er slettet. Localhost:3000 viser nyeste build til Joes gennemsyn.
+- Blob-pakkens underliggende Zod havde en kendt høj sårbarhed. `overrides.zod` er sat målrettet til 4.6.6. Nu kun de fire kendte moderate udviklingsadvarsler, ingen `audit fix --force` kørt.
+- Joe har gennemset localhost og godkendt samlet commit og push af Community-styling og profilbilleder. Blob-token er kontrolleret i Vercels Production-miljø før udgivelse.
+
+### Community-styling (27. oktober 2026)
+
+- Community er gjort smallere med tydelige afsenderhoveder, initial-avatarer, datolinje, kompakte træningstal og en kortere delingsboks. Ejerhandlinger ligger i en fold-ud-menu. Kommentarer vises som bobler; de to seneste står fremme, og tidligere kommentarer kan foldes ud. Kommentarfelt og Send ligger på samme række.
+- Styling er afgrænset til Community via `app/community/community.css`. Ingen ændring i data eller delingsrettigheder.
+- TypeScript, målrettet ESLint og produktionsbuild består. Den lokale produktionsbuild er visuelt kontrolleret ved 390 px i lyst og mørkt tema med en midlertidig testkonto: intet vandret overløb, og kommentarfeltets Send aktiveres ved indtastning. Ingen testkommentarer sendt. Testkonto og lokal testfil er slettet, og egen server stoppet.
+
 ### Community direkte i feedet og træningsdetaljer (27. oktober 2026)
 
 - Joe har godkendt kommentarer direkte under opslagene samt fold-ud-visning af øvelser, sæt, kg, gentagelser og cardio. Implementeret og godkendt til commit og push.
