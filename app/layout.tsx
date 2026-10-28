@@ -9,7 +9,7 @@ import "./globals.css";
 // indledende HTML). Uden det ville en bruger med mørkt tema kort se den
 // lyse udgave blinke, før React når at overtage. Gemt valg i localStorage
 // vinder, ellers følges telefonens/browserens systemindstilling.
-const themeInitScript = `(function(){try{var t=localStorage.getItem("zet-theme");var dark=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(dark)document.documentElement.classList.add("dark");}catch(e){}})();`;
+const themeInitScript = `(function(){var t;try{t=localStorage.getItem("zet-theme");}catch(e){}if(!["light","dark","warm","electric","blush"].includes(t))t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.classList.toggle("dark",t==="dark"||t==="electric");})();`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
