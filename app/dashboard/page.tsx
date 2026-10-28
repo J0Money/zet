@@ -2,9 +2,11 @@ import { requireUser } from "@/lib/session";
 import { connection } from "next/server";
 import Link from "next/link";
 import "./dashboard.css";
+import "./plates.css";
 import { LatestWorkoutsCard } from "@/app/components/latest-workouts-card";
 import { PersonalRecordsCard } from "@/app/components/personal-records-card";
 import { StreakCard } from "@/app/components/streak-card";
+import { WeeklyMedalCard } from "@/app/components/weekly-medal-card";
 import { WeeklyVolumeCard } from "@/app/components/weekly-volume-card";
 import { WeeklyVolumeHistoryCard } from "@/app/components/weekly-volume-history-card";
 import { WeightProgressionCard } from "@/app/components/weight-progression-card";
@@ -36,6 +38,7 @@ export default async function DashboardPage() {
         <StreakCard workouts={workouts} />
       </header>
       <div className="zet-content">
+        <WeeklyMedalCard workouts={workouts} entries={entries} />
         <WeeklyVolumeCard workouts={workouts} entries={entries} />
         <WeeklyVolumeHistoryCard workouts={workouts} entries={entries} />
         <WeightProgressionCard workouts={workouts} entries={entries} exercises={exercises} />

@@ -1,0 +1,79 @@
+
+ .zet-plates { --surface:var(--background); --text:var(--foreground); --sub:var(--zet-muted); --line:var(--zet-border); color:var(--text); }
+.zet-plates .collection { background:var(--surface); color:var(--text); border-radius:16px; padding:28px; }
+.zet-plates header { display:flex; gap:16px; justify-content:space-between; align-items:baseline; }
+.zet-plates header h3 { margin:0; font-size:23px; letter-spacing:-.04em; font-weight:650; }
+.zet-plates .example { font-size:11px; color:var(--sub); }
+.zet-plates .totals { display:grid; grid-template-columns:repeat(4,1fr); margin-top:28px; gap:12px; }
+.zet-plates .totals strong { display:block; font-size:27px; font-weight:550; }
+.zet-plates .totals small { display:flex; align-items:center; gap:6px; margin-top:5px; font-size:12px; color:var(--sub); }
+.zet-plates .dot { display:inline-block; width:7px; height:7px; background:var(--metal); border-radius:50%; }
+.zet-plates.bronze, .zet-plates .bronze { --edge:#6d4029; --metal:#b07950; --shine:#e4bd95; --ink:#442819; }
+.zet-plates.silver, .zet-plates .silver { --edge:#596269; --metal:#a5b0b7; --shine:#e3e9ed; --ink:#374047; }
+.zet-plates.gold, .zet-plates .gold { --edge:#73521d; --metal:#b7964c; --shine:#f2db9a; --ink:#4e3918; }
+.zet-plates.diamond, .zet-plates .diamond { --edge:#248cb1; --metal:#77d4f1; --shine:#e4faff; --ink:#164c65; }
+.zet-plates .rack-scroll { overflow-x:auto; overscroll-behavior-x:contain; scrollbar-color:#62686e #24272a; margin-top:24px; }
+.zet-plates .rack { position:relative; box-sizing:content-box; width:2332px; padding:32px 16px; }
+.zet-plates .shaft { position:absolute; left:0; right:0; top:calc(50% - 7.5px); height:15px; border-radius:5px; background:linear-gradient(#42474c,#dce1e4 32%,#7c858c 48%,#30353b 90%); box-shadow:0 7px 13px #0008; }
+.zet-plates .shaft::before,.zet-plates .shaft::after { content:''; position:absolute; width:8px; height:28px; top:-7px; border-radius:3px; background:linear-gradient(90deg,#555e65,#cbd1d6,#41474b); }
+.zet-plates .shaft::before { left:4px; } .zet-plates .shaft::after { right:4px; }
+.zet-plates .items { position:relative; display:flex; justify-content:flex-start; align-items:center; gap:0; min-height:160px; }
+.zet-plates .pick { position:relative; appearance:none; border:0; padding:0; background:none; color:inherit; width:44px; height:160px; flex:0 0 44px; display:grid; place-items:center; }
+.zet-plates .disc { display:block; position:relative; width:100%; aspect-ratio:1; border-radius:50%; background:conic-gradient(from 25deg,var(--metal),var(--shine) 13%,var(--metal) 28%,var(--edge) 48%,var(--metal) 64%,var(--shine) 81%,var(--metal)); box-shadow:5px 2px 0 var(--edge),8px 8px 12px #0009,inset 0 0 0 1px #ffffff60,inset 0 0 0 5px #0003; }
+.zet-plates .pick .disc { width:36px; height:160px; aspect-ratio:auto; border-radius:9px; background:linear-gradient(90deg,var(--edge),var(--metal) 16%,var(--shine) 29%,var(--metal) 40%,var(--metal) 77%,var(--edge) 88%,var(--shine) 93%,var(--edge)); box-shadow:2px 3px 5px #0009,inset 0 1px 1px #fff8,inset 0 -2px 2px #0007; }
+.zet-plates .pick .disc::before { inset:5px 5px; border-radius:3px; border:0; box-shadow:inset 1px 0 #ffffff30,inset -1px 0 #0003; background:repeating-linear-gradient(0deg,transparent 0 3px,#ffffff08 3px 4px); }
+.zet-plates .pick .disc > span { display:none; }
+.zet-plates .pick[aria-pressed=true]::after { content:''; position:absolute; bottom:-14px; width:5px; height:5px; border-radius:50%; background:var(--shine); }
+.zet-plates .pick.diamond .disc { box-shadow:2px 3px 5px #0009,inset 0 1px 1px #eaffff,inset 0 -2px 2px #248cb1,0 0 14px #66d9ff20; }
+.zet-plates .disc::before { content:''; position:absolute; inset:9%; border-radius:50%; border:1px solid #ffffff35; box-shadow:0 0 0 3px #0002,inset 0 1px 2px #0006; background:repeating-radial-gradient(circle,transparent 0 2px,#ffffff09 2px 3px); }
+.zet-plates .brand { position:absolute; top:14%; left:0; right:0; text-align:center; color:var(--ink); font-size:clamp(10px,2vw,18px); font-weight:850; letter-spacing:.15em; text-shadow:0 1px 0 #fff5; }
+.zet-plates .hub { position:absolute; inset:37%; border-radius:50%; background:conic-gradient(#f0f3f4,#6e787f,#d5dee2,#515a60,#f0f3f4); box-shadow:0 1px 3px #0009; }
+.zet-plates .hub::after { content:''; position:absolute; inset:25%; border-radius:50%; background:var(--surface); box-shadow:inset 1px 3px 3px #000c,0 1px 0 #fff8; }
+.zet-plates .grip { position:absolute; top:40%; width:12%; height:27%; border-radius:45%; background:var(--surface); box-shadow:inset 1px 3px 3px #000,0 1px 0 #fff6; }
+.zet-plates .left { left:15%; transform:rotate(15deg); } .zet-plates .right { right:15%; transform:rotate(-15deg); }
+.zet-plates .stamp { position:absolute; bottom:15%; left:0; right:0; text-align:center; font-size:9px; letter-spacing:.06em; color:var(--ink); font-weight:750; }
+.zet-plates .diamond .disc { box-shadow:5px 2px 0 #248cb1,8px 8px 12px #0009,0 0 18px #66d9ff30,inset 0 0 0 1px #ecfcff,inset 0 0 0 4px #56bbde; }
+.zet-plates .pager { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0 22px; color:var(--sub); font-size:11px; }
+.zet-plates .pager button { background:transparent; border:1px solid var(--line); color:var(--text); border-radius:8px; min-width:44px; min-height:44px; font-size:19px; }
+.zet-plates .pager button:disabled { opacity:.3; }
+.zet-plates .detail { display:flex; align-items:center; gap:22px; padding-top:22px; border-top:1px solid var(--line); }
+.zet-plates .hero { width:102px; flex-shrink:0; padding:0 6px 6px 0; }
+.zet-plates .hero .brand { font-size:17px; }
+.zet-plates .detail h4 { font-size:22px; font-weight:600; margin:0 0 7px; }
+.zet-plates .detail p { color:var(--sub); margin:5px 0; font-size:13px; }
+.zet-plates .detail small { display:block; margin-top:12px; color:var(--sub); font-size:11px; }
+@media(max-width:450px) { .zet-plates .collection { padding:22px 16px; } .zet-plates .rack { padding-left:8px;padding-right:8px; } .zet-plates .pick .stamp { display:none; } .zet-plates header h3 { font-size:21px; } .zet-plates .detail { gap:18px; } }
+@media(prefers-reduced-motion:reduce) { .zet-plates .pick .disc { transition:none; } }
+
+.zet-plates { min-width:0; }
+.weekly-plate { width:76px; flex-shrink:0; padding:0 5px 5px 0; }
+.weekly-plate .disc { aspect-ratio:1; }
+.weekly-plate .brand { font-size:14px; }
+.weekly-plate .stamp { font-size:8px; }
+.weekly-plate .disc[data-empty="true"] { opacity:.35; }
+.zet-plates .pick, .zet-plates button { cursor:pointer; }
+.zet-plates .pick:focus-visible { outline-offset:4px; }
+.zet-plates .collection-note { font-size:12px; line-height:1.6; color:var(--sub); margin-top:18px; }
+.zet-plates .plate-year { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub); }
+.zet-plates .plate-year select { background:var(--zet-panel-bg); color:var(--foreground); border:1px solid var(--line); border-radius:6px; padding:8px; min-height:44px; font-size:16px; }
+.zet-medal-collection > .zet-plates { padding-top:20px; }
+
+/* Hele årsstangen passer i bredden. Ugevælgeren giver et stort trykfelt på mobil. */
+.zet-plates .rack-scroll { overflow:visible; margin-top:14px; }
+.zet-plates .rack { width:auto; box-sizing:border-box; padding:20px 12px; }
+.zet-plates .items { display:grid; grid-template-columns:repeat(53,minmax(0,1fr)); min-height:80px; }
+.zet-plates .pick { width:100%; height:80px; min-width:0; }
+.zet-plates .pick .disc { width:calc(100% - 1px); height:80px; border-radius:3px; }
+.zet-plates .pick .disc::before { inset:3px 1px; }
+.zet-plates .shaft { height:9px; top:calc(50% - 4.5px); box-shadow:0 3px 6px #0005; }
+.zet-plates .shaft::before,.zet-plates .shaft::after { width:5px; height:20px; top:-5px; }
+.zet-plates .plate-selection { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin:8px 0 18px; font-size:12px; color:var(--sub); }
+.zet-plates .plate-selection label { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.zet-plates .plate-selection select { max-width:100%; min-height:44px; background:var(--zet-panel-bg); color:var(--foreground); border:1px solid var(--line); border-radius:6px; padding:6px; font-size:14px; }
+.zet-plates .hero { width:80px; }
+.zet-plates .hero .brand { font-size:14px; }
+.zet-plates .totals { margin-top:18px; }
+.zet-plates .totals strong { font-size:23px; }
+.weekly-plate { width:64px; }
+.weekly-plate .brand { font-size:12px; }
+@media(max-width:600px) { .zet-plates .plate-selection select { font-size:16px; } }

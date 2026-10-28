@@ -65,6 +65,52 @@ function getStartOfWeek(date: Date): Date {
   return start;
 }
 
+export const weeklyMedals = [
+  { days: 2, name: "Bronze", icon: "🥉" },
+  { days: 3, name: "Sølv", icon: "🥈" },
+  { days: 4, name: "Guld", icon: "🥇" },
+  { days: 5, name: "Diamant", icon: "💎" },
+] as const;
+
+export function getWeeklyMedal(workouts: Workout[], entries: Entry[], today = getTodayInCopenhagen()) {
+  const start = getStartOfWeek(new Date(today));
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setUTCDate(date.getUTCDate() + index);
+    return date.toISOString().slice(0, 10);
+  });
+  const withEntries = new Set(entries.map((entry) => entry.workout_id));
+  // Ældre pas uden tidsstempler er afsluttede, ligesom i historikken.
+  const trained = new Set(workouts.filter((workout) =>
+    days.includes(workout.date) && workout.date <= today &&
+    (!workout.started_at || workout.ended_at) && withEntries.has(workout.id),
+  ).map((workout) => workout.date));
+  const count = trained.size;
+  const medal = weeklyMedals.filter((item) => count >= item.days).at(-1) ?? null;
+  const next = weeklyMedals.find((item) => count < item.days) ?? null;
+  return { count, medal, next, days: days.map((date) => ({ date, trained: trained.has(date) })) };
+}
+
+export function getMedalCollection(workouts: Workout[], entries: Entry[], today = getTodayInCopenhagen()) {
+  const currentWeek = getStartOfWeek(new Date(today)).toISOString().slice(0, 10);
+  const withEntries = new Set(entries.map((entry) => entry.workout_id));
+  const weeks = new Map<string, Set<string>>();
+  for (const workout of workouts) {
+    if (workout.date >= currentWeek || (workout.started_at && !workout.ended_at) || !withEntries.has(workout.id)) continue;
+    const start = getStartOfWeek(new Date(workout.date)).toISOString().slice(0, 10);
+    const days = weeks.get(start) ?? new Set<string>();
+    days.add(workout.date);
+    weeks.set(start, days);
+  }
+  return [...weeks.entries()].sort(([a], [b]) => b.localeCompare(a)).flatMap(([start, days]) => {
+    const medal = weeklyMedals.filter((item) => days.size >= item.days).at(-1);
+    if (!medal) return [];
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    return [{ start, end: end.toISOString().slice(0, 10), count: days.size, medal }];
+  });
+}
+
 export function getWeeklyTrainingSummary(
   workouts: Workout[],
   entries: Entry[],

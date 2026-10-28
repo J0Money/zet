@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from "react";
 
 const themes = [
-  { id: "light", name: "Lyst", description: "Rent og enkelt", colors: ["#f7f7fa", "#ffffff", "#4f46e5"] },
-  { id: "dark", name: "Mørkt", description: "Klassisk mørkt", colors: ["#09090b", "#27272a", "#818cf8"] },
+  { id: "light", name: "Original", description: "Rent og enkelt", colors: ["#f7f7fa", "#ffffff", "#4f46e5"] },
+  { id: "dark", name: "Midnight", description: "Klassisk mørkt", colors: ["#09090b", "#27272a", "#818cf8"] },
   { id: "warm", name: "Warm Studio", description: "Creme og terracotta", colors: ["#f4efe6", "#fffaf3", "#ae431f"] },
   { id: "electric", name: "Electric", description: "Midnatsblå og lavendel", colors: ["#101329", "#1a2040", "#b6a0ff"] },
   { id: "blush", name: "Blush", description: "Lyserød og hindbær", colors: ["#fff0f5", "#fffafd", "#ad3167"] },
