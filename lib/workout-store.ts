@@ -4,6 +4,7 @@
 // henter dette id fra requireUser(), aldrig fra formularer eller URL-parametre.
 
 import "server-only";
+import { displayExerciseName } from "./exercise-names";
 import { and, eq, or, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
@@ -16,7 +17,7 @@ import type { CardioEntry, Entry, Equipment, Exercise, ExerciseType, MuscleGroup
 // ren SQL, men neon-http-driveren parser ikke Postgres' array-tekstformat
 // til et JS-array, json_agg giver json, som driveren parser korrekt.
 export async function getExercises(userId: string): Promise<Exercise[]> {
-  return db
+  const rows = await db
     .select({
       id: exercise.id,
       user_id: exercise.user_id,
@@ -30,6 +31,7 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
     .leftJoin(exerciseMuscleGroup, eq(exerciseMuscleGroup.exercise_id, exercise.id))
     .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId), eq(exercise.is_shared, true)))
     .groupBy(exercise.id);
+  return rows.map((row) => ({ ...row, name: displayExerciseName(row.name) }));
 }
 
 // Opretter en øvelse, der er delt med alle (is_shared), men stadig kender sin
@@ -68,7 +70,7 @@ export async function createExercise(
   return {
     id: created.id,
     user_id: created.user_id,
-    name: created.name,
+    name: displayExerciseName(created.name),
     type: created.type,
     muscle_groups: input.muscleGroups,
     group_name: created.group_name,
