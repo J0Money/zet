@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { formatShortDateDanish } from "@/lib/dates";
 import type { Entry, Workout } from "@/lib/types";
-import { getWeeklyVolumeHistory } from "@/lib/workouts";
+import { getWeeklyVolumeHistory, getWeeklyTrainingSummary } from "@/lib/workouts";
 
 export function WeeklyVolumeHistoryCard({
   workouts,
@@ -20,6 +20,7 @@ export function WeeklyVolumeHistoryCard({
   workouts: Workout[];
   entries: Entry[];
 }) {
+  const summary = getWeeklyTrainingSummary(workouts, entries);
   const history = getWeeklyVolumeHistory(workouts, entries, 8);
   const hasAnyVolume = history.some((point) => point.totalVolumeKg > 0);
   const chartData = history.map((point) => ({
@@ -29,8 +30,9 @@ export function WeeklyVolumeHistoryCard({
 
   return (
     <section className="zet-panel">
-      <h2 className="text-base font-semibold tracking-tight">Styrkevolumen pr. uge</h2>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Samlet volumen de seneste 8 uger, så du kan se udviklingen, ikke kun denne uge.</p>
+      <h2 className="text-base font-semibold tracking-tight">Styrkevolumen</h2>
+      <p className="zet-volume-total">{summary.totalVolumeKg.toLocaleString("da-DK")} <span>kg</span></p>
+      <p className="zet-weeklyLabel">denne uge · seneste 8 uger nedenfor</p>
 
       {!hasAnyVolume ? (
         <p className="mt-6 rounded-xl bg-zinc-50 dark:bg-zinc-800 px-4 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">

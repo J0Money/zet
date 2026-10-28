@@ -1,5 +1,5 @@
 import type { Entry, Workout } from "@/lib/types";
-import { getWeightComparison } from "@/lib/fun-comparisons";
+
 import { getWeeklyTrainingSummary } from "@/lib/workouts";
 
 export function WeeklyVolumeCard({
@@ -11,21 +11,12 @@ export function WeeklyVolumeCard({
 }) {
   const summary = getWeeklyTrainingSummary(workouts, entries);
   const hasCardio = summary.cardio.totalDistanceKm > 0 || summary.cardio.totalDurationSec > 0;
-  const comparison = getWeightComparison(summary.totalVolumeKg);
+  if (!hasCardio) return null;
 
   return (
     <section className="zet-weekly">
-      <h2 className="zet-sectionTitle">Denne uge</h2>
+      <h2 className="zet-sectionTitle">Cardio denne uge</h2>
       <div className="zet-summaryGrid">
-        <div className="zet-metric">
-          <p className="zet-metricValue">{summary.workoutCount}</p>
-          <p className="zet-weeklyLabel">træninger</p>
-        </div>
-        <div className="zet-metric">
-          <p className="zet-metricValue">{summary.totalVolumeKg.toLocaleString("da-DK")} <span>kg</span></p>
-          <p className="zet-weeklyLabel">styrkevolumen</p>
-          {comparison && <p className="mt-1 text-xs text-zinc-400">{comparison}</p>}
-        </div>
         {hasCardio && (
           <>
             <div className="zet-metric">

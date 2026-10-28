@@ -74,6 +74,17 @@
 .zet-plates .hero .brand { font-size:14px; }
 .zet-plates .totals { margin-top:18px; }
 .zet-plates .totals strong { font-size:23px; }
-.weekly-plate { width:64px; }
+.weekly-plate { width:90px; }
+@media(max-width:600px) { .weekly-plate { width:68px; } }
 .weekly-plate .brand { font-size:12px; }
 @media(max-width:600px) { .zet-plates .plate-selection select { font-size:16px; } }
+.zet-dashboard .zet-plates .totals { display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:16px; }
+.zet-dashboard .zet-plates .totals > div { display:flex; align-items:baseline; gap:5px; }
+.zet-dashboard .zet-plates .totals strong { font-size:13px; font-weight:600; }
+.zet-dashboard .zet-plates .totals small { font-size:12px; }
+.zet-dashboard .zet-plates .rack { padding:14px 7px; }
+.zet-dashboard .zet-plates .items { min-height:62px; }
+.zet-dashboard .zet-plates .pick, .zet-dashboard .zet-plates .pick .disc { height:62px; }
+.zet-dashboard .zet-plates .plate-selection { margin-bottom:0; }
+.zet-dashboard .zet-plates .detail { margin-top:16px; }
+@media(max-width:600px) { .zet-dashboard .zet-plates .items { min-height:53px; } .zet-dashboard .zet-plates .pick, .zet-dashboard .zet-plates .pick .disc { height:53px; } }
