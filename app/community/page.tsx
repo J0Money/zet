@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { requireUser } from "@/lib/session";
-import { getCommunityFeed, getCommentsForPosts } from "@/lib/community";
+import { getCommunityFeed, getCommentsForPosts, getCommunityLeaderboard } from "@/lib/community";
+import { CommunityLeaderboard } from "@/app/components/community-leaderboard";
+import { CommunityTabs } from "@/app/components/community-tabs";
 import { CommunityComments } from "@/app/components/community-comments";
 import { AddWorkoutDetails } from "@/app/components/add-workout-details";
 import { ConfirmSubmitButton } from "@/app/components/confirm-submit-button";
@@ -17,16 +19,16 @@ export const instant = false;
 export default async function CommunityPage() {
   await connection();
   const user = await requireUser();
-  const posts = await getCommunityFeed(user.id);
+  const [posts, leaderboard] = await Promise.all([getCommunityFeed(user.id), getCommunityLeaderboard()]);
   const comments = await getCommentsForPosts(posts.map((post) => post.id));
   return <div className="zet-page community-page flex flex-col gap-6">
     <header className="zet-pageHeader">
       <p className="zet-brand">ZET</p><h1>Community</h1>
       <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Små sejre. Gode træninger. Sammen.</p>
     </header>
+    <CommunityTabs ranked={<CommunityLeaderboard exercises={leaderboard} currentUserId={user.id} />} feed={<>
     <div className="community-share">
-      <div><p className="community-eyebrow">DIT FÆLLESSKAB</p><h2>En træning værd at dele?</h2>
-      <p>Vælg et afsluttet pas fra din historik.</p></div>
+      <p>Giv hinanden lidt medvind.</p>
       <Link href="/history" className="community-share-button">Del træning <span aria-hidden="true">↗</span></Link>
     </div>
     {!posts.length ? <div className="zet-panel text-sm text-zinc-500 dark:text-zinc-400">Her er stille endnu. Den første delte træning starter fællesskabet.</div>
@@ -44,15 +46,15 @@ export default async function CommunityPage() {
             </div></details>}
           </header>
           {post.caption && <p className="community-caption">{post.caption}</p>}
-          <div className="community-workout"><CommunitySummaryCard summary={post.summary} /></div>
+          <div className="community-workout"><CommunitySummaryCard summary={post.summary} compact /></div>
           {post.isMine && !post.summary.exercises && <div className="community-add-details"><AddWorkoutDetails postId={post.id} summary={post.summary} /></div>}
-          <div className="community-reactions">{post.isMine ? <div>
-            <p className="text-sm text-zinc-500">{post.count > 0 ? `${post.count} har sagt Stærkt!` : "Dit pas er delt med fællesskabet"}</p>
+          <CommunityComments postId={post.id} userId={user.id} comments={comments.filter((comment) => comment.postId === post.id)} reaction={post.isMine ? <div>
+            <p className="text-sm text-zinc-500">{post.count > 0 ? `${post.count} har sagt Stærkt!` : "Ingen reaktioner endnu"}</p>
           </div> : <CommunityReaction postId={post.id} count={post.count} reacted={post.reacted} />}
-          </div>
-          <CommunityComments postId={post.id} userId={user.id} comments={comments.filter((comment) => comment.postId === post.id)} />
+          />
         </article>
       </li>)}</ul>}
     {posts.length === 50 && <p className="text-sm text-zinc-500">De seneste 50 delte træninger vises.</p>}
+    </>} />
   </div>;
 }

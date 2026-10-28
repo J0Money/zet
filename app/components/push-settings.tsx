@@ -64,8 +64,9 @@ export function PushSettings({ configured }: { configured: boolean }) {
     } finally { setBusy(false); }
   }
 
-  return <section className="zet-panel space-y-3">
+  return <section className="flex flex-col gap-3">
     <h2 className="zet-sectionTitle">Notifikationer</h2>
+    <div className="zet-panel space-y-3">
     <p className="text-sm text-zinc-500 dark:text-zinc-400">Få besked, når andre kommenterer din delte træning. Gælder denne enhed og stopper, når du logger ud.</p>
     <p className="text-sm text-zinc-500 dark:text-zinc-400">På iPhone: Føj ZET til hjemmeskærmen, og åbn appen derfra for at slå notifikationer til.</p>
     {!configured ? <p className="text-sm">Push er ikke aktiveret på serveren endnu.</p>
@@ -75,5 +76,6 @@ export function PushSettings({ configured }: { configured: boolean }) {
         {busy ? "Vent…" : status === "loading" ? "Kontrollerer…" : status === "on" ? "Slå notifikationer fra" : "Slå notifikationer til"}
       </button>}
     {message && <p role="status" className="text-sm">{message}</p>}
+    </div>
   </section>;
 }

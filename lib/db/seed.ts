@@ -53,11 +53,11 @@ async function seedUsersAndExercises(db: Db) {
   const insertedExercises = await db
     .insert(exercise)
     .values([
-      { user_id: null, name: "Bænkpres", type: "strength" },
+      { user_id: null, name: "Bench press", type: "strength" },
       { user_id: null, name: "Squat", type: "strength" },
-      { user_id: null, name: "Ro i maskine", type: "strength" },
-      { user_id: null, name: "Skulderpres", type: "strength" },
-      { user_id: null, name: "Løb", type: "cardio" },
+      { user_id: null, name: "Machine row", type: "strength" },
+      { user_id: null, name: "Shoulder press", type: "strength" },
+      { user_id: null, name: "Running", type: "cardio" },
     ])
     .returning();
 
@@ -66,11 +66,11 @@ async function seedUsersAndExercises(db: Db) {
   );
 
   await db.insert(exerciseMuscleGroup).values([
-    { exercise_id: exerciseIdByName.get("Bænkpres")!, muscle_group: "chest" },
+    { exercise_id: exerciseIdByName.get("Bench press")!, muscle_group: "chest" },
     { exercise_id: exerciseIdByName.get("Squat")!, muscle_group: "legs" },
-    { exercise_id: exerciseIdByName.get("Ro i maskine")!, muscle_group: "back" },
-    { exercise_id: exerciseIdByName.get("Skulderpres")!, muscle_group: "shoulders" },
-    { exercise_id: exerciseIdByName.get("Løb")!, muscle_group: "full_body" },
+    { exercise_id: exerciseIdByName.get("Machine row")!, muscle_group: "back" },
+    { exercise_id: exerciseIdByName.get("Shoulder press")!, muscle_group: "shoulders" },
+    { exercise_id: exerciseIdByName.get("Running")!, muscle_group: "full_body" },
   ]);
 
   console.log(`Seedet bruger "${joe.name}" og ${insertedExercises.length} øvelser.`);
@@ -95,11 +95,11 @@ async function seedDemoWorkouts(
   const dateC = toDateString(addDays(thisWeekStart, -6));
   const dateD = toDateString(addDays(thisWeekStart, 1));
 
-  const bænkpres = exerciseIdByName.get("Bænkpres")!;
+  const bænkpres = exerciseIdByName.get("Bench press")!;
   const squat = exerciseIdByName.get("Squat")!;
-  const ro = exerciseIdByName.get("Ro i maskine")!;
-  const skulderpres = exerciseIdByName.get("Skulderpres")!;
-  const løb = exerciseIdByName.get("Løb")!;
+  const ro = exerciseIdByName.get("Machine row")!;
+  const skulderpres = exerciseIdByName.get("Shoulder press")!;
+  const løb = exerciseIdByName.get("Running")!;
 
   const [workoutA, workoutB, workoutC, workoutD] = await db
     .insert(workout)

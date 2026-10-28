@@ -44,8 +44,9 @@ export function ProfileImageSettings({ userId, image, name, configured }: { user
     } catch (error) { setError(error instanceof Error ? error.message : "Billedet kunne ikke åbnes."); }
     finally { setPreparing(false); }
   }
-  return <section className="zet-panel space-y-4">
+  return <section className="flex flex-col gap-3">
     <h2 className="zet-sectionTitle">Profilbillede</h2>
+    <div className="zet-panel space-y-4">
     <div className="flex items-center gap-4">
       <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-indigo-50 text-2xl font-semibold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
         {preview ? /* eslint-disable-next-line @next/next/no-img-element -- Lokal forhåndsvisning af det valgte billede. */
@@ -70,5 +71,6 @@ export function ProfileImageSettings({ userId, image, name, configured }: { user
         {image && <button name="operation" value="remove" disabled={pending || preparing || !configured} className="min-h-11 px-3 text-sm text-red-600">Fjern billede</button>}
       </div>
     </form>
+    </div>
   </section>;
 }

@@ -35,7 +35,6 @@
 .community-workout details li { overflow-wrap: anywhere; }
 .community-add-details { margin-top: 10px; }
 .community-reactions { margin-top: 16px; margin-bottom: 16px; }
-.community-reactions button { border-color: #e4e4e7; border-radius: 999px; font-size: 12px; }
 .community-reactions p { font-size: 12px; }
 .community-comments { border-color: #eeeef0; padding-top: 18px; }
 .community-comments > h3 { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--zet-muted-strong); }
@@ -63,7 +62,7 @@
 .dark .community-you, .dark .community-workout > div > .flex > span { background: #27272a; color: #d4d4d8; }
 .dark .community-workout details { background: #141416; border-color: #303034; }
 .dark .community-workout summary { color: #d4d4d8; }
-.dark .community-reactions button, .dark .community-comment-form textarea, .dark .community-comments { border-color: #303034; }
+.dark .community-comment-form textarea, .dark .community-comments { border-color: #303034; }
 .dark .community-comment-bubble { background: #222225; }
 @media (max-width: 600px) {
   .community-page { padding: 24px 14px; gap: 22px; }
@@ -76,3 +75,41 @@
   .community-caption { font-size: 15px; }
   .community-comment-form textarea { font-size: 16px; }
 }
+.community-share { padding: 0 0 20px; border: 0; border-bottom: 1px solid var(--zet-border); border-radius: 0; background: transparent; }
+.community-share p { margin: 0; font-size: 13px; }
+.community-share-button { background: var(--zet-panel-bg); color: var(--foreground); border: 1px solid var(--zet-border); }
+.community-share-button:hover { background: var(--background); }
+.community-feed { gap: 28px; }
+.community-post.zet-panel { padding: 26px; border-radius: 16px; box-shadow: none; }
+.community-post-header { margin-bottom: 24px; }
+.community-workout-title { font-size: 27px; font-weight: 750; line-height: 1.2; letter-spacing: -.04em; }
+.community-exercise-preview { margin-top: 8px; margin-bottom: 18px; font-size: 13px; line-height: 1.6; color: var(--zet-muted); overflow-wrap: anywhere; }
+.community-caption { margin-top: 14px; margin-bottom: 18px; font-size: 15px; }
+.community-workout { margin-top: 16px; }
+.community-workout > div > .flex { column-gap: 0; row-gap: 6px; }
+.community-workout > div > .flex > span { padding: 0; background: transparent; border-radius: 0; font-size: 13px; color: var(--zet-muted-strong); }
+.community-workout > div > .flex > span + span::before { content: '·'; margin: 0 10px; color: var(--zet-muted); }
+.community-workout details { margin-top: 12px; border: 0; border-radius: 0; background: transparent; padding: 0; }
+.community-workout summary { color: var(--foreground); }
+.community-workout details[open] { padding-bottom: 12px; }
+.community-comments { margin-top: 18px; padding-top: 14px; }
+.community-action-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; }
+.community-action-row .community-reactions { grid-area: 1 / 1; position: relative; z-index: 1; width: fit-content; margin: 0; min-height: 44px; display: flex; align-items: center; max-width: 170px; }
+.community-compose { grid-area: 1 / 1 / auto / -1; min-width: 0; }
+.community-comment-trigger { width: fit-content; margin-left: auto; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; color: var(--zet-muted-strong); }
+.community-comment-trigger::-webkit-details-marker { display: none; }
+.community-comment-trigger:hover { background: var(--background); color: var(--foreground); }
+.community-comment-trigger:focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
+.community-compose-form { padding-top: 16px; }
+.community-comment-bubble { background: transparent; padding: 0; border-radius: 0; }
+.community-comment-meta { padding-left: 36px; }
+.community-older-comments { margin-bottom: 8px; }
+.dark .community-share, .dark .community-workout details, .dark .community-comment-bubble, .dark .community-workout > div > .flex > span { background: transparent; }
+@media (max-width: 600px) {
+  .community-share { padding: 0 4px 18px; gap: 12px; }
+  .community-post.zet-panel { padding: 20px 16px; border-radius: 14px; }
+  .community-workout-title { font-size: 25px; }
+  .community-feed { gap: 20px; }
+}
+.community-record-hint { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 550; color: var(--zet-muted-strong); }
+.community-caption { font-size: 18px; line-height: 1.5; font-weight: 550; letter-spacing: -.02em; }
