@@ -113,3 +113,14 @@
 }
 .community-record-hint { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 550; color: var(--zet-muted-strong); }
 .community-caption { font-size: 18px; line-height: 1.5; font-weight: 550; letter-spacing: -.02em; }
+
+/* Samme palette som resten af appen i de tre farvetemaer. */
+:root:is([data-theme="warm"], [data-theme="electric"], [data-theme="blush"]) {
+  & .community-post.zet-panel, & .community-comments, & .community-comment-form textarea { border-color: var(--zet-border); }
+  & .community-avatar { background: var(--zet-soft); color: var(--zet-accent); }
+  & .community-you { background: var(--background); color: var(--zet-muted); }
+  & .community-share p { color: var(--zet-muted); }
+  & .community-workout summary { color: var(--foreground); }
+  & .community-workout > div > .flex > span { color: var(--zet-muted-strong); }
+  & .community-comment-trigger:focus-visible { outline-color: var(--zet-accent); }
+}

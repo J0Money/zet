@@ -71,3 +71,100 @@ body {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
 }
+
+/* Farvetemaer genbruger appens eksisterende neutrale og indigo-tokens. */
+:root[data-theme="warm"] {
+  --background: #f4efe6; --foreground: #332c25; --zet-panel-bg: #fffaf3; --zet-border: #e4d8c9;
+  --zet-muted: #75675a; --zet-muted-strong: #332c25; --zet-accent: #ae431f; --zet-soft: #f9e2d4;
+  --color-zinc-50: #fffaf3;
+  --color-zinc-100: #fffaf3;
+  --color-zinc-200: #f4efe6;
+  --color-zinc-300: #e4d8c9;
+  --color-zinc-400: #75675a;
+  --color-zinc-500: #75675a;
+  --color-zinc-600: #75675a;
+  --color-zinc-700: #332c25;
+  --color-zinc-800: #332c25;
+  --color-zinc-900: #332c25;
+  --color-zinc-950: #332c25;
+  --color-indigo-50: #f9e2d4;
+  --color-indigo-100: #f9e2d4;
+  --color-indigo-200: #e4d8c9;
+  --color-indigo-300: #ae431f;
+  --color-indigo-400: #ae431f;
+  --color-indigo-500: #ae431f;
+  --color-indigo-600: #ae431f;
+  --color-indigo-700: #ae431f;
+  --color-indigo-800: #ae431f;
+  --color-indigo-900: #332c25;
+  --color-indigo-950: #332c25;
+}
+:root[data-theme="electric"] {
+  --background: #101329; --foreground: #f1f2ff; --zet-panel-bg: #1a2040; --zet-border: #303b65;
+  --zet-muted: #afb8dd; --zet-muted-strong: #f1f2ff; --zet-accent: #b6a0ff; --zet-soft: #342952;
+  --color-zinc-50: #f1f2ff;
+  --color-zinc-100: #f1f2ff;
+  --color-zinc-200: #d5daf1;
+  --color-zinc-300: #afb8dd;
+  --color-zinc-400: #afb8dd;
+  --color-zinc-500: #afb8dd;
+  --color-zinc-600: #afb8dd;
+  --color-zinc-700: #303b65;
+  --color-zinc-800: #1a2040;
+  --color-zinc-900: #101329;
+  --color-zinc-950: #101329;
+  --color-indigo-50: #f1edff;
+  --color-indigo-100: #e0d6ff;
+  --color-indigo-200: #d4c5ff;
+  --color-indigo-300: #b6a0ff;
+  --color-indigo-400: #b6a0ff;
+  --color-indigo-500: #7051ba;
+  --color-indigo-600: #6945b3;
+  --color-indigo-700: #583a96;
+  --color-indigo-800: #46326e;
+  --color-indigo-900: #342952;
+  --color-indigo-950: #241d3c;
+}
+:root[data-theme="blush"] {
+  --background: #fff0f5; --foreground: #482b3c; --zet-panel-bg: #fffafd; --zet-border: #eccbdc;
+  --zet-muted: #846277; --zet-muted-strong: #482b3c; --zet-accent: #ad3167; --zet-soft: #f9dce9;
+  --color-zinc-50: #fffafd;
+  --color-zinc-100: #fffafd;
+  --color-zinc-200: #fff0f5;
+  --color-zinc-300: #eccbdc;
+  --color-zinc-400: #846277;
+  --color-zinc-500: #846277;
+  --color-zinc-600: #846277;
+  --color-zinc-700: #482b3c;
+  --color-zinc-800: #482b3c;
+  --color-zinc-900: #482b3c;
+  --color-zinc-950: #482b3c;
+  --color-indigo-50: #f9dce9;
+  --color-indigo-100: #f9dce9;
+  --color-indigo-200: #eccbdc;
+  --color-indigo-300: #ad3167;
+  --color-indigo-400: #ad3167;
+  --color-indigo-500: #ad3167;
+  --color-indigo-600: #ad3167;
+  --color-indigo-700: #ad3167;
+  --color-indigo-800: #ad3167;
+  --color-indigo-900: #482b3c;
+  --color-indigo-950: #482b3c;
+}
+
+:root[data-theme="electric"] .zet-brand { color: var(--zet-accent); }
+:root:is([data-theme="warm"], [data-theme="blush"]) .bg-white { background-color: var(--zet-panel-bg); }
+.zet-theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.zet-theme-option { display: flex; align-items: center; gap: 12px; min-height: 78px; padding: 14px; text-align: left; border: 1px solid var(--zet-border); border-radius: 12px; cursor: pointer; }
+.zet-theme-option:hover { background: var(--background); }
+.zet-theme-option[aria-pressed="true"] { border-color: var(--zet-accent, var(--color-indigo-500)); box-shadow: inset 0 0 0 1px var(--zet-accent, var(--color-indigo-500)); }
+.zet-theme-option strong { display: block; font-size: 14px; }
+.zet-theme-option small { display: block; margin-top: 4px; color: var(--zet-muted); font-size: 12px; }
+.zet-theme-swatches { display: flex; flex-shrink: 0; }
+.zet-theme-swatches span { height: 24px; width: 17px; border: 1px solid #00000015; }
+.zet-theme-swatches span:first-child { border-radius: 7px 0 0 7px; }
+.zet-theme-swatches span:last-child { border-radius: 0 7px 7px 0; }
+.zet-theme-check { margin-left: auto; color: var(--zet-accent, var(--color-indigo-500)); }
+@media (max-width: 600px) { .zet-theme-options { grid-template-columns: 1fr; } }
+:root[data-theme="electric"] .text-indigo-600 { color: var(--zet-accent); }
+:root[data-theme="electric"] .border-indigo-600 { border-color: var(--zet-accent); }
