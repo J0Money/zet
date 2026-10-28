@@ -29,3 +29,44 @@
   .zet-details { grid-template-columns: 1fr; }
   .zet-weekly { padding: 16px; }
 }
+
+.zet-medal { position: relative; padding: 22px 0 20px; border-bottom: 1px solid var(--zet-border); }
+.zet-medal-topline { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.zet-medal-topline h2 { font-size: 13px; font-weight: 600; }
+.zet-medal-topline > span { color: var(--zet-muted); font-size: 11px; }
+.zet-medal-main { display: flex; align-items: center; gap: 20px; margin: 20px 0 24px; }
+.zet-medal-art { width: 76px; height: 86px; flex-shrink: 0; }
+.zet-medal-art[data-empty="true"] { opacity: .4; }
+.zet-medal-name { font-size: 32px; line-height: 1.15; font-weight: 600; letter-spacing: -.045em; }
+.zet-medal-progress { margin-top: 7px; font-size: 13px; color: var(--zet-muted); }
+.zet-medal-count { margin-left: auto; font-size: 12px; color: var(--zet-muted); }
+.zet-medal-count strong { color: var(--foreground); font-weight: 600; }
+.zet-medal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; padding-right: 42px; }
+.zet-medal-days li { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--zet-muted); font-size: 10px; }
+.zet-medal-day { display: grid; place-items: center; height: 22px; width: 22px; border: 1px solid var(--zet-border); border-radius: 50%; font-size: 12px; }
+.zet-medal-days [data-trained="true"] .zet-medal-day { color: var(--background); background: var(--foreground); border-color: var(--foreground); }
+.zet-medal-info { margin-top: 12px; font-size: 12px; color: var(--zet-muted); line-height: 1.6; }
+.zet-medal-info summary { position: absolute; right: 0; top: 166px; display: grid; place-items: center; width: 36px; height: 44px; cursor: pointer; list-style: none; }
+.zet-medal-info summary::-webkit-details-marker { display: none; }
+.zet-medal-info summary span { display: grid; place-items: center; width: 17px; height: 17px; border: 1px solid var(--zet-muted); border-radius: 50%; font-family: Georgia, serif; font-style: italic; }
+.zet-medal-info p + p { margin-top: 5px; }
+@media (max-width: 600px) {
+ .zet-medal { padding-top: 0; }
+ .zet-medal-main { gap: 16px; }
+ .zet-medal-name { font-size: 28px; }
+ .zet-medal-count { display: none; }
+ .zet-medal-info summary { top: 144px; }
+ .zet-medal-days { gap: 5px; }
+}
+.zet-medal-collection { margin-top: 18px; font-size: 13px; }
+.zet-medal-collection > summary { display: flex; align-items: center; gap: 9px; min-height: 44px; width: fit-content; cursor: pointer; list-style: none; font-weight: 550; }
+.zet-medal-collection > summary::-webkit-details-marker { display: none; }
+.zet-medal-collection > summary::after { content: '+'; margin-left: 3px; color: var(--zet-muted); }
+.zet-medal-collection[open] > summary::after { content: '−'; }
+.zet-medal-collection > summary > span { color: var(--zet-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.zet-medal-collection-note { font-size: 12px; line-height: 1.6; color: var(--zet-muted); max-width: 560px; margin: 4px 0 14px; }
+.zet-medal-collection li { display: flex; gap: 16px; align-items: center; border-top: 1px solid var(--zet-border); padding: 14px 0; }
+.zet-medal-collection .zet-medal-art { width: 44px; height: 52px; }
+.zet-medal-collection h3 { font-weight: 600; font-size: 14px; }
+.zet-medal-collection li p { margin-top: 4px; color: var(--zet-muted); font-size: 11px; }
+.zet-medal-collection-days { margin-left: auto; flex-shrink: 0; font-size: 12px; color: var(--zet-muted); }

@@ -8,6 +8,20 @@
 
 const COPENHAGEN_TIME_ZONE = "Europe/Copenhagen";
 
+// ISO-ugen tilhører året, som dens torsdag ligger i.
+export function getISOWeek(date: string): { week: number; year: number } {
+  const thursday = new Date(date);
+  thursday.setUTCDate(thursday.getUTCDate() + 3 - (thursday.getUTCDay() + 6) % 7);
+  const year = thursday.getUTCFullYear();
+  const week = Math.ceil(((thursday.getTime() - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7);
+  return { week, year };
+}
+
+export function formatWeekDanish(date: string): string {
+  const { week, year } = getISOWeek(date);
+  return `Uge ${week} · ${year}`;
+}
+
 // Today's date as "YYYY-MM-DD", using Danish wall-clock time.
 export function getTodayInCopenhagen(): string {
   return new Intl.DateTimeFormat("sv-SE", {

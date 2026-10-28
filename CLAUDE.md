@@ -4,6 +4,13 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 
 ## Overlevering til Codex (27. oktober 2026)
 
+### Skivesamling på Overblik (28. oktober 2026)
+
+- Godkendt til push: ugens vægtskive og altid synlig årsstang med plads til 53 skiver. Bronze ved 2 træningsdage, Sølv ved 3, Guld ved 4 og Diamant ved 5+. Højst ét afsluttet pas med indhold pr. dag, mandag til søndag i dansk kalender. Ældre pas uden tidsstempler tæller som afsluttede. Ingen migration; beregnet fra brugerens egen historik.
+- Afsluttede ugers skiver sorteres fra venstre mod højre og grupperes efter ISO-ugeår. Hele stangen passer i bredden; ugevælger og klik viser detaljer. Ingen Community-integration endnu. Rettelser og sletninger i historikken påvirker samlingen.
+- Joe bad om eksempeldata på admin@123.dk: 131 cardio-pas er tilføjet og derefter omfordelt tilfældigt. Alle har noteprefix `[ZET skivestang-demo 2026-10-28]`. Samlet med eksisterende pas giver det 7 Bronze, 14 Sølv, 14 Guld og 5 Diamant. Ingen demo-pas er delt. Disse data tæller også i admin-statistik. Seed-scriptet stopper, hvis markøren allerede findes; shuffle-scriptet ændrer kun markerede pas.
+- Fem beregningstests, målrettet ESLint og produktionsbuild består. Browserkontrol af niveauer, skivevalg og hel stang gennemført. Temanavnene Lyst/Mørkt ændres samtidig til Original/Midnight.
+
 ### Godkendt til udgivelse (28. oktober 2026)
 
 - Joe har gennemset ændringerne og bedt om samlet commit og push: Community-feed, Ranked med Big 5, ensartede Indstillinger, samlet træningsredigering med alle udstyrsvarianter og engelske øvelsesnavne. Dette afløser markeringerne om lokale, ikke-pushede ændringer nedenfor.
