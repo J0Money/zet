@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
+import type { ReactNode } from "react";
 import type { getComments } from "@/lib/community";
 import { deleteCommentAction } from "@/app/community/actions";
 import { ConfirmSubmitButton } from "@/app/components/confirm-submit-button";
 import { CommentForm } from "@/app/components/comment-form";
 import { ProfileAvatar } from "@/app/components/profile-avatar";
 
-export function CommunityComments({ postId, userId, comments }: {
-  postId: string; userId: string; comments: Awaited<ReturnType<typeof getComments>>;
+export function CommunityComments({ postId, userId, comments, reaction }: {
+  postId: string; userId: string; comments: Awaited<ReturnType<typeof getComments>>; reaction?: ReactNode;
 }) {
   const renderComment = (comment: typeof comments[number]) => <li key={comment.id} className="community-comment space-y-1">
       <div className="community-comment-bubble">
@@ -21,12 +22,17 @@ export function CommunityComments({ postId, userId, comments }: {
       </div>
     </li>;
   return <section className="community-comments space-y-4 border-t border-zinc-200 pt-4 dark:border-zinc-700" aria-label="Kommentarer">
-    <h3 className="text-sm font-semibold">Kommentarer <span className="community-comment-count">{comments.length}</span></h3>
-    {comments.length > 2 && <details className="community-older-comments">
-      <summary className="min-h-11 cursor-pointer content-center text-sm text-zinc-500">Vis {comments.length - 2} tidligere kommentarer</summary>
-      <ul className="space-y-3">{comments.slice(0, -2).map(renderComment)}</ul>
+    <div className="community-action-row">
+      {reaction && <div className="community-reactions">{reaction}</div>}
+      <details className="community-compose" open={reaction ? undefined : true}>
+        <summary className="community-comment-trigger min-h-11 cursor-pointer content-center text-sm font-semibold">Kommentér <span className="community-comment-count">{comments.length}</span></summary>
+        <div className="community-compose-form"><CommentForm postId={postId} initialId={randomUUID()} /></div>
+      </details>
+    </div>
+    {comments.length > 1 && <details className="community-older-comments">
+      <summary className="min-h-11 cursor-pointer content-center text-sm text-zinc-500">Se {comments.length - 1} tidligere {comments.length === 2 ? "kommentar" : "kommentarer"}</summary>
+      <ul className="space-y-3">{comments.slice(0, -1).map(renderComment)}</ul>
     </details>}
-    {comments.length > 0 && <ul className="space-y-3">{comments.slice(-2).map(renderComment)}</ul>}
-    <CommentForm postId={postId} initialId={randomUUID()} />
+    {comments.length > 0 && <ul className="space-y-3">{comments.slice(-1).map(renderComment)}</ul>}
   </section>;
 }

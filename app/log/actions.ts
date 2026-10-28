@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/session";
 import { setExerciseNote } from "@/lib/exercise-notes";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
-import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
+import { EQUIPMENT } from "@/lib/equipment";
+import { equipmentName } from "@/lib/exercise-names";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
 import type { Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
 import {
@@ -45,7 +46,7 @@ async function resolveVariant(
   if (found) return { exercise: found };
   if (wanted === null) return { error: "Øvelsen findes ikke uden udstyr." };
 
-  const name = `${groupName} (${equipmentLabel[wanted]})`;
+  const name = `${groupName} (${equipmentName[wanted]})`;
   const sameName = visible.find(
     (exercise) => exercise.type === "strength" && exercise.name.toLowerCase() === name.toLowerCase(),
   );

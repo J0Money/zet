@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { Check, HandFist } from "@phosphor-icons/react";
 import { reactAction, shareWorkoutAction, withdrawPostAction } from "@/app/community/actions";
 import type { CommunitySummary } from "@/lib/community-summary";
 import { CommunitySummaryCard } from "@/app/components/community-summary-card";
@@ -19,9 +20,13 @@ export function CommunityReaction({ postId, count, reacted }: { postId: string; 
   return <form action={action}>
     <input type="hidden" name="postId" value={postId} />
     <input type="hidden" name="active" value={String(!reacted)} />
-    <button aria-pressed={reacted} disabled={pending}
-      className={`min-h-11 rounded-xl border px-4 text-sm font-medium disabled:opacity-50 ${reacted ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : "border-zinc-300 dark:border-zinc-700"}`}>
-      Stærkt! · {count}
+    <button aria-pressed={reacted} aria-busy={pending} disabled={pending}
+      aria-label={`Stærkt! ${count} reaktioner`}
+      className={`group inline-flex min-h-11 items-center gap-2.5 rounded-full border py-2 pl-3 pr-2 text-sm font-semibold shadow-sm transition motion-reduce:transition-none enabled:active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-500 disabled:cursor-wait disabled:opacity-60 ${reacted ? "border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20 dark:border-indigo-500 dark:bg-indigo-500" : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:border-indigo-300 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-200 dark:hover:bg-indigo-900"}`}>
+      <HandFist size={22} weight={reacted ? "fill" : "duotone"} aria-hidden="true" className="-rotate-12 transition-transform group-hover:rotate-0 motion-reduce:transition-none" />
+      <span>Stærkt!</span>
+      {reacted && <Check size={14} weight="bold" aria-hidden="true" />}
+      <span aria-hidden="true" className={`ml-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs tabular-nums ${reacted ? "bg-white/20 text-white" : "bg-white text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200"}`}>{count}</span>
     </button>
   </form>;
 }

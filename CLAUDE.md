@@ -4,6 +4,34 @@ Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er
 
 ## Overlevering til Codex (27. oktober 2026)
 
+### Godkendt til udgivelse (28. oktober 2026)
+
+- Joe har gennemset ændringerne og bedt om samlet commit og push: Community-feed, Ranked med Big 5, ensartede Indstillinger, samlet træningsredigering med alle udstyrsvarianter og engelske øvelsesnavne. Dette afløser markeringerne om lokale, ikke-pushede ændringer nedenfor.
+- Seneste produktionsbuild, TypeScript og målrettet ESLint består. Enheds- og databaseintegrationstests for redigering og rangliste består. Browserkontrol bekræfter Feed/Ranked-fanerne og alle fem faste lister. Ingen ny migration kræves; navneændringerne er allerede udført og verificeret i databasen.
+
+### Rangliste lokalt (28. oktober 2026)
+
+- Community har Feed og Ranked som separate faner i samme stil som Styrke/Cardio på Log. Ranked viser altid Big 5: Squat, Bench press, Deadlift, Overhead press og Barbell row, kun med stang. Tomme lister har en forklaring. Vælgeren til andre øvelser og udstyr ligger nedenunder. Fire rangliste-enhedstests består, inklusive tomme lister og udelukkelse af maskiner/ukendt udstyr fra Big 5.
+
+- Joe godkendte top 3 i Community med separate valg af øvelse og udstyr. Højeste kg vinder, derefter flest gentagelser. Én plads pr. bruger; identiske resultater får delt placering, og højst tre personer vises med stabil rækkefølge. Alle tider, ikke kun feedets seneste 50 opslag.
+- Datakilden er udelukkende delte Community-snapshots med øvelsesdetaljer, aldrig private pas eller aktuelle sæt. Danske og engelske snapshot-navne normaliseres via navneoversættelsen. Udstyr identificeres kun ud fra en eksplicit variantendelse; ellers separat kategori "Ikke angivet". Gamle opslag uden detaljer tæller ikke. Tilbagetrækning fjerner resultatet ved næste opdatering.
+- Ingen migration. Tre enhedstests og en databaseintegrationstest består: rangering, én plads pr. person, udstyrsadskillelse, ligestillinger, gamle snapshots, private data og tilbagetrækning. Midlertidige testdata er slettet. Ikke committet eller pushet.
+
+### Engelske øvelsesnavne (28. oktober 2026)
+
+- Joe bad om engelske øvelsesnavne. 46 øvelser er omdøbt og verificeret i databasen med uændrede ID'er. Gruppebetegnelser følger med. Ingen skemaændring. Script: `scripts/translate-exercises.ts`, dry-run som standard, `--apply` udfører ændringerne samlet og kontrollerer gamle værdier før skrivning.
+- Joe afklarede Flue smækkeren som Pec deck fly og Motor cyklen som Prone Row (endeligt navn valgt af Joe; den tidligere lange oversættelse er omdøbt i databasen). Mapping i `lib/exercise-names.ts`. Nye variantnavne bruger engelske udstyrsnavne, mens appens udstyrsvalg fortsat har danske labels. Seed og katalog er oversat. Ældre Community-snapshots oversættes kun i visningen, deres indhold er ikke skrevet om.
+- Navneændringen i databasen er allerede aktiv. Kodeændringer ligger lokalt og er endnu ikke pushet.
+
+### Træningsredigering lokalt (28. oktober 2026)
+
+- Øvelse og udstyr vælges separat. Alle udstyrstyper samt Uden udstyr vises. Nye varianter oprettes først ved gemning, i samme transaktion som passet, med samme gruppe og muskelgrupper som kildeøvelsen. Integrationstest bekræfter én variant for flere sæt, genbrug ved efterfølgende gemning og ingen ny variant efter afvist gammel formular.
+
+- Godkendt af Joe: samlet redigering fra historikken af dato, start/slut i dansk tid, private noter, øvelse/variant, styrke- og cardiotal samt tilføjelse/fjernelse af registreringer. Flytning mellem pas er udskudt. Sletning af hele passet kræver bekræftelse og sletter også det delte opslag via eksisterende cascade.
+- Ingen migration. Eksisterende felter bruges. Gemning sker med ét SQL-statement i Neons ikke-interaktive serializable-transaktion. Det er understøttet, i modsætning til interaktive transaktioner. Versionskontrol af pas og sæt afviser gamle formularer; ejer- og øvelsesadgang kontrolleres i samme statement. Sæt-id'er og oprindelige oprettelsestider bevares. Delte Community-snapshots ændres ikke ved redigering.
+- Enhedstests for datoer og dansk sommer/vintertid samt integrationstest med midlertidige brugere består. Integration dækker ejerafgrænsning, private øvelser, fremmede sæt-id'er, samlet gemning, gamle formularer, samtidige gemninger og bevaret deling. Testdata er slettet. TypeScript, ESLint og produktionsbuild består. Formularen er visuelt kontrolleret i smal browser uden overløb eller indlejrede formularer. Brugerens rigtige pas er ikke gemt eller ændret under browserkontrollen.
+- Ikke committet eller pushet. De tidligere lokale Community- og Indstillinger-designændringer ligger også stadig til gennemsyn.
+
 ### Profilbilleder (27. oktober 2026)
 
 - Joe valgte upload via Vercel Blob. Privat lager `zet-profile-images` er oprettet i Frankfurt og forbundet til Production og Development. Token er hentet til ignoreret `.env.local` uden udskrift. Ingen migration: eksisterende `user.image` bruges.

@@ -10,6 +10,8 @@ import type { Entry } from "@/lib/types";
 import { getEntries, getExercises, getWorkoutById } from "@/lib/workout-store";
 import { getSharePreview, getSharedPost } from "@/lib/community";
 import { ShareWorkout } from "@/app/components/community-controls";
+import { WorkoutEditor } from "@/app/components/workout-editor";
+import { getWorkoutEditVersion } from "@/lib/workout-edit";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -26,6 +28,7 @@ export default async function WorkoutDetailPage({
   const currentUser = await requireUser();
 
   const { id } = await params;
+  const editVersion = await getWorkoutEditVersion(currentUser.id, id);
 
   // getWorkoutById returnerer undefined både hvis id'et slet ikke findes, og
   // hvis workouten tilhører en anden bruger, begge tilfælde skal se ens ud
@@ -73,6 +76,7 @@ export default async function WorkoutDetailPage({
         )}
       </header>
 
+      <WorkoutEditor workout={workout} entries={workoutEntries} exercises={exercises} version={editVersion} shared={Boolean(sharedPost)} />
       <ShareWorkout workoutId={id} name={currentUser.name} summary={sharePreview} shared={sharedPost} />
 
       {entriesByExercise.size === 0 ? (
