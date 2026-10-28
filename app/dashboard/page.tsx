@@ -5,7 +5,7 @@ import "./dashboard.css";
 import "./plates.css";
 import { LatestWorkoutsCard } from "@/app/components/latest-workouts-card";
 import { PersonalRecordsCard } from "@/app/components/personal-records-card";
-import { StreakCard } from "@/app/components/streak-card";
+
 import { WeeklyMedalCard } from "@/app/components/weekly-medal-card";
 import { WeeklyVolumeCard } from "@/app/components/weekly-volume-card";
 import { WeeklyVolumeHistoryCard } from "@/app/components/weekly-volume-history-card";
@@ -29,22 +29,27 @@ export default async function DashboardPage() {
   const exercises = await getExercises(currentUser.id);
 
   return (
-    <div className="zet-page">
+    <div className="zet-page zet-dashboard">
       <header className="zet-header">
         <div className="zet-masthead">
           <div><p className="zet-brand">ZET</p><h1>Overblik</h1></div>
           <Link href="/log" className="zet-headerAction"><span aria-hidden="true">+</span> Log træning</Link>
         </div>
-        <StreakCard workouts={workouts} />
+
       </header>
       <div className="zet-content">
         <WeeklyMedalCard workouts={workouts} entries={entries} />
-        <WeeklyVolumeCard workouts={workouts} entries={entries} />
-        <WeeklyVolumeHistoryCard workouts={workouts} entries={entries} />
-        <WeightProgressionCard workouts={workouts} entries={entries} exercises={exercises} />
+        <section className="zet-development" aria-labelledby="development-title">
+          <h2 id="development-title">Din udvikling</h2>
+          <div className="zet-chart-grid">
+            <WeeklyVolumeHistoryCard workouts={workouts} entries={entries} />
+            <WeightProgressionCard workouts={workouts} entries={entries} exercises={exercises} />
+          </div>
+          <WeeklyVolumeCard workouts={workouts} entries={entries} />
+        </section>
         <div className="zet-details">
-          <PersonalRecordsCard workouts={workouts} entries={entries} exercises={exercises} />
           <LatestWorkoutsCard workouts={workouts} entries={entries} exercises={exercises} />
+          <PersonalRecordsCard workouts={workouts} entries={entries} exercises={exercises} />
         </div>
       </div>
     </div>

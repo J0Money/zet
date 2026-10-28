@@ -23,8 +23,8 @@ export function PlateCollection({ collection, currentYear }: { collection: Colle
 
 function YearBar({ collection }: { collection: Collection }) {
   const items = [...collection].sort((a, b) => a.start.localeCompare(b.start));
-  const [selectedStart, setSelectedStart] = useState(items[0]?.start);
-  const selected = items.find(item => item.start === selectedStart) ?? items[0];
+  const [selectedStart, setSelectedStart] = useState<string | undefined>(undefined);
+  const selected = items.find(item => item.start === selectedStart);
   return <>
     <div className="totals" aria-label="Antal optjente skiver">
       {(Object.keys(plateTypes) as Array<keyof typeof plateTypes>).map(name => <div key={name} className={plateTypes[name].className}>
@@ -35,21 +35,19 @@ function YearBar({ collection }: { collection: Collection }) {
       <div className="rack"><div className="shaft" aria-hidden="true" /><div className="items">
         {items.map(item => <button type="button" key={item.start} className={`pick ${plateTypes[item.medal.name].className}`}
           aria-label={`${item.medal.name}, ${formatWeekDanish(item.start)}, ${item.count} træningsdage`}
-          aria-pressed={selected?.start === item.start} onClick={() => setSelectedStart(item.start)}>
+          aria-pressed={selected?.start === item.start} onClick={() => setSelectedStart(selectedStart === item.start ? undefined : item.start)}>
           <WeightPlate name={item.medal.name} />
         </button>)}
       </div></div>
     </div>
     <div className="plate-selection">
       <span>{items.length} af 53 skiver</span>
-      {selected && <label>Vis skive <select value={selected.start} onChange={event => setSelectedStart(event.target.value)}>
-        {items.map(item => <option key={item.start} value={item.start}>{formatWeekDanish(item.start)} · {item.medal.name}</option>)}
-      </select></label>}
     </div>
     {selected ? <div className="detail" aria-live="polite">
       <div className={`hero ${plateTypes[selected.medal.name].className}`}><WeightPlate name={selected.medal.name} /></div>
       <div><h4>{selected.medal.name}</h4><p>{formatWeekDanish(selected.start)}</p><p>{selected.count} træningsdage</p></div>
-    </div> : <p className="collection-note">Ingen skiver dette år endnu. Træn på mindst to forskellige dage i samme uge for at optjene Bronze.</p>}
-    <p className="collection-note">Én skive pr. optjent uge. Den aktuelle uge kommer med, når ugen slutter. Retter du historikken, opdateres samlingen.</p>
+    </div> : items.length === 0 ? <p className="collection-note">Ingen skiver dette år endnu. Træn på mindst to forskellige dage i samme uge for at optjene Bronze.</p> : null}
+
   </>;
 }
+

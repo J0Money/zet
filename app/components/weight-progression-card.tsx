@@ -23,7 +23,7 @@ export function WeightProgressionCard({
   exercises: Exercise[];
 }) {
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
-  const [exerciseId, setExerciseId] = useState(strengthExercises[0]?.id ?? "");
+  const [exerciseId, setExerciseId] = useState(() => strengthExercises.find(exercise => getWeightProgression(workouts, entries, exercise.id).length > 0)?.id ?? strengthExercises[0]?.id ?? "");
   const progression = getWeightProgression(workouts, entries, exerciseId);
 
   return (
