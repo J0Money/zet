@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bigFiveLeaderboards, buildLeaderboard, type LeaderboardPost } from "../lib/community-leaderboard";
+import { displayExerciseName } from "../lib/exercise-names";
 function post(userId: string, weightKg: number, reps = 5, exercise = "Bænkpres (Stang)", id = userId): LeaderboardPost {
  return { id, userId, name: userId, image: null, summary: { date: "2026-10-28", duration: null, strengthSets: 1, cardioSessions: 0, records: [], exercises: [{ name: exercise, sets: [{ kind: "strength", weightKg, reps }] }] } };
 }
+test("Displayed Danish equipment preserves Ranked categories", () => {
+ assert.equal(displayExerciseName("Squat (Barbell)"), "Squat (Stang)");
+ assert.equal(displayExerciseName("Bench press (Machine)"), "Bench press (Maskine)");
+ assert.equal(displayExerciseName("Lat pulldown (Cable)"), "Lat pulldown (Kabel)");
+ const lists = bigFiveLeaderboards(buildLeaderboard([post("a", 70, 10, displayExerciseName("Squat (Barbell)"))]));
+ assert.equal(lists[0].results[0].weightKg, 70);
+});
 test("Big 5 always shows five lists and only uses explicit barbell results", () => {
  const lists = bigFiveLeaderboards(buildLeaderboard([
    post("machine", 200, 5, "Bench press (Machine)"), post("barbell", 100),

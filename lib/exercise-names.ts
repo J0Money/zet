@@ -1,4 +1,5 @@
 import type { Equipment } from "./types";
+import { equipmentLabel } from "./equipment";
 
 export const equipmentName: Record<Equipment, string> = {
   barbell: "Barbell", dumbbells: "Dumbbells", machine: "Machine", cable: "Cable", bodyweight: "Bodyweight", other: "Other",
@@ -21,4 +22,14 @@ export function englishExerciseName(name: string): string {
   if (!suffix) return englishExerciseNames[name] ?? name;
   const labels: Record<string, string> = { Stang: "Barbell", Maskine: "Machine", Kabel: "Cable", kabel: "Cable", Kropsvægt: "Bodyweight", Andet: "Other" };
   return `${englishExerciseNames[suffix[1]] ?? suffix[1]} (${labels[suffix[2]] ?? suffix[2]})`;
+}
+
+// Exercise names stay English; equipment follows the Danish selectors.
+export function displayExerciseName(name: string): string {
+  const translated = englishExerciseName(name);
+  for (const [key, label] of Object.entries(equipmentName)) {
+    const suffix = ` (${label})`;
+    if (translated.endsWith(suffix)) return `${translated.slice(0, -suffix.length)} (${equipmentLabel[key as Equipment]})`;
+  }
+  return translated;
 }
