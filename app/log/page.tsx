@@ -10,6 +10,7 @@ import type { Entry } from "@/lib/types";
 import { getActiveWorkout, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 import { getExerciseHistory } from "@/lib/workouts";
 import { getExerciseNotes } from "@/lib/exercise-notes";
+import { lastEquipmentByChoice } from "@/lib/exercise-groups";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
 // at Next.js kræver en Suspense-grænse omkring den dynamiske del.
@@ -91,6 +92,7 @@ export default async function LogPage() {
         programs={programs}
         exerciseHistory={exerciseHistory}
         exerciseNotes={exerciseNotes}
+        preferredEquipment={lastEquipmentByChoice(strengthExercises, entries)}
       />
 
       <section className="zet-panel">

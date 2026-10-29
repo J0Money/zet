@@ -1,5 +1,19 @@
 import { EQUIPMENT } from "@/lib/equipment";
-import type { Equipment, Exercise } from "@/lib/types";
+import type { Entry, Equipment, Exercise } from "@/lib/types";
+
+// entries kommer fra getEntries, sorteret efter registreringstid, ældst først.
+// Kun brugerens egne sæt gives ind. Historikken ændres ikke.
+export function lastEquipmentByChoice(exercises: Exercise[], entries: Entry[]): Record<string, WheelKey> {
+  const byId = new Map(exercises.map(exercise => [exercise.id, exercise]));
+  const result: Record<string, WheelKey> = {};
+  for (const entry of entries) {
+    const exercise = byId.get(entry.exercise_id);
+    if (entry.kind === "strength" && exercise?.type === "strength") {
+      result[choiceKey(exercise)] = exercise.equipment ?? "none";
+    }
+  }
+  return result;
+}
 
 // Én linje i øvelseslisten. Alle varianter af samme øvelse hører til samme
 // linje: de med samme group_name, og en øvelse uden gruppe (fx "Squat") hører

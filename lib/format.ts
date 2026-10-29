@@ -60,7 +60,7 @@ export function formatClock(totalSeconds: number): string {
 
 // Sæt samlet til en kort tekst: lige efterfølgende ens sæt slås sammen, fx
 // "100 kg × 5 (3 sæt), 90 kg × 8". Vægt og reps vises med dansk talformat.
-export function formatSetsSummary(sets: { reps: number; weight_kg: number }[]): string {
+export function formatSetsSummary(sets: { reps: number; weight_kg: number }[], repsFirst = false): string {
   const parts: string[] = [];
   for (let i = 0; i < sets.length; ) {
     let count = 1;
@@ -68,7 +68,8 @@ export function formatSetsSummary(sets: { reps: number; weight_kg: number }[]): 
       count += 1;
     }
     const weight = sets[i].weight_kg.toLocaleString("da-DK", { maximumFractionDigits: 2 });
-    parts.push(`${weight} kg × ${sets[i].reps}${count > 1 ? ` (${count} sæt)` : ""}`);
+    const label = repsFirst ? `${sets[i].reps} reps × ${weight} kg` : `${weight} kg × ${sets[i].reps}`;
+    parts.push(`${label}${count > 1 ? ` (${count} sæt)` : ""}`);
     i += count;
   }
   return parts.join(", ");

@@ -5,7 +5,7 @@ import { displayExerciseName } from "@/lib/exercise-names";
 
 export function CommunitySummaryCard({ summary, compact = false }: { summary: CommunitySummary; compact?: boolean }) {
   const records = summary.records.length > 0 && <div className={compact ? "space-y-3 py-3" : "rounded-xl bg-indigo-50 dark:bg-indigo-950 p-3"}>
-    <p className="mb-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">Nye personlige rekorder</p>
+    <p className="mb-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">{summary.records.length === 1 ? "Ny personlig rekord" : "Nye personlige rekorder"}</p>
     <ul className="space-y-3">{summary.records.map((record, index) => <li key={index} className="text-sm">
       <p className="font-medium">{displayExerciseName(record.exercise)}</p>
       <p>{formatSetsSummary([{ weight_kg: record.weightKg, reps: record.reps }])}</p>
