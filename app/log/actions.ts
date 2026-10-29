@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/session";
+import { scheduleWorkoutExpiry } from "@/lib/schedule-workout-expiry";
 import { setExerciseNote } from "@/lib/exercise-notes";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/workout-store";
 
 export type LogStrengthSetState = {
+  warning?: string;
   error?: string;
   success?: boolean;
   newRecord?: boolean;
@@ -166,7 +168,8 @@ export async function logStrengthSet(
   revalidatePath("/history");
   revalidatePath("/log");
 
-  return { success: true, newRecord };
+  const warning = await scheduleWorkoutExpiry(currentUser.id, workout.id);
+  return { success: true, newRecord, warning };
 }
 
 export type LogCardioEntryState = {

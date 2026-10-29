@@ -4,6 +4,7 @@
 // henter dette id fra requireUser(), aldrig fra formularer eller URL-parametre.
 
 import "server-only";
+import { closeExpiredStrengthWorkouts } from "./workout-expiry";
 import { displayExerciseName } from "./exercise-names";
 import { and, eq, or, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -165,34 +166,9 @@ export async function getWorkoutById(
   return row ? toWorkout(row) : undefined;
 }
 
-// Et pas, der ikke har fået en eneste registrering i så lang tid, regnes for
-// glemt og lukkes af sig selv, med sluttidspunktet sat til den seneste
-// registrering (eller starten, hvis der ingen er). Det sker i én SQL-sætning.
-// created_at på sæt og cardio er uden tidszone og gemt i databasens tid (UTC
-// hos Neon), derfor AT TIME ZONE 'UTC'.
-const STALE_AFTER_HOURS = 12;
-
-async function closeStaleWorkouts(userId: string): Promise<void> {
-  await db.execute(sql`
-    UPDATE workout AS w
-    SET ended_at = a.last_activity
-    FROM (
-      SELECT w2.id,
-        greatest(
-          w2.started_at,
-          (SELECT max(created_at) FROM workout_set WHERE workout_id = w2.id) AT TIME ZONE 'UTC',
-          (SELECT max(created_at) FROM workout_cardio WHERE workout_id = w2.id) AT TIME ZONE 'UTC'
-        ) AS last_activity
-      FROM workout AS w2
-      WHERE w2.user_id = ${userId} AND w2.started_at IS NOT NULL AND w2.ended_at IS NULL
-    ) AS a
-    WHERE w.id = a.id AND a.last_activity < now() - make_interval(hours => ${STALE_AFTER_HOURS})
-  `);
-}
-
 // Det pas, brugeren er i gang med, eller undefined.
 export async function getActiveWorkout(userId: string): Promise<Workout | undefined> {
-  await closeStaleWorkouts(userId);
+  await closeExpiredStrengthWorkouts(userId);
   const [row] = await db
     .select()
     .from(workoutTable)

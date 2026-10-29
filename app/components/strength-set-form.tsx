@@ -6,7 +6,7 @@ import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
 import { ExerciseNote } from "@/app/components/exercise-note";
-import { choiceKey, defaultWheelKey, groupExercises, wheelOptions } from "@/lib/exercise-groups";
+import { choiceKey, defaultWheelKey, groupExercises, wheelOptions, type WheelKey } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
@@ -26,12 +26,13 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, exerciseNotes }: {
+export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, exerciseNotes, preferredEquipment }: {
   userId: string;
   exercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
   exerciseNotes: Record<string, string>;
+  preferredEquipment: Record<string, WheelKey>;
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
@@ -116,6 +117,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   const wheelSlots = currentChoice ? wheelOptions(currentChoice) : [];
   const currentSlot = currentChoice
     ? wheelSlots.find((slot) => slot.key === slotByChoice[currentChoice.key]) ??
+      wheelSlots.find((slot) => slot.key === preferredEquipment[currentChoice.key]) ??
       wheelSlots.find((slot) => slot.key === defaultWheelKey(wheelSlots))
     : undefined;
 
@@ -304,12 +306,12 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
             <div aria-live="polite" className="space-y-2">
               <p className="text-zinc-600 dark:text-zinc-300">
                 {selectedHistory?.lastDate
-                  ? <><span className="font-medium">Sidst {formatDateDanish(selectedHistory.lastDate)}:</span> {formatSetsSummary(selectedHistory.lastSets)}</>
+                  ? <><span className="font-medium">Sidst {formatDateDanish(selectedHistory.lastDate)}:</span> {formatSetsSummary(selectedHistory.lastSets, true)}</>
                   : selectedHistory ? "Ingen tidligere afsluttede pas med denne variant." : "Ingen tidligere sæt med denne variant."}
               </p>
               {selectedHistory && (
                 <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                  <abbr title="Personlig rekord" className="no-underline">PR</abbr>: {formatSetsSummary([selectedHistory.best])}
+                  <abbr title="Personlig rekord" className="no-underline">PR</abbr>: {formatSetsSummary([selectedHistory.best], true)}
                 </p>
               )}
             </div>
@@ -397,6 +399,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
         </button>}
       </div>
 
+      {state.warning && <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">{state.warning}</p>}
       {state.error && (
         <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
           {state.error}
