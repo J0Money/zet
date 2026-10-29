@@ -33,7 +33,7 @@ Et åbent browserur får først afsluttet status ved navigation/genindlæsning.
 Næste serveropslag af aktivt pas anvender også udløbsreglen.
 Ingen database-outbox: nedbrud mellem gemning og publicering kan miste opgaven.
 Eksisterende aktive pas får først en opgave ved næste sæt.
-Ingen migration eller konto-opgradering. Ingen rigtige opgaver er sendt endnu.
+Ingen migration eller konto-opgradering.
 
 ## Tests
 
@@ -42,4 +42,17 @@ node --import tsx --test tests/workout-expiry-publisher.test.ts
 ZET_RUN_EXPIRY_TESTS=1 node --conditions=react-server --import tsx --test tests/workout-expiry.integration.test.ts
 
 Integration bruger midlertidige brugere og rydder op. Publisher bruger simuleret
-netværk. Konto, nøgler, deployment og rigtig forsinket levering mangler endnu.
+netværk.
+
+## Udgivelsesstatus 29. oktober 2026
+
+Kode udgivet som 2412b0a. Vercel Production er Ready. QSTASH_TOKEN og
+WORKOUT_EXPIRY_SECRET er gemt som Production Secrets.
+Den udgivne callback er testet: kald uden nøgle afvises med 401, og et
+isoleret udløbet styrkepas afsluttes ved sidste sæts tidspunkt med korrekt
+nøgle. Testdata er ryddet op. Enheds-, database- og buildtests består.
+
+Rigtig publicering og forsinket levering gennem QStash mangler stadig at
+blive bekræftet ved et nyt styrkesæt i produktion. Callback-testen var et
+direkte HTTP-kald, ikke en levering fra QStash. Tokenet er gemt som en
+hemmelighed i Vercel og er ikke hentet til lokal udvikling.
