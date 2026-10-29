@@ -20,6 +20,19 @@ test(
     const invitationIds: string[] = [];
     const emails: string[] = [];
     const password = randomBytes(24).toString("hex");
+
+    // "I dag minus N år" giver en deterministisk alder, uanset hvornår testen
+    // køres, da måned/dag er identisk med i dag (ingen -1-justering i calculateAge).
+    function birthDateYearsAgo(years: number): string {
+      const now = new Date();
+      const year = now.getUTCFullYear() - years;
+      const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(now.getUTCDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+    const adultBirthDate = birthDateYearsAgo(30);
+    const minorBirthDate = birthDateYearsAgo(15);
+    const tooYoungBirthDate = birthDateYearsAgo(10);
     const uuidPattern =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -79,7 +92,7 @@ test(
           assert.equal(result.success, false);
         }
         const unknown = await acceptInvitation({
-          token: randomBytes(32).toString("hex"), name: "Test", password,
+          token: randomBytes(32).toString("hex"), name: "Test", password, birthDate: adultBirthDate,
         });
         assert.ok(!unknown.success && unknown.code === "INVALID_INVITATION");
         assert.equal((await readInvitation(fixture.id)).usedAt, null);
@@ -93,7 +106,7 @@ test(
         ]) {
           const fixture = await createInvitation(overrides);
           const result = await acceptInvitation({
-            token: fixture.token, name: "Test", password,
+            token: fixture.token, name: "Test", password, birthDate: adultBirthDate,
           });
           assert.ok(!result.success && result.code === "INVALID_INVITATION");
           const rows = await db.select().from(user).where(eq(user.email, fixture.email));
@@ -110,6 +123,7 @@ test(
           token: fixture.token,
           name: "  Testbruger  ",
           password,
+          birthDate: adultBirthDate,
           email: "maa-ikke-bruges@example.invalid",
         });
         assert.ok(result.success);
@@ -118,6 +132,9 @@ test(
         const [created] = await db.select().from(user).where(eq(user.id, result.userId));
         assert.equal(created.name, "Testbruger");
         assert.equal(created.emailVerified, false);
+        assert.equal(created.birthDate, adultBirthDate);
+        assert.equal(created.adultPermissionConfirmed, null);
+        assert.ok(created.ageConfirmationAt);
         const accounts = await db.select().from(account).where(eq(account.userId, created.id));
         assert.equal(accounts.length, 1);
         assert.match(accounts[0].id, uuidPattern);
@@ -141,16 +158,47 @@ test(
           body: { email: normalizedEmail, password: randomBytes(24).toString("hex") },
         }));
         const reused = await acceptInvitation({
-          token: fixture.token, name: "Andet forsøg", password,
+          token: fixture.token, name: "Andet forsøg", password, birthDate: adultBirthDate,
         });
         assert.ok(!reused.success && reused.code === "INVALID_INVITATION");
+      });
+
+      await runCase("Under 13 år kan ikke oprette en konto", async () => {
+        const fixture = await createInvitation();
+        const result = await acceptInvitation({
+          token: fixture.token, name: "For ung", password, birthDate: tooYoungBirthDate,
+        });
+        assert.ok(!result.success && result.code === "INVALID_INPUT");
+        assert.equal((await readInvitation(fixture.id)).usedAt, null);
+        const rows = await db.select().from(user).where(eq(user.email, fixture.email));
+        assert.equal(rows.length, 0);
+      });
+
+      await runCase("13-17 år kræver bekræftet voksentilladelse", async () => {
+        const fixture = await createInvitation();
+        const withoutPermission = await acceptInvitation({
+          token: fixture.token, name: "Mindreårig", password, birthDate: minorBirthDate,
+        });
+        assert.ok(!withoutPermission.success && withoutPermission.code === "INVALID_INPUT");
+        const rows = await db.select().from(user).where(eq(user.email, fixture.email));
+        assert.equal(rows.length, 0);
+
+        const withPermission = await acceptInvitation({
+          token: fixture.token, name: "Mindreårig", password,
+          birthDate: minorBirthDate, adultPermissionConfirmed: "on",
+        });
+        assert.ok(withPermission.success);
+        const [created] = await db.select().from(user).where(eq(user.email, fixture.email));
+        assert.equal(created.birthDate, minorBirthDate);
+        assert.equal(created.adultPermissionConfirmed, true);
+        assert.ok(created.ageConfirmationAt);
       });
 
       await runCase("Tre samtidige forsøg kan kun oprette én konto", async () => {
         const fixture = await createInvitation();
         const results = await Promise.all(
           [1, 2, 3].map(() => acceptInvitation({
-            token: fixture.token, name: "Samtidig test", password,
+            token: fixture.token, name: "Samtidig test", password, birthDate: adultBirthDate,
           })),
         );
         assert.equal(results.filter((result) => result.success).length, 1);
@@ -169,7 +217,7 @@ test(
         await db.insert(user).values({ id: existingId, email, name: "Eksisterende test" });
         const fixture = await createInvitation({ email });
         const result = await acceptInvitation({
-          token: fixture.token, name: "Skal ikke gemmes", password,
+          token: fixture.token, name: "Skal ikke gemmes", password, birthDate: adultBirthDate,
         });
         assert.ok(!result.success && result.code === "EMAIL_IN_USE");
         assert.equal((await readInvitation(fixture.id)).usedAt, null);
@@ -199,7 +247,7 @@ test(
           crypto.randomUUID = () => occupiedAccountId as ReturnType<typeof randomUUID>;
           syncBuiltinESMExports();
           result = await acceptInvitation({
-            token: fixture.token, name: "Skal rulles tilbage", password,
+            token: fixture.token, name: "Skal rulles tilbage", password, birthDate: adultBirthDate,
           });
         } finally {
           crypto.randomUUID = originalRandomUUID;
@@ -214,7 +262,7 @@ test(
 
         // Efter en tilbagerullet fejl kan samme link bruges igen.
         const retry = await acceptInvitation({
-          token: fixture.token, name: "Nyt forsøg", password,
+          token: fixture.token, name: "Nyt forsøg", password, birthDate: adultBirthDate,
         });
         assert.ok(retry.success);
       });
@@ -225,7 +273,7 @@ test(
           createInvitation({ email }), createInvitation({ email }),
         ]);
         const results = await Promise.all(fixtures.map((fixture) =>
-          acceptInvitation({ token: fixture.token, name: "Test", password }),
+          acceptInvitation({ token: fixture.token, name: "Test", password, birthDate: adultBirthDate }),
         ));
         assert.equal(results.filter((result) => result.success).length, 1);
         assert.equal(results.filter((result) =>
@@ -266,7 +314,7 @@ test(
         await db.insert(user).values({ email, name: "Test af begrænsning" });
         const fixture = await createInvitation({ email });
         const results = await Promise.all(Array.from({ length: 8 }, () =>
-          acceptInvitation({ token: fixture.token, name: "Test", password }),
+          acceptInvitation({ token: fixture.token, name: "Test", password, birthDate: adultBirthDate }),
         ));
         assert.equal(results.filter((result) =>
           !result.success && result.code === "EMAIL_IN_USE",
@@ -282,7 +330,7 @@ test(
         await db.update(invitationAttempt)
           .set({ windowEndsAt: new Date(Date.now() - 60_000) })
           .where(eq(invitationAttempt.invitationId, fixture.id));
-        const retry = await acceptInvitation({ token: fixture.token, name: "Test", password });
+        const retry = await acceptInvitation({ token: fixture.token, name: "Test", password, birthDate: adultBirthDate });
         assert.ok(!retry.success && retry.code === "EMAIL_IN_USE");
         const [resetCounter] = await db.select().from(invitationAttempt).where(
           eq(invitationAttempt.invitationId, fixture.id),
@@ -297,6 +345,7 @@ test(
         form.set("name", "Formulartest");
         form.set("password", password);
         form.set("confirmPassword", "En anden adgangskode");
+        form.set("birthDate", adultBirthDate);
         const mismatch = await registerWithInvitation({ success: true }, form);
         assert.equal(mismatch.success, undefined);
         assert.equal(mismatch.error, "Adgangskoderne er ikke ens.");

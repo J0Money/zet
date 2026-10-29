@@ -58,6 +58,19 @@ export function formatShortDateDanish(date: string): string {
   }).format(new Date(date));
 }
 
+// Alder i fyldte år ud fra en "YYYY-MM-DD"-fødselsdato, regnet mod dags dato
+// i dansk tid. Bruges til aldersgrænsen ved oprettelse (lib/invitations.ts)
+// og til at vise/skjule voksenbekræftelsen i signup-formularen.
+export function calculateAge(birthDate: string): number {
+  const today = getTodayInCopenhagen().split("-").map(Number);
+  const birth = birthDate.split("-").map(Number);
+  let age = today[0] - birth[0];
+  if (today[1] < birth[1] || (today[1] === birth[1] && today[2] < birth[2])) {
+    age--;
+  }
+  return age;
+}
+
 // Klokkeslæt i dansk tid for et gemt tidspunkt (ISO), fx "18.42". Her bruges
 // Europe/Copenhagen med vilje, i modsætning til formatDateDanish: et
 // tidspunkt er et ægte øjeblik, ikke en kalenderdato uden tidszone.

@@ -1,5 +1,63 @@
 # ZET
 
+## Overlevering til Claude Code (29. oktober 2026)
+
+Læs dette afsnit først. Det afløser ældre status og instruktioner om igangværende arbejde nedenfor, herunder beskrivelsen af en app kun til 1-3 personer og den gamle 12-timers afslutning.
+
+### Aktuel opgave: realistisk databeskyttelse før bredere brug
+
+- Joachim har udtrykkeligt sagt, at ZET skal kunne bruges af en bredere gruppe, og ønsker at gøre det rigtigt fra starten. Planlæg efter GDPR frem for at læne jer op ad undtagelsen for rent private aktiviteter. Der er stadig kun invitationsbaseret oprettelse; åbn ikke offentlig signup uden aftale.
+- To nye lokale, ikke-committede dokumenter: `docs/privacy-readiness.md` (datakort, dokumenterede mangler, leverandørfund og rækkefølge) og `docs/privacy-policy-draft.md` (tydeligt markeret IKKE TIL UDGIVELSE med afklaringsfelter). Læs begge, før der implementeres noget. Ingen privatlivsside er bygget eller publiceret.
+- Ansvarlig er foreløbigt oplyst som "Joachim H". Fuldt navn er ikke bekræftet. Joachim vil oprette en dedikeret mail til ZET; adressen er endnu ikke valgt/oplyst. Find ikke selv på en adresse eller brug en privat adresse fra tidligere screenshots.
+- Ingen slettefrister eller behandlingsgrundlag er endeligt vedtaget. Lov ikke automatisk kontosletning, dataeksport, EU-eksklusiv behandling eller bestemte frister, før praksis er verificeret. En manuel rettighedsprocedure kan være første løsning, men skal faktisk kunne gennemføres og testes.
+- Vigtig leverandørafklaring: Vercels offentlige DPA nævner Pro/Enterprise i indledningen, mens deres generelle vilkår henviser til DPA. ZET er på Hobby. Afklar den konkrete aftaledækning; konkludér ikke automatisk, at Hobby er ulovligt eller at en opgradering løser alt. DPA har også en begrænsning for særlige kategorier af persondata. Træningsdata/fritekst skal vurderes for eventuelle helbredsoplysninger. Kilder og status står i arbejdsdokumentet. Intet abonnement må opgraderes uden ja.
+- Neon og Upstash har offentlig DPA-dokumentation; konkrete kontoaftaler, underleverandører, regioner og log-/backupfrister er ikke færdigverificeret. Blob er observeret i Frankfurt, Vercel-funktioner i iad1 (USA). Ingen cookie-/netværksaudit af produktion er gennemført. Ingen reklamer, betaling eller analytics-SDK er fundet i koden.
+- Tekniske huller: ingen samlet kontoeksport/-sletning, ingen dokumenteret generel retention-oprydning, lokale kladder har ingen TTL og bliver ikke ryddet ved logout. Blob-oprydning kan fejle uden genforsøg. Kontosletning skal håndtere fremmednøgler til delte øvelser, så andres historik ikke ødelægges. Løs ikke dette med et blindt DELETE/cascade.
+- Næste rækkefølge: kontakt/identitet og målgruppealder, leverandørafklaring, begrundede behandlingsgrundlag og opbevaringsregler, testede rettigheds-/oprydningsprocedurer, derefter endelig tekst og publicering. Behov for DPIA/DPO og eventuelle Community/platformregler skal vurderes, ikke antages.
+
+### Aldersgrænse ved oprettelse (29. oktober 2026, lokalt, ikke committet)
+
+- Afklaret med Joachim: ansvarlig er Joachim Hjertmann som privatperson (ingen firma/CVR). Dedikeret ZET-mail er endnu ikke oprettet; Joachim opretter den selv.
+- Mindstealder 13 år. Signup kræver fødselsdato; under 13 afvises, 13-17 skal krydse af for voksentilladelse, 18+ uden ekstra trin. Serveren håndhæver det i `acceptInvitation` (`lib/invitations.ts`), formularen viser det løbende (`app/signup/signup-form.tsx`). `calculateAge` ligger i `lib/dates.ts`.
+- Migration `0015_user_age_confirmation.sql` er vist og kørt efter Joachims ja: `user.birth_date`, `user.adult_permission_confirmed`, `user.age_confirmation_at`, alle nullable. Eksisterende brugere har null. Fødselsdato må ikke vises til andre brugere.
+- TypeScript, ESLint, build og alle 14 invitationstests (inkl. to nye aldersgrænsetests) består. Browserkontrol af 15 år, under 13 og voksen samt mobilbredde er gennemført; testinvitation slettet.
+
+### Git og produktion
+
+- Lokal `master` er på `698d578` (dokumentation), efter `2412b0a` (automatisk afslutning og logrettelser), efter `07d4213` (Overblik). De to nye commits blev pushet til `origin/master` i denne session. Remote er ikke genhentet ved denne handover.
+- Før denne overleveringsændring var eneste lokale ændringer de to nye privatlivsdokumenter. Denne handover ændrer også CLAUDE.md. Intet af dette nye dokumentationsarbejde er committet eller pushet. Brugeren har bedt om handover, ikke om nyt push.
+- Produktion: https://zet-wheat.vercel.app. Senest kontrollerede redeployment `zet-1qgm1mh3a-j0-money.vercel.app` var Ready og havde produktionsaliaset. Det var efter brugerens Blob-rotation, ikke en ny kodeændring.
+- Ingen nye migrationer i denne session. Senest kendte migrationsniveau er 0014. En lokal server har kørt på port 3000; kontrollér aktuel proces før start/stop og antag ikke, at en gammel værktøjssession stadig findes.
+
+### Udgivet: automatisk afslutning af styrkepas
+
+- Kun åbne, startede pas med mindst ét styrkesæt og ingen cardio. Afslut efter mindst én time uden nye styrkesæt, med sidste sæts registreringstid som sluttid. Tomme pas og cardio/blandede pas undtages. Rettelse af kg/reps tæller ikke som et nyt sæt.
+- Den endelige løsning er en forsinket QStash-opgave pr. gemning, IKKE et fast tjek hvert 30. minut. Ny deadline efter nye sæt; gamle opgaver kontrollerer aktuelle data. Publicering sker kun i Vercel Production. QSTASH_TOKEN og WORKOUT_EXPIRY_SECRET er sat som Production Secrets; vis aldrig værdier.
+- Implementering og begrænsninger: `docs/automatic-workout-end.md`, `lib/schedule-workout-expiry.ts`, `lib/workout-expiry-publisher.ts`, `lib/workout-expiry.ts`, `app/api/workouts/expire/route.ts`. getActiveWorkout anvender også udløbsreglen. Ingen outbox; nedbrud mellem gemning og publicering kan miste opgaven. Ved fanget publiceringsfejl vises advarsel uden at gentage gemningen.
+- Produktionscallback er testet direkte med isoleret testpas: 401 uden nøgle, korrekt afslutning med nøgle, testdata ryddet op. Dette beviser IKKE levering gennem QStash.
+- Brugeren er i gang med en rigtig test: startede først et tomt pas og blev bedt om at gemme et styrkesæt og vente en time uden cardio/nye sæt. Præcist gemmetidspunkt og faktisk QStash-levering er IKKE verificeret. Følg op. At passet er lukket efter genåbning beviser heller ikke i sig selv QStash, fordi getActiveWorkout også afslutter. Kontrollér provider-levering eller tilstanden før et brugeropslag, som kan ændre den.
+- Et allerede åbent browserur opdateres ikke automatisk ved serverafslutning; genindlæsning/navigation kræves. Eksisterende pas får først en planlagt opgave ved næste gemte sæt.
+
+### Øvrige udgivne rettelser og feedback
+
+- Log viser reps først i "Sidst" og PR; Community beholder den tidligere rækkefølge. Community viser ental ved én rekord. Log husker senest loggede udstyr pr. øvelsesvalg, med lokal kladde som første prioritet.
+- Manglende pulldown-rekord skyldtes i det undersøgte tilfælde forskellige øvelsesvarianter: tidligere uden angivet udstyr og senere Maskine. Ingen historiske data blev rettet. Rekorder er bevidst pr. variant; ændr ikke denne regel uden aftale.
+- Større redesign af Log er stadig kun et tidligere udkast, ikke implementeret. Bland ikke nyt design ind i privatlivsarbejdet.
+
+### Blob-nøgle og Vercel-advarsel er løst
+
+- Brugeren roterede Blob-credentials med to timers overlap og redeployede. Derefter ændrede Codex den EKSISTERENDE `BLOB_READ_WRITE_TOKEN` via Vercels PATCH env-API fra encrypted/Config til sensitive/Secret uden at ændre værdien, miljøerne eller Blob-forbindelsen. Efterfølgende GET bekræftede `visibility: secret` for både Production og Development.
+- Ingen OIDC-migration er lavet eller nødvendig for denne rettelse. Rotér ikke igen for at fjerne den gamle advarsel. UI havde ingen Edit, fordi Blob styrede variablen; API-opdateringen virkede.
+- Den lokale `.env.local` er IKKE bekræftet opdateret efter brugerens Blob-rotation og kan derfor indeholde en udløbet nøgle. Håndtér en eventuel opdatering uden at vise værdier eller overskrive øvrige variabler.
+- Brugeren måtte bruge en gemt Vercel recovery code til redeploy. Authenticator-adgang er ikke genoprettet. Sikkerhedskoder må ikke sendes i chatten; omgå ikke reauthentication.
+
+### Verifikation og arbejdsregler
+
+- Før udgivelsen bestod produktionsbuild, målrettet lint, publisher-tests, udstyrsvalg-tests, exercise-history-tests og databaseintegration for udløbsreglen. Denne handover er kun dokumentation; ingen ny kode er ændret.
+- Relevante kommandoer: `node --import tsx --test tests/workout-expiry-publisher.test.ts tests/last-equipment.test.ts`; databaseintegration tilvælges med `$env:ZET_RUN_EXPIRY_TESTS='1'` og `node --conditions=react-server --import tsx --test tests/workout-expiry.integration.test.ts`. Brug testens egne isolerede brugere og oprydning.
+- Læs AGENTS.md og relevante installerede Next.js-guides før kode. Følg eksisterende projektmønstre. Spørg før arkitekturændringer, vis migrations-SQL og få ja, push kun med ja. Ingen destruktive brugerdataændringer eller betalte opgraderinger uden aftale.
+- Ingen hemmeligheder i chat, logs eller git. Aldrig `npm audit fix --force`. Brug dansk, enkelt sprog og ingen tankestreger i tekst til Joachim. Undgå gentagne spørgsmål om ting, koden eller den eksisterende samtale kan afklare.
+
 Mobilvenlig webapp til at registrere styrke og cardio med et dashboard. Appen er til Joe og 1-2 venner. Hver brugers data skal være adskilt fra de andres.
 
 ## Overlevering til Codex (27. oktober 2026)

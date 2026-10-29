@@ -4,8 +4,31 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { calculateAge, getTodayInCopenhagen } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { invitation, user } from "@/lib/db/schema";
+
+// Mindstealder for at oprette en ZET-konto. Under denne alder afvises
+// oprettelsen helt, der findes intet forældresamtykke-flow i appen.
+const MINIMUM_AGE = 13;
+
+// Validerer en "YYYY-MM-DD"-fødselsdato fra formularen: ægte kalenderdato,
+// ikke i fremtiden, og et rimeligt årstal. Returnerer null ved ugyldigt input.
+function parseBirthDate(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (year < 1900) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  if (value > getTodayInCopenhagen()) return null;
+  return value;
+}
 
 type InvitationErrorCode =
   | "INVALID_INPUT"
@@ -119,6 +142,38 @@ export async function acceptInvitation(
     };
   }
 
+  const { birthDate: birthDateInput, adultPermissionConfirmed: adultPermissionInput } =
+    input as Record<string, unknown>;
+  const birthDate = parseBirthDate(birthDateInput);
+  if (!birthDate) {
+    return {
+      success: false,
+      code: "INVALID_INPUT",
+      message: "Udfyld en gyldig fødselsdato.",
+    };
+  }
+  const age = calculateAge(birthDate);
+  if (age < MINIMUM_AGE) {
+    return {
+      success: false,
+      code: "INVALID_INPUT",
+      message: `Du skal være mindst ${MINIMUM_AGE} år for at oprette en ZET-konto.`,
+    };
+  }
+  // Null betyder "ikke relevant": brugeren er 18+, så der kræves ingen
+  // voksenbekræftelse. 13-17 år skal eksplicit have bekræftet den.
+  let adultPermissionConfirmed: boolean | null = null;
+  if (age < 18) {
+    if (adultPermissionInput !== "on" && adultPermissionInput !== true) {
+      return {
+        success: false,
+        code: "INVALID_INPUT",
+        message: "Du skal bekræfte, at du har fået lov af en forælder eller anden voksen.",
+      };
+    }
+    adultPermissionConfirmed = true;
+  }
+
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
   try {
@@ -186,8 +241,12 @@ export async function acceptInvitation(
       ),
       created_user AS (
         INSERT INTO "user"
-          ("id", "email", "name", "email_verified", "created_at", "updated_at")
-        SELECT ${userId}::uuid, "email", ${name.trim()}, false, now(), now()
+          ("id", "email", "name", "email_verified",
+           "birth_date", "adult_permission_confirmed", "age_confirmation_at",
+           "created_at", "updated_at")
+        SELECT ${userId}::uuid, "email", ${name.trim()}, false,
+               ${birthDate}::date, ${adultPermissionConfirmed}, now(),
+               now(), now()
         FROM claimed_invitation
         RETURNING "id", "email"
       ),
