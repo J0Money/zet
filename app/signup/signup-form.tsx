@@ -2,11 +2,13 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { calculateAge } from "@/lib/dates";
 import { registerWithInvitation, type SignupState } from "./actions";
 
 const initialState: SignupState = {};
 const inputClass =
   "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-indigo-600";
+const MINIMUM_AGE = 13;
 
 export function SignupForm({
   token,
@@ -21,7 +23,16 @@ export function SignupForm({
 }) {
   const [state, formAction, pending] = useActionState(registerWithInvitation, initialState);
   const [name, setName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [adultPermissionConfirmed, setAdultPermissionConfirmed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Beregnes løbende, mens man taster, så man kan se aldersgrænsen med det
+  // samme. Serveren regner selv efter og håndhæver det reelt, se
+  // lib/invitations.ts.
+  const age = /^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? calculateAge(birthDate) : null;
+  const tooYoung = age !== null && age < MINIMUM_AGE;
+  const needsAdultPermission = age !== null && age >= MINIMUM_AGE && age < 18;
 
   if (state.success) {
     return (
@@ -68,6 +79,46 @@ export function SignupForm({
             className={inputClass}
           />
         </div>
+        <div>
+          <label htmlFor="birthDate" className="mb-2 block text-sm font-medium">Fødselsdato</label>
+          <input
+            id="birthDate"
+            name="birthDate"
+            type="date"
+            autoComplete="bday"
+            required
+            value={birthDate}
+            onChange={(event) => {
+              setBirthDate(event.target.value);
+              setAdultPermissionConfirmed(false);
+            }}
+            className={inputClass}
+          />
+          <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+            Du skal være mindst {MINIMUM_AGE} år for at oprette en ZET-konto.
+          </p>
+        </div>
+        {tooYoung && (
+          <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
+            Du skal være mindst {MINIMUM_AGE} år for at oprette en konto i ZET.
+          </p>
+        )}
+        {needsAdultPermission && (
+          <div role="alert" className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm leading-6 text-amber-900 dark:text-amber-200">
+            <p className="font-semibold">Du er under 18 år</p>
+            <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="adultPermissionConfirmed"
+                required
+                checked={adultPermissionConfirmed}
+                onChange={(event) => setAdultPermissionConfirmed(event.target.checked)}
+                className="mt-0.5 size-4 accent-indigo-600"
+              />
+              <span>Jeg har fået lov af en forælder eller anden voksen til at oprette og bruge en ZET-konto.</span>
+            </label>
+          </div>
+        )}
         <div>
           <label htmlFor="password" className="mb-2 block text-sm font-medium">Adgangskode</label>
           <input
@@ -116,8 +167,8 @@ export function SignupForm({
         )}
         <button
           type="submit"
-          disabled={pending}
-          className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
+          disabled={pending || tooYoung || (needsAdultPermission && !adultPermissionConfirmed)}
+          className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Opretter din konto…" : "Opret bruger"}
         </button>

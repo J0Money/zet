@@ -22,6 +22,8 @@ export async function registerWithInvitation(
     token: formData.get("token"),
     name: formData.get("name"),
     password,
+    birthDate: formData.get("birthDate"),
+    adultPermissionConfirmed: formData.get("adultPermissionConfirmed"),
   });
   return result.success ? { success: true } : { error: result.message };
 }
