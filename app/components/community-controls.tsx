@@ -6,6 +6,7 @@ import { Check, HandFist } from "@phosphor-icons/react";
 import { reactAction, shareWorkoutAction, withdrawPostAction } from "@/app/community/actions";
 import type { CommunitySummary } from "@/lib/community-summary";
 import { CommunitySummaryCard } from "@/app/components/community-summary-card";
+import { HEALTH_NOTICE } from "@/lib/health-notice";
 
 export function WithdrawPost({ postId }: { postId: string }) {
   const [, action, pending] = useActionState(withdrawPostAction, {});
@@ -58,7 +59,7 @@ export function ShareWorkout({ workoutId, name, summary, shared }: {
         <textarea name="caption" maxLength={1000} rows={3} placeholder="Hurtig træning med Erik!" value={caption} onChange={(event) => setCaption(event.target.value)} disabled={pending}
           className="mt-2 w-full rounded-xl border border-zinc-300 bg-transparent p-3 dark:border-zinc-700" />
       </label>
-      <p className="text-xs text-zinc-500">Teksten deles med fællesskabet. Dine private træningsnoter deles ikke.</p>
+      <p className="text-xs text-zinc-500">Teksten deles med fællesskabet. Dine private træningsnoter deles ikke. {HEALTH_NOTICE}</p>
       {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
       <button disabled={pending} className="min-h-12 rounded-xl bg-indigo-600 px-5 font-semibold text-white disabled:opacity-50">{pending ? "Deler…" : "Del med fællesskabet"}</button>
     </form>}

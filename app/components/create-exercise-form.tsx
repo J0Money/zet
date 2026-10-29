@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CreateExerciseState } from "@/app/log/actions";
+import { HEALTH_NOTICE } from "@/lib/health-notice";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { ExerciseType, MuscleGroup } from "@/lib/types";
 
@@ -59,6 +60,7 @@ export function CreateExerciseForm({
           onChange={(event) => setName(event.target.value)}
           className={inputClass}
         />
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Øvelsen kan ses af alle i ZET. {HEALTH_NOTICE}</p>
       </div>
 
       {type === "strength" && (

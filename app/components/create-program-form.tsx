@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createProgramAction, type CreateProgramState } from "@/app/programs/actions";
+import { HEALTH_NOTICE } from "@/lib/health-notice";
 import type { Exercise } from "@/lib/types";
 
 const initialState: CreateProgramState = {};
@@ -32,6 +33,7 @@ export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
       <div>
         <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="name">Navn</label>
         <input id="name" name="name" type="text" required maxLength={100} placeholder="Fx Pushdag" className={inputClass} />
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Navnet kan ses af andre, hvis du udgiver programmet. {HEALTH_NOTICE}</p>
       </div>
 
       <div className="flex flex-col gap-3">

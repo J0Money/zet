@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useId, useState, type ReactNode } from "react";
 import { saveExerciseNote, type ExerciseNoteState } from "@/app/log/actions";
+import { HEALTH_NOTICE } from "@/lib/health-notice";
 
 const initialState: ExerciseNoteState = {};
 
@@ -53,7 +54,7 @@ export function ExerciseNote({ exerciseId, equipment, note, children }: {
           <textarea id={inputId} value={text} onChange={(event) => setText(event.target.value)}
             maxLength={500} rows={3} disabled={pending} placeholder="Fx Sæde 4 · ryglæn 2 eller Bænk 30°"
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 text-base" />
-          <p className="mt-1 text-xs text-zinc-500">Kun synlig for dig, på denne øvelsesvariant.</p>
+          <p className="mt-1 text-xs text-zinc-500">Kun synlig for dig, på denne øvelsesvariant. {HEALTH_NOTICE}</p>
           <div className="flex flex-wrap gap-x-5">
             <button type="button" disabled={pending} className={buttonClass} onClick={() => save(text)}>{pending ? "Gemmer…" : "Gem note"}</button>
             <button type="button" disabled={pending} className={buttonClass} onClick={() => setEditing(false)}>Annuller</button>
