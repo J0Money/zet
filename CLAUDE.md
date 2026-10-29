@@ -8,7 +8,7 @@ Læs dette afsnit først. Det afløser ældre status og instruktioner om igangv�
 
 - Joachim har udtrykkeligt sagt, at ZET skal kunne bruges af en bredere gruppe, og ønsker at gøre det rigtigt fra starten. Planlæg efter GDPR frem for at læne jer op ad undtagelsen for rent private aktiviteter. Der er stadig kun invitationsbaseret oprettelse; åbn ikke offentlig signup uden aftale.
 - To nye lokale, ikke-committede dokumenter: `docs/privacy-readiness.md` (datakort, dokumenterede mangler, leverandørfund og rækkefølge) og `docs/privacy-policy-draft.md` (tydeligt markeret IKKE TIL UDGIVELSE med afklaringsfelter). Læs begge, før der implementeres noget. Ingen privatlivsside er bygget eller publiceret.
-- Ansvarlig er foreløbigt oplyst som "Joachim H". Fuldt navn er ikke bekræftet. Joachim vil oprette en dedikeret mail til ZET; adressen er endnu ikke valgt/oplyst. Find ikke selv på en adresse eller brug en privat adresse fra tidligere screenshots.
+- Ansvarlig er Joachim Hjertmann som privatperson. Dedikeret kontaktmail er ZetService@protonmail.com (Proton Mail, oprettet af Joachim 29. oktober 2026). Brug ikke andre private adresser fra tidligere screenshots.
 - Ingen slettefrister eller behandlingsgrundlag er endeligt vedtaget. Lov ikke automatisk kontosletning, dataeksport, EU-eksklusiv behandling eller bestemte frister, før praksis er verificeret. En manuel rettighedsprocedure kan være første løsning, men skal faktisk kunne gennemføres og testes.
 - Vigtig leverandørafklaring: Vercels offentlige DPA nævner Pro/Enterprise i indledningen, mens deres generelle vilkår henviser til DPA. ZET er på Hobby. Afklar den konkrete aftaledækning; konkludér ikke automatisk, at Hobby er ulovligt eller at en opgradering løser alt. DPA har også en begrænsning for særlige kategorier af persondata. Træningsdata/fritekst skal vurderes for eventuelle helbredsoplysninger. Kilder og status står i arbejdsdokumentet. Intet abonnement må opgraderes uden ja.
 - Neon og Upstash har offentlig DPA-dokumentation; konkrete kontoaftaler, underleverandører, regioner og log-/backupfrister er ikke færdigverificeret. Blob er observeret i Frankfurt, Vercel-funktioner i iad1 (USA). Ingen cookie-/netværksaudit af produktion er gennemført. Ingen reklamer, betaling eller analytics-SDK er fundet i koden.
@@ -17,10 +17,15 @@ Læs dette afsnit først. Det afløser ældre status og instruktioner om igangv�
 
 ### Aldersgrænse ved oprettelse (29. oktober 2026, lokalt, ikke committet)
 
-- Afklaret med Joachim: ansvarlig er Joachim Hjertmann som privatperson (ingen firma/CVR). Dedikeret ZET-mail er endnu ikke oprettet; Joachim opretter den selv.
+- Afklaret med Joachim: ansvarlig er Joachim Hjertmann som privatperson (ingen firma/CVR). Dedikeret ZET-mail er ZetService@protonmail.com.
 - Mindstealder 13 år. Signup kræver fødselsdato; under 13 afvises, 13-17 skal krydse af for voksentilladelse, 18+ uden ekstra trin. Serveren håndhæver det i `acceptInvitation` (`lib/invitations.ts`), formularen viser det løbende (`app/signup/signup-form.tsx`). `calculateAge` ligger i `lib/dates.ts`.
 - Migration `0015_user_age_confirmation.sql` er vist og kørt efter Joachims ja: `user.birth_date`, `user.adult_permission_confirmed`, `user.age_confirmation_at`, alle nullable. Eksisterende brugere har null. Fødselsdato må ikke vises til andre brugere.
 - TypeScript, ESLint, build og alle 14 invitationstests (inkl. to nye aldersgrænsetests) består. Browserkontrol af 15 år, under 13 og voksen samt mobilbredde er gennemført; testinvitation slettet.
+
+### Leverandører og helbredsdata (29. oktober 2026, lokalt, ikke committet)
+
+- Vercel Support bekræftede: ingen DPA på Hobby. Joachim vil ikke opgradere til Pro. Railway undersøges som alternativ; spørgsmål sendt til privacy@railway.com, svar afventes. Proton-spørgsmål sendt via supportformular. Detaljer i `docs/privacy-readiness.md`. Ingen hosting er flyttet, intet abonnement oprettet.
+- Helbredsdata: Joachim valgte minimering (mulighed A). `lib/health-notice.ts` vises ved seks fritekstfelter: privat note på pas, huskenote, delingstekst, kommentarer (kun mens man skriver), nye øvelser og nye programmer. TypeScript, ESLint og produktionsbuild består. Ikke kontrolleret i browser.
 
 ### Git og produktion
 

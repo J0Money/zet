@@ -5,6 +5,7 @@ import { localWorkoutTime, type EditEntry } from "@/lib/workout-edit-input";
 import { saveWorkoutAction, deleteWorkoutAction } from "@/app/history/actions";
 import { choiceKey, groupExercises } from "@/lib/exercise-groups";
 import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
+import { HEALTH_NOTICE } from "@/lib/health-notice";
 const field = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-zinc-300 bg-transparent px-3 py-2 text-base dark:border-zinc-700";
 const button = "min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-medium dark:border-zinc-700";
 function ExerciseEquipmentSelect({ exercises, entry, onChange }: { exercises: Exercise[]; entry: EditEntry; onChange: (patch: Partial<EditEntry>) => void }) {
@@ -62,7 +63,7 @@ export function WorkoutEditor({ workout, entries, exercises, version, shared }: 
           <label className="min-w-0 text-sm">Slut<input className={field} name="end" type="datetime-local" step="1" defaultValue={localWorkoutTime(workout.ended_at)} /></label>
         </div>
         <p className="text-xs text-zinc-500">Ældre pas kan beholde tomme tidspunkter. Hvis du retter datoen, skal starttidspunktet også være på den dag.</p>
-        <label className="block text-sm">Privat note<textarea className={field} name="notes" rows={2} maxLength={5000} defaultValue={workout.notes} /></label>
+        <label className="block text-sm">Privat note<textarea className={field} name="notes" rows={2} maxLength={5000} defaultValue={workout.notes} /><span className="mt-1 block text-xs text-zinc-500">{HEALTH_NOTICE}</span></label>
         <div className="space-y-4">{draft.map((entry, index) => <div key={entry.id} className="space-y-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold">{entry.kind === "strength" ? "Sæt" : "Cardio"} {index + 1}</p><button className="min-h-11 px-2 text-sm text-red-600" type="button" onClick={() => setDraft(draft.filter((item) => item.id !== entry.id))}>Fjern</button></div>
           <ExerciseEquipmentSelect exercises={exercises} entry={entry} onChange={(patch) => change(index, patch)} />

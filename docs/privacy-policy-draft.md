@@ -4,13 +4,15 @@ IKKE TIL UDGIVELSE. Arbejdsudkast 29. oktober 2026. Felter i kantede parenteser 
 
 ## Ansvarlig og kontakt
 
-ZET drives af Joachim Hjertmann som privatperson. Spørgsmål om dine oplysninger og anmodninger om at bruge dine rettigheder kan sendes til [dedikeret ZET-mail, ikke oprettet endnu].
+ZET drives af Joachim Hjertmann som privatperson. Spørgsmål om dine oplysninger og anmodninger om at bruge dine rettigheder kan sendes til ZetService@protonmail.com.
 
 ## Hvilke oplysninger bruges og hvorfor?
 
 Ved invitation og oprettelse bruges e-mail, navn og en adgangskode, som gemmes i form af et hash. Konto- og loginoplysninger bruges til at give dig adgang og beskytte kontoen. Login kan omfatte IP-adresse og browseroplysninger.
 
 ZET gemmer de øvelser, sæt, gentagelser, belastninger, cardiotal, datoer, noter og programmer, du registrerer. Oplysningerne bruges til historik, overblik og beregnede træningsresultater. Hvis du uploader et profilbillede, gemmes en bearbejdet udgave af billedet.
+
+ZET er en træningslog og er ikke beregnet til oplysninger om dit helbred. Skriv derfor ikke om skader, sygdom eller andet helbred i noter, opslag, kommentarer eller navne på øvelser og programmer. Har du alligevel gjort det, kan du selv slette teksten eller bede os om at slette den.
 
 [Indsæt særskilt, valideret behandlingsgrundlag for invitation, konto, træning, sikkerhed, frivillig deling og push. Afklar eventuelle helbredsoplysninger og mindreårige før udgivelse.]
 
@@ -32,7 +34,7 @@ Push er valgfrit. Ved tilmelding gemmes tekniske oplysninger til at sende notifi
 
 ZET bruger Vercel til hosting og billedlager, Neon til databasen og Upstash QStash til planlagte tjek af inaktive træninger. QStash modtager et pas-id, ikke hele træningen. Browserens push-tjeneste bruges til notifikationer, hvis du tilmelder dig.
 
-[Indsæt verificerede leverandørroller, lande, overførselsgrundlag og adgang til garantier. Afklar Vercel Hobby-aftalen. Tilføj mailleverandør, når valgt.]
+[Indsæt verificerede leverandørroller, lande, overførselsgrundlag og adgang til garantier. Afklar Vercel Hobby-aftalen. Mailleverandør: Proton Mail (Schweiz); DPA-dækning for gratis konto er uafklaret.]
 
 ## Opbevaring og dine rettigheder
 
