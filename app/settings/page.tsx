@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { ShieldCheck, SignOut } from "@phosphor-icons/react/dist/ssr";
-import { logout } from "@/app/components/logout-action";
+import { ShieldCheck } from "@phosphor-icons/react/dist/ssr";
+import { LogoutButton } from "@/app/components/logout-button";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/session";
 import { PushSettings } from "@/app/components/push-settings";
 import { pushConfigured } from "@/lib/push";
 import { getProfileImage } from "@/lib/avatars";
+import { avatarStorageConfigured } from "@/lib/avatar-storage";
 import { ProfileImageSettings } from "@/app/components/profile-image-settings";
 
 // Siden afhænger af den aktuelle bruger (admin-status), så den kan ikke
@@ -27,7 +28,7 @@ export default async function SettingsPage() {
         <h1>Indstillinger</h1>
       </header>
 
-      <ProfileImageSettings userId={currentUser.id} name={currentUser.name} image={image} configured={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
+      <ProfileImageSettings userId={currentUser.id} name={currentUser.name} image={image} configured={avatarStorageConfigured()} />
       <section className="flex flex-col gap-3">
         <h2 className="zet-sectionTitle">Udseende</h2>
         <ThemeToggle />
@@ -53,15 +54,7 @@ export default async function SettingsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="zet-sectionTitle">Konto</h2>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="zet-panel flex w-full items-center gap-3 text-left text-sm font-medium text-red-600 dark:text-red-400 transition-colors hover:border-red-200 dark:hover:border-red-800"
-          >
-            <SignOut aria-hidden="true" size={20} />
-            Log ud
-          </button>
-        </form>
+        <LogoutButton />
       </section>
     </div>
   );

@@ -3,6 +3,7 @@
 import { requireUser } from "@/lib/session";
 import { scheduleWorkoutExpiry } from "@/lib/schedule-workout-expiry";
 import { setExerciseNote } from "@/lib/exercise-notes";
+import { rejectHealthText } from "@/lib/health-notice";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { EQUIPMENT } from "@/lib/equipment";
@@ -75,6 +76,8 @@ export async function saveExerciseNote(
     || typeof input.note !== "string" || input.note.length > 500) {
     return { error: "Noten må højst være 500 tegn." };
   }
+  const healthError = rejectHealthText(input.note);
+  if (healthError) return { error: healthError };
   const visible = await getExercises(currentUser.id);
   const selected = visible.find((item) => item.id === input.exerciseId && item.type === "strength");
   if (!selected) return { error: "Vælg en gyldig styrkeøvelse." };
@@ -257,6 +260,8 @@ export async function createExerciseAction(
   if (name.length > 100) {
     return { error: "Navnet må højst være 100 tegn." };
   }
+  const healthError = rejectHealthText(name);
+  if (healthError) return { error: healthError };
   if (type !== "strength" && type !== "cardio") {
     return { error: "Ugyldig øvelsestype." };
   }

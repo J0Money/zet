@@ -8,6 +8,8 @@ import { equipmentName } from "./exercise-names";
 
 const versionSql = sql`md5(row_to_json(w)::text || coalesce((select jsonb_agg(to_jsonb(s) order by s.id)::text from workout_set s where s.workout_id = w.id), '') || coalesce((select jsonb_agg(to_jsonb(c) order by c.id)::text from workout_cardio c where c.workout_id = w.id), ''))`;
 export async function getWorkoutEditVersion(userId: string, id: string): Promise<string> {
+  // Et ugyldigt id skal ende som "ikke fundet" på siden, ikke som en databasefejl.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return "";
   const result = await db.execute(sql`select ${versionSql} as version from workout w where w.id = ${id}::uuid and w.user_id = ${userId}::uuid`);
   return String(result.rows[0]?.version ?? "");
 }

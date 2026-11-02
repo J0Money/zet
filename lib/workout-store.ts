@@ -101,7 +101,8 @@ export async function getEntries(userId: string): Promise<Entry[]> {
   // Sorteret efter created_at: "Sæt 1, Sæt 2, ..." afspejler rækkefølgen,
   // sættene blev logget i, og ændrer sig ikke, hvis et sæt rettes bagefter
   // (en UPDATE kan ellers flytte rækkens fysiske plads i en usorteret SELECT).
-  const strengthRows = await db
+  // De to opslag er uafhængige og hentes samtidig, så siden kun venter på det langsomste.
+  const [strengthRows, cardioRows] = await Promise.all([db
     .select({
       id: workoutSet.id,
       workout_id: workoutSet.workout_id,
@@ -113,9 +114,8 @@ export async function getEntries(userId: string): Promise<Entry[]> {
     .from(workoutSet)
     .innerJoin(workoutTable, eq(workoutSet.workout_id, workoutTable.id))
     .where(eq(workoutTable.user_id, userId))
-    .orderBy(workoutSet.created_at);
-
-  const cardioRows = await db
+    .orderBy(workoutSet.created_at),
+  db
     .select({
       id: workoutCardio.id,
       workout_id: workoutCardio.workout_id,
@@ -127,7 +127,7 @@ export async function getEntries(userId: string): Promise<Entry[]> {
     .from(workoutCardio)
     .innerJoin(workoutTable, eq(workoutCardio.workout_id, workoutTable.id))
     .where(eq(workoutTable.user_id, userId))
-    .orderBy(workoutCardio.created_at);
+    .orderBy(workoutCardio.created_at)]);
 
   // Styrke og cardio ligger i hver sin tabel, så de to lister flettes efter
   // created_at, ellers kom alle cardio-registreringer efter alle styrkesæt, uanset

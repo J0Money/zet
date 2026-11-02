@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { CreateExerciseState } from "@/app/log/actions";
-import { HEALTH_NOTICE } from "@/lib/health-notice";
+import { HEALTH_NOTICE, healthWarning } from "@/lib/health-notice";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { ExerciseType, MuscleGroup } from "@/lib/types";
 
@@ -30,6 +30,7 @@ export function CreateExerciseForm({
   // Kontrolleret, så navnet bevares efter en fejl (React nulstiller ellers
   // ukontrollerede felter efter hver formularhandling).
   const [name, setName] = useState("");
+  const healthError = healthWarning(name);
 
   function toggleGroup(group: MuscleGroup) {
     setSelectedGroups((current) => {
@@ -61,6 +62,7 @@ export function CreateExerciseForm({
           className={inputClass}
         />
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Øvelsen kan ses af alle i ZET. {HEALTH_NOTICE}</p>
+        {healthError && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{healthError}</p>}
       </div>
 
       {type === "strength" && (
@@ -95,7 +97,7 @@ export function CreateExerciseForm({
         <button
           type="submit"
           form={formId}
-          disabled={isPending}
+          disabled={isPending || Boolean(healthError)}
           className="min-h-11 flex-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
         >
           {isPending ? "Opretter…" : "Opret øvelse"}

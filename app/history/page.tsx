@@ -15,9 +15,9 @@ export default async function HistoryPage() {
   await connection();
   const currentUser = await requireUser();
 
-  const workouts = await getWorkouts(currentUser.id);
-  const entries = await getEntries(currentUser.id);
-  const exercises = await getExercises(currentUser.id);
+  const [workouts, entries, exercises] = await Promise.all([
+    getWorkouts(currentUser.id), getEntries(currentUser.id), getExercises(currentUser.id),
+  ]);
   const workoutSummaries = getLatestWorkouts(workouts, entries, exercises, workouts.length);
 
   return (

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { createProgram, deleteProgram, setProgramPublished } from "@/lib/programs";
+import { rejectHealthText } from "@/lib/health-notice";
 
 export type CreateProgramState = { error?: string; success?: boolean };
 
@@ -13,6 +14,8 @@ export async function createProgramAction(
   const currentUser = await requireUser();
   const name = String(formData.get("name") ?? "");
   const exerciseIds = formData.getAll("exerciseIds").map(String);
+  const healthError = rejectHealthText(name);
+  if (healthError) return { error: healthError };
 
   try {
     await createProgram(currentUser.id, { name, exerciseIds });

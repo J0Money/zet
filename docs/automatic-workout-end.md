@@ -22,7 +22,8 @@ Sluttiden er sidste sæts tidspunkt. Rettelse af kg/reps er ikke et nyt sæt.
 Ingen cron-plan oprettes. Appen publicerer selv opgaver. Payload indeholder
 kun tilfældigt pas-id, ingen navne eller træningsindhold. Separat bearer-nøgle
 beskytter callback. Det gamle globale GET-endpoint er fjernet.
-Lokal udvikling og previews sender ikke opgaver; kun VERCEL_ENV=production.
+Opgaver sendes kun, når WORKOUT_EXPIRY_CALLBACK_URL er sat (kun i produktion,
+fx https://<produktionsadresse>/api/workouts/expire). Lokal udvikling sætter den ikke.
 Hvis publicering fejler, bevares sættene og brugeren får besked om manuel
 afslutning. Der prøves igen én gang med samme deduplikeringsnøgle.
 

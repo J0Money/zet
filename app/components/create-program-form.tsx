@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createProgramAction, type CreateProgramState } from "@/app/programs/actions";
-import { HEALTH_NOTICE } from "@/lib/health-notice";
+import { HEALTH_NOTICE, healthWarning } from "@/lib/health-notice";
 import type { Exercise } from "@/lib/types";
 
 const initialState: CreateProgramState = {};
@@ -11,6 +11,8 @@ const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-70
 export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
   const [state, formAction, isPending] = useActionState(createProgramAction, initialState);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [name, setName] = useState("");
+  const healthError = healthWarning(name);
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
   const cardioExercises = exercises.filter((exercise) => exercise.type === "cardio");
 
@@ -27,13 +29,16 @@ export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
       action={(formData) => {
         formAction(formData);
         setSelected(new Set());
+        setName("");
       }}
       className="flex flex-col gap-4"
     >
       <div>
         <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="name">Navn</label>
-        <input id="name" name="name" type="text" required maxLength={100} placeholder="Fx Pushdag" className={inputClass} />
+        <input id="name" name="name" type="text" required maxLength={100} placeholder="Fx Pushdag" className={inputClass}
+          value={name} onChange={(event) => setName(event.target.value)} />
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Navnet kan ses af andre, hvis du udgiver programmet. {HEALTH_NOTICE}</p>
+        {healthError && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{healthError}</p>}
       </div>
 
       <div className="flex flex-col gap-3">
@@ -71,7 +76,7 @@ export function CreateProgramForm({ exercises }: { exercises: Exercise[] }) {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || Boolean(healthError)}
         className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? "Opretter…" : "Opret program"}

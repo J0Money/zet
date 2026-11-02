@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/session";
 import { saveWorkoutEdit } from "@/lib/workout-edit";
 import { WorkoutEditError, type WorkoutEdit } from "@/lib/workout-edit-input";
+import { rejectHealthText } from "@/lib/health-notice";
 import { db } from "@/lib/db";
 import { workout } from "@/lib/db/schema";
 export type EditState = { error?: string; success?: boolean };
@@ -17,7 +18,10 @@ export async function saveWorkoutAction(_: EditState, data: FormData): Promise<E
   try {
     const raw = String(data.get("payload") ?? "");
     if (raw.length > 200000) return { error: "Træningen er for stor." };
-    await saveWorkoutEdit(user.id, id, String(data.get("version") ?? ""), JSON.parse(raw) as WorkoutEdit);
+    const edit = JSON.parse(raw) as WorkoutEdit;
+    const healthError = rejectHealthText(edit?.notes);
+    if (healthError) return { error: healthError };
+    await saveWorkoutEdit(user.id, id, String(data.get("version") ?? ""), edit);
   } catch (error) {
     return { error: error instanceof WorkoutEditError ? error.message : "Træningen kunne ikke gemmes. Prøv igen." };
   }

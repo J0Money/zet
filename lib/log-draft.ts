@@ -46,13 +46,30 @@ export function isCardioDraft(value: unknown): value is CardioDraft {
   return object(value) && nullableText(value.selectedProgramId)
     && [value.searchQuery, value.exerciseId, value.distanceKm, value.minutes, value.seconds].every(text);
 }
+// Alle versioner af kladdenøgler starter med dette, så logout kan rydde dem samlet.
+export const DRAFT_KEY_PREFIX = "zet:log-draft:";
+// Kladder gemmes kun i browseren og udløber efter 2 dage (aftalt med Joachim).
+export const DRAFT_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
+
 export function draftKey(userId: string, kind: string) {
-  return `zet:log-draft:v1:${userId}:${kind}`;
+  return `${DRAFT_KEY_PREFIX}v2:${userId}:${kind}`;
 }
-export function parseDraft<T>(raw: string | null, validate: (value: unknown) => value is T): T | null {
+export function serializeDraft(value: unknown, now = Date.now()) {
+  return JSON.stringify({ savedAt: now, value });
+}
+export function parseDraft<T>(raw: string | null, validate: (value: unknown) => value is T, now = Date.now()): T | null {
   if (!raw || raw.length > 100_000) return null;
   try {
-    const value: unknown = JSON.parse(raw);
-    return validate(value) ? value : null;
+    const stored: unknown = JSON.parse(raw);
+    if (!object(stored) || typeof stored.savedAt !== "number") return null;
+    // Et tidspunkt i fremtiden (forkert ur) tæller også som ugyldigt.
+    const age = now - stored.savedAt;
+    if (!(age >= -60_000 && age <= DRAFT_MAX_AGE_MS)) return null;
+    return validate(stored.value) ? stored.value : null;
   } catch { return null; }
+}
+export function clearAllDrafts(storage: Storage) {
+  const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
+    .filter((key): key is string => key?.startsWith(DRAFT_KEY_PREFIX) ?? false);
+  for (const key of keys) storage.removeItem(key);
 }

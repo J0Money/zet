@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { addComment, addWorkoutDetails, getDetailsPreview, deleteCaption, deleteComment, setReaction, shareWorkout, withdrawPost } from "@/lib/community";
 import { notifyComment } from "@/lib/push";
+import { rejectHealthText } from "@/lib/health-notice";
 
 export type CommunityActionState = { error?: string; success?: boolean };
 function refresh() {
@@ -14,6 +15,8 @@ function refresh() {
 
 export async function shareWorkoutAction(_state: CommunityActionState, data: FormData): Promise<CommunityActionState> {
   const user = await requireUser();
+  const healthError = rejectHealthText(data.get("caption"));
+  if (healthError) return { error: healthError };
   const result = await shareWorkout(user.id, String(data.get("workoutId") ?? ""), String(data.get("preview") ?? ""), String(data.get("caption") ?? ""));
   if (result.success) refresh();
   return result;
@@ -33,6 +36,8 @@ export async function reactAction(_state: CommunityActionState, data: FormData):
 
 export async function commentAction(_state: CommunityActionState, data: FormData): Promise<CommunityActionState> {
   const user = await requireUser();
+  const healthError = rejectHealthText(data.get("body"));
+  if (healthError) return { error: healthError };
   const result = await addComment(user.id, String(data.get("postId") ?? ""), String(data.get("commentId") ?? ""), String(data.get("body") ?? ""));
   if (result.success) {
     refresh();

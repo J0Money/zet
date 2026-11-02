@@ -24,9 +24,9 @@ export default async function DashboardPage() {
   const currentUser = await requireUser();
 
   // Kortene modtager kun data, som tilhører den aktuelle sessions bruger.
-  const workouts = await getWorkouts(currentUser.id);
-  const entries = await getEntries(currentUser.id);
-  const exercises = await getExercises(currentUser.id);
+  const [workouts, entries, exercises] = await Promise.all([
+    getWorkouts(currentUser.id), getEntries(currentUser.id), getExercises(currentUser.id),
+  ]);
 
   return (
     <div className="zet-page zet-dashboard">

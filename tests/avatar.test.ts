@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import sharp from "sharp";
-import { prepareAvatar, ownedAvatarUrl, MAX_AVATAR_BYTES } from "../lib/avatar-image";
+import { prepareAvatar, ownedAvatarKey, MAX_AVATAR_BYTES } from "../lib/avatar-image";
 
 test("Profilbilleder bliver kvadratiske WebP uden EXIF", async () => {
   const original = await sharp({ create: { width: 800, height: 600, channels: 3, background: "#4f46e5" } }).jpeg().withMetadata().toBuffer();
@@ -15,11 +15,12 @@ test("Ugyldige og for store billeder afvises", async () => {
   await assert.rejects(prepareAvatar(Buffer.from("not an image")));
   await assert.rejects(prepareAvatar(new Uint8Array(MAX_AVATAR_BYTES + 1)));
 });
-test("Oprydning accepterer kun profilens egne private blob-stier", () => {
+test("Oprydning accepterer kun profilens egne objektnøgler", () => {
   const id = "12345678-1234-1234-1234-123456789abc";
-  const url = `https://example.private.blob.vercel-storage.com/avatars/${id}/12345678-1234-1234-1234-123456789def.webp`;
-  assert.equal(ownedAvatarUrl(url, id), true);
-  assert.equal(ownedAvatarUrl(url, "another-user"), false);
-  assert.equal(ownedAvatarUrl(url.replace('example.private.blob.vercel-storage.com', 'evil.example'), id), false);
-  assert.equal(ownedAvatarUrl(url + '?download=1', id), false);
+  const key = `avatars/${id}/12345678-1234-1234-1234-123456789def.webp`;
+  assert.equal(ownedAvatarKey(key, id), true);
+  assert.equal(ownedAvatarKey(key, "another-user"), false);
+  assert.equal(ownedAvatarKey(`https://evil.example/${key}`, id), false);
+  assert.equal(ownedAvatarKey(`avatars/${id}/../x/12345678-1234-1234-1234-123456789def.webp`, id), false);
+  assert.equal(ownedAvatarKey(`https://example.private.blob.vercel-storage.com/${key}`, id), false);
 });

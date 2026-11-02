@@ -63,14 +63,11 @@ export const user = pgTable("user", {
   // (inklusive dem, der oprettes via invitationslinks) får "member" som
   // standard; kun Joes bruger er sat til "admin" direkte i databasen.
   role: userRole("role").notNull().default("member"),
-  // Aldersbekræftelse ved oprettelse via invitationslink, se lib/invitations.ts.
-  // Nul for brugere oprettet før denne ændring, da de ikke blev spurgt.
-  // Under 13 år kan slet ikke oprette en konto, så birthDate repræsenterer
-  // altid mindst 13 år på oprettelsestidspunktet, hvor den er sat.
-  birthDate: date("birth_date", { mode: "string" }),
-  // true hvis brugeren var 13-17 år og bekræftede at have fået lov af en
-  // forælder/voksen. Null hvis ikke relevant (18+, eller oprettet før denne
-  // ændring).
+  // Aldersgruppe fra kontrollen ved oprettelse via invitationslink, se
+  // lib/invitations.ts. Fødselsdatoen gemmes ikke. ageConfirmationAt er null for
+  // brugere oprettet før aldersgrænsen. Når den er sat, betyder
+  // adultPermissionConfirmed true 13-17 år med bekræftet voksentilladelse og
+  // null 18+ på oprettelsestidspunktet.
   adultPermissionConfirmed: boolean("adult_permission_confirmed"),
   ageConfirmationAt: timestamp("age_confirmation_at", { withTimezone: true }),
 });

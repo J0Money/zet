@@ -20,3 +20,13 @@ test("Ny deadline giver ny opgave, fejl lækker ikke svar", async () => {
   await assert.rejects(publishWorkoutExpiry("workout", 1800003600, config, async () => { throw new Error("sensitive response"); }), { message: "Afslutningen kunne ikke planlægges." });
   await assert.rejects(publishWorkoutExpiry("workout", 1800003600, { ...config, token: "" }, send));
 });
+
+test("Bruger QStash-regionens adresse og afviser fremmede værter", async () => {
+  const urls: string[] = [];
+  const send: typeof fetch = async (input) => { urls.push(String(input)); return new Response("", { status: 200 }); };
+  await publishWorkoutExpiry("workout", 1800003600, { ...config, qstashUrl: "https://qstash-eu-central-1.upstash.io" }, send);
+  await publishWorkoutExpiry("workout", 1800003600, config, send);
+  assert.ok(urls[0].startsWith("https://qstash-eu-central-1.upstash.io/v2/publish/https://"));
+  assert.ok(urls[1].startsWith("https://qstash.upstash.io/v2/publish/https://"));
+  await assert.rejects(publishWorkoutExpiry("workout", 1800003600, { ...config, qstashUrl: "https://evil.example/" }, send), { message: "Ugyldig QStash-adresse." });
+});

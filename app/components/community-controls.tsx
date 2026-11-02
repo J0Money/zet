@@ -6,7 +6,7 @@ import { Check, HandFist } from "@phosphor-icons/react";
 import { reactAction, shareWorkoutAction, withdrawPostAction } from "@/app/community/actions";
 import type { CommunitySummary } from "@/lib/community-summary";
 import { CommunitySummaryCard } from "@/app/components/community-summary-card";
-import { HEALTH_NOTICE } from "@/lib/health-notice";
+import { HEALTH_NOTICE, healthWarning } from "@/lib/health-notice";
 
 export function WithdrawPost({ postId }: { postId: string }) {
   const [, action, pending] = useActionState(withdrawPostAction, {});
@@ -39,6 +39,7 @@ export function ShareWorkout({ workoutId, name, summary, shared }: {
   const [state, action, pending] = useActionState(shareWorkoutAction, {});
   const [caption, setCaption] = useState("");
   if (!summary && !shared) return null;
+  const healthError = healthWarning(caption);
   return <section className="zet-panel space-y-4" aria-label="Del træning">
     <h2 className="zet-sectionTitle">{shared ? "Delt med fællesskabet" : "Del med fællesskabet"}</h2>
     <p className="text-sm text-zinc-500 dark:text-zinc-400">{shared
@@ -60,8 +61,9 @@ export function ShareWorkout({ workoutId, name, summary, shared }: {
           className="mt-2 w-full rounded-xl border border-zinc-300 bg-transparent p-3 dark:border-zinc-700" />
       </label>
       <p className="text-xs text-zinc-500">Teksten deles med fællesskabet. Dine private træningsnoter deles ikke. {HEALTH_NOTICE}</p>
+      {healthError && <p role="alert" className="text-sm text-red-600">{healthError}</p>}
       {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
-      <button disabled={pending} className="min-h-12 rounded-xl bg-indigo-600 px-5 font-semibold text-white disabled:opacity-50">{pending ? "Deler…" : "Del med fællesskabet"}</button>
+      <button disabled={pending || Boolean(healthError)} className="min-h-12 rounded-xl bg-indigo-600 px-5 font-semibold text-white disabled:opacity-50">{pending ? "Deler…" : "Del med fællesskabet"}</button>
     </form>}
   </section>;
 }

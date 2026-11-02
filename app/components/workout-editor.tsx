@@ -5,7 +5,7 @@ import { localWorkoutTime, type EditEntry } from "@/lib/workout-edit-input";
 import { saveWorkoutAction, deleteWorkoutAction } from "@/app/history/actions";
 import { choiceKey, groupExercises } from "@/lib/exercise-groups";
 import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
-import { HEALTH_NOTICE } from "@/lib/health-notice";
+import { HEALTH_NOTICE, healthWarning } from "@/lib/health-notice";
 const field = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-zinc-300 bg-transparent px-3 py-2 text-base dark:border-zinc-700";
 const button = "min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-medium dark:border-zinc-700";
 function ExerciseEquipmentSelect({ exercises, entry, onChange }: { exercises: Exercise[]; entry: EditEntry; onChange: (patch: Partial<EditEntry>) => void }) {
@@ -37,6 +37,8 @@ export function WorkoutEditor({ workout, entries, exercises, version, shared }: 
   const [deleteState, deleteAction, deleting] = useActionState(deleteWorkoutAction, {});
   const [draft, setDraft] = useState<EditEntry[]>(entries);
   const [openedVersion, setOpenedVersion] = useState(version);
+  const [notes, setNotes] = useState(workout.notes);
+  const healthError = healthWarning(notes);
   const [previous, setPrevious] = useState(state);
   if (previous !== state) { setPrevious(state); if (state.success) setOpen(false); }
   function change(index: number, patch: Partial<EditEntry>) { setDraft(draft.map((entry, i) => i === index ? { ...entry, ...patch } as EditEntry : entry)); }
@@ -46,7 +48,7 @@ export function WorkoutEditor({ workout, entries, exercises, version, shared }: 
     const common = { id: crypto.randomUUID(), workout_id: workout.id, exercise_id: exercise.id };
     setDraft([...draft, kind === "strength" ? { ...common, kind, reps: 10, weight_kg: 0 } : { ...common, kind, distance_km: 1, duration_sec: 300 }]);
   }
-  if (!open) return <div className="space-y-2"><button className={button} onClick={() => { setDraft(entries); setOpenedVersion(version); setOpen(true); }}>Rediger træning</button>{state.success && <p role="status" className="text-sm text-zinc-500">Ændringerne er gemt.</p>}</div>;
+  if (!open) return <div className="space-y-2"><button className={button} onClick={() => { setDraft(entries); setOpenedVersion(version); setNotes(workout.notes); setOpen(true); }}>Rediger træning</button>{state.success && <p role="status" className="text-sm text-zinc-500">Ændringerne er gemt.</p>}</div>;
   return <section className="zet-panel space-y-5">
     <h2 className="zet-sectionTitle">Rediger træning</h2>
     <p className="text-sm text-zinc-500">Alle rettelser gemmes samlet. Tidspunkter er i dansk tid.</p>
@@ -63,7 +65,8 @@ export function WorkoutEditor({ workout, entries, exercises, version, shared }: 
           <label className="min-w-0 text-sm">Slut<input className={field} name="end" type="datetime-local" step="1" defaultValue={localWorkoutTime(workout.ended_at)} /></label>
         </div>
         <p className="text-xs text-zinc-500">Ældre pas kan beholde tomme tidspunkter. Hvis du retter datoen, skal starttidspunktet også være på den dag.</p>
-        <label className="block text-sm">Privat note<textarea className={field} name="notes" rows={2} maxLength={5000} defaultValue={workout.notes} /><span className="mt-1 block text-xs text-zinc-500">{HEALTH_NOTICE}</span></label>
+        <label className="block text-sm">Privat note<textarea className={field} name="notes" rows={2} maxLength={5000} defaultValue={workout.notes} onChange={(event) => setNotes(event.target.value)} /><span className="mt-1 block text-xs text-zinc-500">{HEALTH_NOTICE}</span></label>
+        {healthError && <p role="alert" className="text-sm text-red-600">{healthError}</p>}
         <div className="space-y-4">{draft.map((entry, index) => <div key={entry.id} className="space-y-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold">{entry.kind === "strength" ? "Sæt" : "Cardio"} {index + 1}</p><button className="min-h-11 px-2 text-sm text-red-600" type="button" onClick={() => setDraft(draft.filter((item) => item.id !== entry.id))}>Fjern</button></div>
           <ExerciseEquipmentSelect exercises={exercises} entry={entry} onChange={(patch) => change(index, patch)} />
@@ -78,7 +81,7 @@ export function WorkoutEditor({ workout, entries, exercises, version, shared }: 
         </div>)}</div>
         <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={!exercises.some((e) => e.type === "strength")} onClick={() => add("strength")}>Tilføj sæt</button><button type="button" className={button} disabled={!exercises.some((e) => e.type === "cardio")} onClick={() => add("cardio")}>Tilføj cardio</button></div>
         {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
-        <div className="flex flex-wrap gap-3"><button className="min-h-11 rounded-xl bg-indigo-600 px-4 font-semibold text-white">{pending ? "Gemmer…" : "Gem ændringer"}</button><button type="button" className={button} onClick={() => { if (confirm("Kassér dine ugemte ændringer?")) setOpen(false); }}>Annullér</button></div>
+        <div className="flex flex-wrap gap-3"><button disabled={Boolean(healthError)} className="min-h-11 rounded-xl bg-indigo-600 px-4 font-semibold text-white disabled:opacity-50">{pending ? "Gemmer…" : "Gem ændringer"}</button><button type="button" className={button} onClick={() => { if (confirm("Kassér dine ugemte ændringer?")) setOpen(false); }}>Annullér</button></div>
       </fieldset>
     </form>
     <form action={deleteAction} onSubmit={(e) => { if (!confirm("Slet hele træningen? Alle sæt og et eventuelt delt opslag med kommentarer bliver slettet. Det kan ikke fortrydes.")) e.preventDefault(); }}>

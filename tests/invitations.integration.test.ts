@@ -3,7 +3,7 @@ import crypto, { createHash, randomBytes, randomUUID } from "node:crypto";
 import { syncBuiltinESMExports } from "node:module";
 import { test } from "node:test";
 import { config } from "dotenv";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // Testen skriver midlertidige data i den valgte database. Den skal tilvælges
 // eksplicit og kører aldrig seed eller migrationer. Alle egne rækker ryddes op.
@@ -33,6 +33,12 @@ test(
     const adultBirthDate = birthDateYearsAgo(30);
     const minorBirthDate = birthDateYearsAgo(15);
     const tooYoungBirthDate = birthDateYearsAgo(10);
+    // Fødselsdatoen må aldrig gemmes. Virker både før og efter, at kolonnen fjernes.
+    async function storedBirthDate(userId: string) {
+      const rows = await db.execute<{ birth: string | null }>(
+        sql`SELECT to_jsonb(u) ->> 'birth_date' AS birth FROM "user" u WHERE u.id = ${userId}`);
+      return rows.rows[0]?.birth ?? null;
+    }
     const uuidPattern =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -132,7 +138,7 @@ test(
         const [created] = await db.select().from(user).where(eq(user.id, result.userId));
         assert.equal(created.name, "Testbruger");
         assert.equal(created.emailVerified, false);
-        assert.equal(created.birthDate, adultBirthDate);
+        assert.equal(await storedBirthDate(created.id), null);
         assert.equal(created.adultPermissionConfirmed, null);
         assert.ok(created.ageConfirmationAt);
         const accounts = await db.select().from(account).where(eq(account.userId, created.id));
@@ -189,7 +195,7 @@ test(
         });
         assert.ok(withPermission.success);
         const [created] = await db.select().from(user).where(eq(user.email, fixture.email));
-        assert.equal(created.birthDate, minorBirthDate);
+        assert.equal(await storedBirthDate(created.id), null);
         assert.equal(created.adultPermissionConfirmed, true);
         assert.ok(created.ageConfirmationAt);
       });

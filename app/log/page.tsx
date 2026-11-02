@@ -21,17 +21,19 @@ export default async function LogPage() {
   // forhåndsgenereres statisk. connection() gør siden dynamisk pr. besøg.
   await connection();
   const currentUser = await requireUser();
-  const exerciseNotes = await getExerciseNotes(currentUser.id);
+  // getActiveWorkout kan afslutte et udløbet pas, så pas og sæt hentes først
+  // bagefter. De øvrige opslag er uafhængige og hentes samtidig.
+  const [exerciseNotes, exercises, programs, activeWorkout] = await Promise.all([
+    getExerciseNotes(currentUser.id),
+    getExercises(currentUser.id),
+    getPrograms(currentUser.id),
+    getActiveWorkout(currentUser.id),
+  ]);
+  const [entries, workouts] = await Promise.all([getEntries(currentUser.id), getWorkouts(currentUser.id)]);
 
-  const exercises = await getExercises(currentUser.id);
   const strengthExercises = exercises.filter((exercise) => exercise.type === "strength");
   const cardioExercises = exercises.filter((exercise) => exercise.type === "cardio");
   const exerciseNameById = new Map(exercises.map((exercise) => [exercise.id, exercise.name]));
-  const programs = await getPrograms(currentUser.id);
-
-  const activeWorkout = await getActiveWorkout(currentUser.id);
-  const entries = await getEntries(currentUser.id);
-  const workouts = await getWorkouts(currentUser.id);
   const exerciseHistory = getExerciseHistory(workouts, entries, activeWorkout?.id);
   const sessionEntries = activeWorkout
     ? entries.filter(

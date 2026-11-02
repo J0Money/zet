@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { parseDraft } from "@/lib/log-draft";
+import { parseDraft, serializeDraft } from "@/lib/log-draft";
 
 // Bruges først efter browserens hydrering i LogFormTabs. Formularen monteres
 // med brugerens id som key, så en kladde aldrig flyttes mellem brugere.
 export function useLocalDraft<T>(key: string, initial: T, validate: (value: unknown) => value is T) {
   const [draft, setDraft] = useState(() => {
     try {
-      return parseDraft(localStorage.getItem(key), validate) ?? initial;
+      const stored = parseDraft(localStorage.getItem(key), validate);
+      // Udløbne eller ugyldige kladder fjernes, så de ikke bliver liggende.
+      if (stored === null) localStorage.removeItem(key);
+      // Kladder fra før udløbstiden (v1) har intet tidsstempel og ryddes væk.
+      localStorage.removeItem(key.replace(":v2:", ":v1:"));
+      return stored ?? initial;
     } catch { /* Browseren kan have blokeret lokal lagring. */ }
     return initial;
   });
@@ -18,7 +23,7 @@ export function useLocalDraft<T>(key: string, initial: T, validate: (value: unkn
     const serialized = JSON.stringify(draft);
     if (serialized === lastStored.current) return;
     try {
-      localStorage.setItem(key, serialized);
+      localStorage.setItem(key, serializeDraft(draft));
       lastStored.current = serialized;
     } catch { /* Indtastning og gemning på serveren skal stadig virke. */ }
   }, [draft, key]);

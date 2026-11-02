@@ -12,10 +12,10 @@
     "test:invitations": "node --conditions=react-server --import tsx --test tests/invitations.integration.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1160.0",
     "@better-auth/drizzle-adapter": "^1.7.11",
     "@neondatabase/serverless": "^1.2.0",
     "@phosphor-icons/react": "^2.1.10",
-    "@vercel/blob": "^2.8.2",
     "better-auth": "^1.7.11",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.2",
@@ -32,6 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "@vercel/blob": "^2.8.2",
     "dotenv": "^18.0.8",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",

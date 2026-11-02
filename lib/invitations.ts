@@ -152,6 +152,8 @@ export async function acceptInvitation(
       message: "Udfyld en gyldig fødselsdato.",
     };
   }
+  // Fødselsdatoen bruges kun til kontrollen her og gemmes aldrig. Kun
+  // aldersgruppen gemmes (adult_permission_confirmed og age_confirmation_at).
   const age = calculateAge(birthDate);
   if (age < MINIMUM_AGE) {
     return {
@@ -242,10 +244,10 @@ export async function acceptInvitation(
       created_user AS (
         INSERT INTO "user"
           ("id", "email", "name", "email_verified",
-           "birth_date", "adult_permission_confirmed", "age_confirmation_at",
+           "adult_permission_confirmed", "age_confirmation_at",
            "created_at", "updated_at")
         SELECT ${userId}::uuid, "email", ${name.trim()}, false,
-               ${birthDate}::date, ${adultPermissionConfirmed}, now(),
+               ${adultPermissionConfirmed}, now(),
                now(), now()
         FROM claimed_invitation
         RETURNING "id", "email"

@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { removeProfileImage, saveProfileImage } from "@/lib/avatars";
 import { MAX_AVATAR_BYTES } from "@/lib/avatar-image";
+import { avatarStorageConfigured } from "@/lib/avatar-storage";
 
 export type AvatarState = { error?: string; success?: boolean };
 export async function changeAvatarAction(_state: AvatarState, data: FormData): Promise<AvatarState> {
   const user = await requireUser();
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return { error: "Billedlageret er ikke klar endnu." };
+  if (!avatarStorageConfigured()) return { error: "Billedlageret er ikke klar endnu." };
   try {
     let result: AvatarState;
     if (data.get("operation") === "remove") result = await removeProfileImage(user.id);

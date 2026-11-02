@@ -11,12 +11,7 @@ export async function prepareAvatar(bytes: Uint8Array) {
   return image.rotate().resize(512, 512, { fit: "cover" }).webp({ quality: 82 }).toBuffer();
 }
 
-export function ownedAvatarUrl(value: string | null, userId: string) {
-  if (!value) return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && /^[a-z0-9]+\.private\.blob\.vercel-storage\.com$/i.test(url.hostname)
-      && !url.port && !url.username && !url.password && !url.search && !url.hash
-      && url.pathname.startsWith(`/avatars/${userId}/`) && /^\/avatars\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.webp$/i.test(url.pathname);
-  } catch { return false; }
+// user.image gemmer objektnøglen i billedlageret, fx "avatars/<bruger-id>/<uuid>.webp".
+export function ownedAvatarKey(value: string | null, userId: string) {
+  return Boolean(value && value.startsWith(`avatars/${userId}/`) && /^avatars\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.webp$/i.test(value));
 }
