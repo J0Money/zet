@@ -12,7 +12,7 @@ export async function loginWithPassword(
   }
   try {
     const headers = new Headers({ "content-type": "application/json" });
-    for (const name of ["origin", "cookie", "user-agent", "x-forwarded-for"]) {
+    for (const name of ["origin", "cookie", "user-agent", "x-real-ip", "x-forwarded-for"]) {
       const value = requestHeaders.get(name);
       if (value) headers.set(name, value);
     }

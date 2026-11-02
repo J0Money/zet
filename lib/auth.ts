@@ -42,5 +42,11 @@ export const auth = betterAuth({
     database: {
       generateId: "uuid",
     },
+    // Railway sender en kæde af adresser i x-forwarded-for, som Better Auth
+    // ikke stoler på. Railways proxy sætter x-real-ip til besøgendes IP, så
+    // logintælleren bliver pr. besøgende i stedet for én fælles tæller.
+    ipAddress: {
+      ipAddressHeaders: ["x-real-ip", "x-forwarded-for"],
+    },
   },
 });
