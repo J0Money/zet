@@ -34,6 +34,14 @@ export const auth = betterAuth({
     // Lukket app til 1-3 kendte personer. Konti oprettes via ZETs eget
     // invitationsforløb. Better Auths offentlige tilmelding er slået fra.
     disableSignUp: true,
+    // Nulstillingslinks laves af admin og sendes manuelt (lib/password-reset.ts).
+    // Ny adgangskode logger brugeren ud alle andre steder.
+    resetPasswordTokenExpiresIn: 24 * 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+  },
+  // Engangskoder (fx nulstillingslinks) gemmes kun som hash i databasen.
+  verification: {
+    storeIdentifier: "hashed",
   },
   // Tabellerne user/workout/exercise bruger allerede UUID som primærnøgler
   // (se lib/db/schema.ts). Indstillingen sikrer, at Better Auth også bruger

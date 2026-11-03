@@ -23,7 +23,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   // Oprettelsessiden har sit eget forløb uden træningsnavigation.
-  if (pathname === "/signup" || pathname === "/login") return null;
+  if (pathname === "/signup" || pathname === "/login" || pathname === "/reset-password") return null;
 
   return (
     <nav aria-label="Hovednavigation" className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pb-[env(safe-area-inset-bottom)]">

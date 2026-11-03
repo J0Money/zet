@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { listInvitations } from "@/lib/invitations";
+import { createPasswordResetAction } from "./actions";
 import { InvitationForm } from "./invitation-form";
 import { InvitationList } from "./invitation-list";
 
@@ -27,6 +28,12 @@ export default async function InvitationsAdminPage() {
       <InvitationForm />
       <h2 className="mb-3 mt-10 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Tidligere invitationer</h2>
       <InvitationList invitations={invitations} />
+      <h2 className="mt-12 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Glemt adgangskode</h2>
+      <p className="mb-6 mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        Lav et link, så en bruger selv kan vælge en ny adgangskode. Linket gælder i 24 timer og kan kun bruges én
+        gang. Et nyt link gør det forrige ugyldigt, og brugeren logges ud alle steder, når koden er skiftet.
+      </p>
+      <InvitationForm linkAction={createPasswordResetAction} idPrefix="reset" submitLabel="Opret nulstillingslink" />
     </div>
   );
 }

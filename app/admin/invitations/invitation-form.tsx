@@ -6,8 +6,15 @@ import { createInvitationAction, type CreateInvitationState } from "./actions";
 const initialState: CreateInvitationState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 
-export function InvitationForm() {
-  const [state, action, pending] = useActionState(createInvitationAction, initialState);
+type LinkAction = (state: CreateInvitationState, formData: FormData) => Promise<CreateInvitationState>;
+
+// Bruges både til invitationer og til nulstilling af adgangskode.
+export function InvitationForm({
+  linkAction = createInvitationAction,
+  idPrefix = "invite",
+  submitLabel = "Opret invitationslink",
+}: { linkAction?: LinkAction; idPrefix?: string; submitLabel?: string }) {
+  const [state, action, pending] = useActionState(linkAction, initialState);
   const [copied, setCopied] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -33,8 +40,8 @@ export function InvitationForm() {
       >
         <fieldset disabled={pending} className="space-y-4 disabled:opacity-70">
           <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium">E-mailadresse</label>
-            <input id="email" name="email" type="email" required maxLength={254} className={inputClass} />
+            <label htmlFor={`${idPrefix}-email`} className="mb-2 block text-sm font-medium">E-mailadresse</label>
+            <input id={`${idPrefix}-email`} name="email" type="email" required maxLength={254} className={inputClass} />
           </div>
           {state.error && (
             <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
@@ -42,7 +49,7 @@ export function InvitationForm() {
             </p>
           )}
           <button type="submit" disabled={pending} className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
-            {pending ? "Opretter…" : "Opret invitationslink"}
+            {pending ? "Opretter…" : submitLabel}
           </button>
         </fieldset>
       </form>
