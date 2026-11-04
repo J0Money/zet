@@ -37,8 +37,8 @@ function RankingRows({ name, results, currentUserId }: { name: string; results: 
 }
 
 function emptyPinMessage(name: string, equipment: RankedPin["equipment"]) {
-  const label = equipmentBadgeLabel(equipment);
-  return `Ingen resultater endnu. Del en træning med ${name} og ${label.toLowerCase()} for at tage den første plads.`;
+  if (equipment === "unspecified") return `Ingen resultater endnu. Del en træning med ${name} for at tage den første plads.`;
+  return `Ingen resultater endnu. Del en træning med ${name} og ${equipmentLabel[equipment].toLowerCase()} for at tage den første plads.`;
 }
 
 export function CommunityLeaderboard({ exercises, currentUserId }: { exercises: LeaderboardExercise[]; currentUserId: string }) {
@@ -117,12 +117,12 @@ function CommunityLeaderboardBody({
       </section>)}
     </div>
     {pins.length > 0 && <div className="space-y-4" aria-label="Dine fremhævede øvelser">
-      {pins.map((pin) => {
+      {pins.map((pin, index) => {
         const resolved = resolveRankedPin(exercises, pin);
         const badge = equipmentBadgeLabel(resolved.equipment);
-        return <section key={rankedPinId(pin)} className="zet-panel space-y-4" aria-labelledby={`pinned-${rankedPinId(pin)}`}>
+        return <section key={rankedPinId(pin)} className="zet-panel space-y-4" aria-labelledby={`pinned-heading-${index}`}>
           <header className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0"><p className="text-xs font-medium text-zinc-500">DIN FREMHÆVNING</p><h3 id={`pinned-${rankedPinId(pin)}`} className="mt-1 break-words text-lg font-semibold">{resolved.name}</h3></div>
+            <div className="min-w-0"><p className="text-xs font-medium text-zinc-500">DIN FREMHÆVNING</p><h3 id={`pinned-heading-${index}`} className="mt-1 break-words text-lg font-semibold">{resolved.name}</h3></div>
             <div className="flex shrink-0 flex-col items-end gap-2">
               <span className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{badge}</span>
               {setPins && <button type="button" className="min-h-11 rounded-lg px-2 text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300" onClick={() => setPins(pins.filter((item) => rankedPinId(item) !== rankedPinId(pin)))}>Fjern kort</button>}
