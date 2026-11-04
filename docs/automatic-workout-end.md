@@ -4,10 +4,17 @@ Et startet styrkepas, der ikke har fået nye sæt i mindst en time, afsluttes
 automatisk med sidste sæts tidspunkt som sluttid. Cardio, blandede, tomme og
 allerede afsluttede pas undtages. Rettelse af kg/reps er ikke et nyt sæt.
 
-Reglen ligger i `lib/workout-expiry.ts` og køres, når brugerens aktive pas
-hentes (`getActiveWorkout`), dvs. når Log åbnes, eller et pas startes eller
-afsluttes. Der er ingen ekstern tjeneste, ingen planlagte opgaver og ingen
-hemmelige nøgler.
+Reglen ligger i `lib/workout-expiry.ts` og køres to steder:
+
+- Hvert 10. minut for alle brugere af serveren selv (`instrumentation.ts` og
+  `lib/workout-expiry-timer.ts`). Det virker, fordi serveren på Railway kører
+  hele tiden. Tjekket starter kun, når Railways egen variabel
+  `RAILWAY_ENVIRONMENT_NAME` findes, så lokal udvikling ikke starter det.
+- Når brugerens aktive pas hentes (`getActiveWorkout`), fx når Log åbnes.
+
+Der er ingen ekstern tjeneste og ingen hemmelige nøgler. Et pas lukkes derfor
+mellem 60 og ca. 70 minutter efter sidste sæt, men sluttiden er altid sidste
+sæts tidspunkt.
 
 ## Ændret 4. november 2026
 
@@ -18,8 +25,7 @@ gemt styrkesæt. Den er fjernet, så Upstash ikke længere modtager data
 
 ## Begrænsninger
 
-Et glemt pas står som åbent på Overblik og Historik, indtil brugeren åbner Log
-igen. Et åbent browserur får først afsluttet status ved navigation eller
+Hvis serveren genstarter, kører tjekket igen ved opstart. Et åbent browserur får først afsluttet status ved navigation eller
 genindlæsning.
 
 ## Test

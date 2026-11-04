@@ -8,7 +8,7 @@ test("Kun inaktive rene styrkepas afsluttes ved sidste sæt", { skip: process.en
   config({ path: ".env.local", quiet: true });
   const { db } = await import("../lib/db");
   const { user, exercise, workout, workoutSet, workoutCardio } = await import("../lib/db/schema");
-  const { closeExpiredStrengthWorkouts } = await import("../lib/workout-expiry");
+  const { closeExpiredStrengthWorkouts, closeAllExpiredStrengthWorkouts } = await import("../lib/workout-expiry");
   const owner = randomUUID(), other = randomUUID(), strength = randomUUID(), cardio = randomUUID();
   const now = Date.now();
   const ago = (minutes: number) => new Date(now - minutes * 60000);
@@ -39,6 +39,18 @@ test("Kun inaktive rene styrkepas afsluttes ved sidste sæt", { skip: process.en
     const [closed] = await db.select().from(workout).where(eq(workout.id, foreign));
     assert.equal(closed.ended_at?.toISOString(), ago(90).toISOString());
     await assert.rejects(closeExpiredStrengthWorkouts(undefined));
+    const timerCase = randomUUID(), timerRecent = randomUUID();
+    // Højst ét åbent pas pr. bruger, så de to tilfælde får hver sin testbruger.
+    await db.insert(workout).values([[timerCase, owner], [timerRecent, other]].map(([id, user_id]) => ({ id, user_id, date: "2026-10-29", started_at: ago(180) })));
+    await db.insert(workoutSet).values([
+      { workout_id: timerCase, exercise_id: strength, reps: 10, weight_kg: 20, created_at: ago(70) },
+      { workout_id: timerRecent, exercise_id: strength, reps: 10, weight_kg: 20, created_at: ago(30) },
+    ]);
+    await closeAllExpiredStrengthWorkouts();
+    const [timerClosed] = await db.select().from(workout).where(eq(workout.id, timerCase));
+    const [timerOpen] = await db.select().from(workout).where(eq(workout.id, timerRecent));
+    assert.equal(timerClosed.ended_at?.toISOString(), ago(70).toISOString());
+    assert.equal(timerOpen.ended_at, null);
   } finally {
     await db.delete(workout).where(inArray(workout.user_id, [owner, other]));
     await db.delete(exercise).where(inArray(exercise.id, [strength, cardio]));

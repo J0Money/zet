@@ -7,6 +7,15 @@ import { db } from "./db";
 // cardio berøres aldrig. Sluttiden er sidste styrkesæt, ikke tjekkets tid.
 export async function closeExpiredStrengthWorkouts(userId: string | undefined, workoutId?: string): Promise<void> {
   if (!userId && !workoutId) throw new Error("Afslutning kræver bruger eller pas.");
+  await closeExpired(userId, workoutId);
+}
+
+// Bruges af serverens faste tjek (instrumentation.ts) for alle brugere på én gang.
+export async function closeAllExpiredStrengthWorkouts(): Promise<void> {
+  await closeExpired(undefined, undefined);
+}
+
+async function closeExpired(userId: string | undefined, workoutId: string | undefined): Promise<void> {
   const query = new PgDialect().sqlToQuery(sql`
     UPDATE workout AS w SET ended_at = a.last_set
     FROM (
