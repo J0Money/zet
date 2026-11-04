@@ -6,7 +6,14 @@ import { parseDraft, serializeDraft } from "@/lib/log-draft";
 // Bruges først efter browserens hydrering i LogFormTabs. Formularen monteres
 // med brugerens id som key, så en kladde aldrig flyttes mellem brugere.
 // initial er en funktion, så hver ny kladde får sit eget engangs-id.
-export function useLocalDraft<T>(key: string, initial: () => T, parse: (value: unknown) => T | null) {
+// revise (valgfri, skal være stabil) kan justere hver ændring, fx give et nyt
+// engangs-id, når indholdet ændres. clearDraft går uden om den.
+export function useLocalDraft<T>(
+  key: string,
+  initial: () => T,
+  parse: (value: unknown) => T | null,
+  revise?: (previous: T, next: T) => T,
+) {
   const [restored] = useState(() => {
     try {
       const raw = localStorage.getItem(key);
@@ -24,8 +31,12 @@ export function useLocalDraft<T>(key: string, initial: () => T, parse: (value: u
     const fresh = initial();
     return { draft: fresh, saved: JSON.stringify(fresh) };
   });
-  const [draft, setDraft] = useState(restored.draft);
+  const [draft, setRawDraft] = useState(restored.draft);
   const lastStored = useRef(restored.saved);
+  const setDraft = useCallback<Dispatch<SetStateAction<T>>>((action) => setRawDraft((current) => {
+    const next = typeof action === "function" ? (action as (previous: T) => T)(current) : action;
+    return revise ? revise(current, next) : next;
+  }), [revise]);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);
@@ -39,7 +50,7 @@ export function useLocalDraft<T>(key: string, initial: () => T, parse: (value: u
   const clearDraft = useCallback((next: T) => {
     // Bevar øvelsesvalget på skærmen, men gem ikke de afsluttede indtastninger igen.
     lastStored.current = JSON.stringify(next);
-    setDraft(next);
+    setRawDraft(next);
     try { localStorage.removeItem(key); } catch { /* Lokal lagring er valgfri. */ }
   }, [key]);
   return { draft, setDraft, clearDraft };

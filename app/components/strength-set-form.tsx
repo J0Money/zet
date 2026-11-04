@@ -13,7 +13,7 @@ import type { ExerciseHistory } from "@/lib/workouts";
 import { formatSetsSummary } from "@/lib/format";
 import { formatDateDanish } from "@/lib/dates";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft } from "@/lib/log-draft";
+import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft, reviseSubmissionId } from "@/lib/log-draft";
 
 const initialState: LogStrengthSetState = {};
 const initialCreateState: CreateExerciseState = {};
@@ -36,7 +36,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft, reviseSubmissionId);
   const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets } = draft;
   const setSelectedTags = draftField(setDraft, "selectedTags");
   const setSelectedProgramId = draftField(setDraft, "selectedProgramId");

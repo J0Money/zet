@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, serializeDraft } from "../lib/log-draft";
+import { clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, reviseSubmissionId, serializeDraft } from "../lib/log-draft";
 
 const now = Date.UTC(2026, 9, 30, 12);
 
@@ -51,6 +51,32 @@ test("Hver ny kladde får sit eget engangs-id, og id'et følger kladden", () => 
   assert.ok(isSubmissionId(newSubmissionId()));
   assert.equal(isSubmissionId("x"), false);
   assert.equal(isSubmissionId(42), false);
+});
+
+test("Ændret indhold giver nyt engangs-id, uændret indhold beholder det", () => {
+  const draft = { ...emptyStrengthDraft(), sets: [{ id: 0, reps: "8", weightKg: "60" }] };
+  // Uændret (fx samme værdi sat igen): samme id.
+  assert.equal(reviseSubmissionId(draft, { ...draft, sets: [{ id: 0, reps: "8", weightKg: "60" }] }).submissionId, draft.submissionId);
+  // Et ekstra sæt, rettet vægt og andet udstyr: nyt id hver gang.
+  for (const next of [
+    { ...draft, sets: [...draft.sets, { id: 1, reps: "8", weightKg: "60" }] },
+    { ...draft, sets: [{ id: 0, reps: "8", weightKg: "62.5" }] },
+    { ...draft, slotByChoice: { "group:Squat": "machine" as const } },
+    { ...draft, selectedChoiceKey: "group:Squat" },
+  ]) {
+    const revised = reviseSubmissionId(draft, next);
+    assert.ok(isSubmissionId(revised.submissionId));
+    assert.notEqual(revised.submissionId, draft.submissionId);
+    assert.deepEqual(revised.sets, next.sets);
+  }
+  // Et id, der allerede er skiftet (efter et bekræftet gem), røres ikke.
+  const afterSave = { ...draft, submissionId: newSubmissionId(), sets: [{ id: 0, reps: "", weightKg: "" }] };
+  assert.equal(reviseSubmissionId(draft, afterSave).submissionId, afterSave.submissionId);
+  const cardio = { ...emptyCardioDraft(), exerciseId: "run", distanceKm: "5", minutes: "25" };
+  assert.equal(reviseSubmissionId(cardio, { ...cardio }).submissionId, cardio.submissionId);
+  for (const change of [{ distanceKm: "5.2" }, { minutes: "26" }, { seconds: "10" }, { exerciseId: "bike" }]) {
+    assert.notEqual(reviseSubmissionId(cardio, { ...cardio, ...change }).submissionId, cardio.submissionId);
+  }
 });
 
 test("Kladder gemt før engangs-id'et beholdes og får et nyt id", () => {

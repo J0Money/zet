@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyCardioDraft, newSubmissionId, parseCardioDraft } from "@/lib/log-draft";
+import { draftKey, emptyCardioDraft, newSubmissionId, parseCardioDraft, reviseSubmissionId } from "@/lib/log-draft";
 import { createExerciseAction, logCardioEntry, type CreateExerciseState, type LogCardioEntryState } from "@/app/log/actions";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { formatPace } from "@/lib/format";
@@ -16,7 +16,7 @@ const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-
 export function CardioEntryForm({ userId, exercises, programs }: { userId: string; exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, parseCardioDraft);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, parseCardioDraft, reviseSubmissionId);
   const { distanceKm, minutes, seconds, selectedProgramId, searchQuery, exerciseId } = draft;
   const setDistanceKm = draftField(setDraft, "distanceKm");
   const setMinutes = draftField(setDraft, "minutes");

@@ -21,6 +21,18 @@ export function isSubmissionId(value: unknown): value is string {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+// Id'et må kun genbruges for præcis samme indtastning. Ændres noget i kladden
+// efter et tabt svar (fx et ekstra sæt), skal det nye indhold have et nyt id,
+// ellers ville serveren se det som en gentagelse og smide ændringen væk.
+// Alle felter tæller med, også søgning og filtre: de kan skifte den øvelse,
+// der gemmes på, og en genindlæsning uden ændringer beholder stadig id'et.
+export function reviseSubmissionId<T extends { submissionId: string }>(previous: T, next: T): T {
+  if (next === previous || next.submissionId !== previous.submissionId) return next;
+  const unchanged = JSON.stringify({ ...previous, submissionId: null })
+    === JSON.stringify({ ...next, submissionId: null });
+  return unchanged ? next : { ...next, submissionId: newSubmissionId() };
+}
+
 export type StrengthDraft = {
   submissionId: string;
   selectedTags: MuscleGroup[];
