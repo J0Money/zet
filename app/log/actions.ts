@@ -8,6 +8,7 @@ import { getTodayInCopenhagen } from "@/lib/dates";
 import { EQUIPMENT } from "@/lib/equipment";
 import { equipmentName } from "@/lib/exercise-names";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
+import { isSubmissionId } from "@/lib/log-draft";
 import type { Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
 import {
   addCardioEntry,
@@ -17,6 +18,15 @@ import {
   getExercises,
   getOrStartActiveWorkout,
 } from "@/lib/workout-store";
+
+// Kladdens engangs-id (skjult felt). Mangler feltet, fx fra en ældre udgave af
+// siden eller et direkte kald, gemmes der som før uden dubletbeskyttelse.
+function readSubmissionId(formData: FormData): { submissionId?: string } | { error: string } {
+  const raw = formData.get("submissionId");
+  if (raw === null || raw === "") return {};
+  if (!isSubmissionId(raw)) return { error: "Ugyldig indsendelse. Genindlæs siden, og prøv igen." };
+  return { submissionId: raw };
+}
 
 export type LogStrengthSetState = {
   error?: string;
@@ -106,6 +116,8 @@ export async function logStrengthSet(
   // Et sæt pr. par af reps/vægt, i den rækkefølge de blev tilføjet i formularen.
   const repsRaw = formData.getAll("reps");
   const weightKgRaw = formData.getAll("weightKg");
+  const submission = readSubmissionId(formData);
+  if ("error" in submission) return { error: submission.error };
 
   const exercises = await getExercises(currentUser.id);
   const selected = exercises.find((exercise) => exercise.id === exerciseId);
@@ -159,16 +171,18 @@ export async function logStrengthSet(
   const today = getTodayInCopenhagen();
   const workout = await getOrStartActiveWorkout(currentUser.id, today);
 
-  await addStrengthEntries(currentUser.id, {
+  const saved = await addStrengthEntries(currentUser.id, {
     workout_id: workout.id,
     exercise_id: exercise.id,
     sets,
-  });
+  }, submission.submissionId);
 
   revalidatePath("/dashboard");
   revalidatePath("/history");
   revalidatePath("/log");
-  return { success: true, newRecord };
+  // null: samme indtastning er allerede gemt (svaret nåede ikke frem sidst).
+  // Stadig success, så browseren rydder kladden, men ingen ny rekord.
+  return { success: true, newRecord: saved !== null && newRecord };
 }
 
 export type LogCardioEntryState = {
@@ -192,6 +206,8 @@ export async function logCardioEntry(
   const minutesRaw = String(formData.get("minutes") ?? "");
   const secondsRaw = String(formData.get("seconds") ?? "");
   const values = { exerciseId, distanceKm: distanceKmRaw, minutes: minutesRaw, seconds: secondsRaw };
+  const submission = readSubmissionId(formData);
+  if ("error" in submission) return { error: submission.error, values };
 
   const exercises = await getExercises(currentUser.id);
   const exercise = exercises.find((exercise) => exercise.id === exerciseId);
@@ -227,7 +243,7 @@ export async function logCardioEntry(
     exercise_id: exercise.id,
     distance_km: distanceKm,
     duration_sec: durationSec,
-  });
+  }, submission.submissionId);
 
   revalidatePath("/dashboard");
   revalidatePath("/history");

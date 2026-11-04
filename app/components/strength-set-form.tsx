@@ -13,7 +13,7 @@ import type { ExerciseHistory } from "@/lib/workouts";
 import { formatSetsSummary } from "@/lib/format";
 import { formatDateDanish } from "@/lib/dates";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyStrengthDraft, isStrengthDraft } from "@/lib/log-draft";
+import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft } from "@/lib/log-draft";
 
 const initialState: LogStrengthSetState = {};
 const initialCreateState: CreateExerciseState = {};
@@ -36,7 +36,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, isStrengthDraft);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft);
   const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets } = draft;
   const setSelectedTags = draftField(setDraft, "selectedTags");
   const setSelectedProgramId = draftField(setDraft, "selectedProgramId");
@@ -54,17 +54,18 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   // Efter et vellykket gem starter listen af sæt forfra, klar til næste
-  // øvelse, og en ny rekord udløser konfetti.
+  // øvelse, og en ny rekord udløser konfetti. Næste indtastning får et nyt
+  // engangs-id, så den ikke bliver set som en gentagelse af den gemte.
   const [previousResult, setPreviousResult] = useState(state);
   if (state !== previousResult) {
     setPreviousResult(state);
     if (state.success) {
-      setDraft({ ...draft, sets: [emptySet(0)] });
+      setDraft({ ...draft, submissionId: newSubmissionId(), sets: [emptySet(0)] });
       if (state.newRecord) setConfettiTrigger((count) => count + 1);
     }
   }
   useEffect(() => {
-    if (state.success) clearDraft({ ...draft, sets: [emptySet(0)] });
+    if (state.success) clearDraft({ ...draft, submissionId: newSubmissionId(), sets: [emptySet(0)] });
     // Kun et nyt svar fra serveren må rydde kladden, ikke næste indtastning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, clearDraft]);
@@ -167,6 +168,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
     <>
     <form id="create-strength-exercise" action={createFormAction} />
     <form action={formAction} inert={isPending} className="flex flex-col gap-5">
+      <input type="hidden" name="submissionId" value={draft.submissionId} />
       <Confetti trigger={confettiTrigger} />
 
       {state.success && state.newRecord && (

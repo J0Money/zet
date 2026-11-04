@@ -5,19 +5,27 @@ import { parseDraft, serializeDraft } from "@/lib/log-draft";
 
 // Bruges først efter browserens hydrering i LogFormTabs. Formularen monteres
 // med brugerens id som key, så en kladde aldrig flyttes mellem brugere.
-export function useLocalDraft<T>(key: string, initial: T, validate: (value: unknown) => value is T) {
-  const [draft, setDraft] = useState(() => {
+// initial er en funktion, så hver ny kladde får sit eget engangs-id.
+export function useLocalDraft<T>(key: string, initial: () => T, parse: (value: unknown) => T | null) {
+  const [restored] = useState(() => {
     try {
-      const stored = parseDraft(localStorage.getItem(key), validate);
+      const raw = localStorage.getItem(key);
+      const stored = parseDraft(raw, parse);
       // Udløbne eller ugyldige kladder fjernes, så de ikke bliver liggende.
       if (stored === null) localStorage.removeItem(key);
       // Kladder fra før udløbstiden (v1) har intet tidsstempel og ryddes væk.
       localStorage.removeItem(key.replace(":v2:", ":v1:"));
-      return stored ?? initial;
+      // En ældre kladde, der lige har fået et engangs-id, skal gemmes igen med
+      // id'et, ellers får den et nyt id ved hver genindlæsning.
+      if (stored !== null && raw !== null) {
+        return { draft: stored, saved: JSON.stringify((JSON.parse(raw) as { value: unknown }).value) };
+      }
     } catch { /* Browseren kan have blokeret lokal lagring. */ }
-    return initial;
+    const fresh = initial();
+    return { draft: fresh, saved: JSON.stringify(fresh) };
   });
-  const lastStored = useRef(JSON.stringify(draft));
+  const [draft, setDraft] = useState(restored.draft);
+  const lastStored = useRef(restored.saved);
 
   useEffect(() => {
     const serialized = JSON.stringify(draft);

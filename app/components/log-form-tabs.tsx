@@ -10,7 +10,8 @@ import type { ExerciseHistory } from "@/lib/workouts";
 import type { WheelKey } from "@/lib/exercise-groups";
 
 type Tab = "strength" | "cardio";
-const isTab = (value: unknown): value is Tab => value === "strength" || value === "cardio";
+const parseTab = (value: unknown): Tab | null => value === "strength" || value === "cardio" ? value : null;
+const defaultTab = (): Tab => "strength";
 
 const subscribe = () => () => {};
 const clientSnapshot = () => true;
@@ -41,7 +42,7 @@ function DraftLogFormTabs({
   exerciseNotes,
   preferredEquipment,
 }: Props) {
-  const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), "strength", isTab);
+  const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), defaultTab, parseTab);
 
   return (
     <div className="flex flex-col gap-5">

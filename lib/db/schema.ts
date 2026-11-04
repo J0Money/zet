@@ -319,6 +319,15 @@ export const workoutCardio = pgTable("workout_cardio", {
     .default(sql`clock_timestamp()`),
 });
 
+// Engangs-id'er fra log-siden (kladdens submissionId). Et id, der allerede
+// findes her, er et gentaget tryk på Gem, og sættene gemmes ikke igen.
+// Rækker ældre end 3 dage slettes ved næste gem (kladder udløber efter 2).
+export const logSubmission = pgTable("log_submission", {
+  id: uuid("id").primaryKey(),
+  user_id: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // En navngivet liste af øvelser (fx "Pushdag"), til hurtigt at filtrere
 // øvelsesvalget på log-siden. Altid ejet af én bruger; is_published styrer,
 // om andre også kan se og bruge den (ikke user_id null som exercise, en

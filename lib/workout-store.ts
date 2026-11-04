@@ -256,8 +256,34 @@ export async function addStrengthEntry(
   return { kind: "strength", ...row };
 }
 
+// Første del af ét samlet SQL-statement til gem fra log-siden (neon-http har
+// ingen interaktive transaktioner, men ét statement er altid atomisk):
+// "claimed" indsætter engangs-id'et og returnerer kun en række, hvis id'et er
+// nyt. Selve indsættelsen bagefter sker kun, når "claimed" har en række, så et
+// gentaget tryk på Gem (samme id) gemmer intet. To samtidige forsøg med samme
+// id venter på hinanden på primærnøglen, og kun det første får rækken.
+// "expired" sletter samtidig brugerens egne id'er ældre end 3 dage (kladder
+// udløber efter 2), så intet bliver liggende for evigt.
+function claimSubmissionSql(userId: string, submissionId: string) {
+  return sql`
+    WITH expired AS (
+      DELETE FROM "log_submission"
+      WHERE "user_id" = ${userId}::uuid
+        AND "created_at" < now() - interval '3 days'
+        AND "id" <> ${submissionId}::uuid
+    ),
+    claimed AS (
+      INSERT INTO "log_submission" ("id", "user_id")
+      VALUES (${submissionId}::uuid, ${userId}::uuid)
+      ON CONFLICT ("id") DO NOTHING
+      RETURNING "id"
+    )`;
+}
+
 // Flere sæt af samme øvelse i ét kald (fx 3 sæt med forskellig vægt/reps),
 // gemt i ét bulk-insert, så enten gemmes alle sæt, eller ingen af dem.
+// Med submissionId gemmes sættene højst én gang pr. id; null betyder, at id'et
+// er set før, og at intet blev gemt. Uden id gemmes der som hidtil.
 export async function addStrengthEntries(
   userId: string,
   data: {
@@ -265,7 +291,8 @@ export async function addStrengthEntries(
     exercise_id: string;
     sets: { reps: number; weight_kg: number }[];
   },
-): Promise<StrengthEntry[]> {
+  submissionId?: string,
+): Promise<StrengthEntry[] | null> {
   const workout = await getWorkoutById(userId, data.workout_id);
   if (!workout) {
     throw new Error("Workout findes ikke for denne bruger.");
@@ -273,6 +300,25 @@ export async function addStrengthEntries(
   const exercises = await getExercises(userId);
   if (!exercises.some((exercise) => exercise.id === data.exercise_id && exercise.type === "strength")) {
     throw new Error("Styrkeøvelsen er ikke tilgængelig for denne bruger.");
+  }
+  if (data.sets.length === 0) {
+    throw new Error("Tilføj mindst ét sæt.");
+  }
+
+  if (submissionId) {
+    const values = data.sets.map((set, position) =>
+      sql`(${set.reps}::integer, ${set.weight_kg}::double precision, ${position}::integer)`);
+    const result = await db.execute<Omit<StrengthEntry, "kind">>(sql`
+      ${claimSubmissionSql(userId, submissionId)}
+      INSERT INTO "workout_set" ("workout_id", "exercise_id", "reps", "weight_kg")
+      SELECT ${data.workout_id}::uuid, ${data.exercise_id}::uuid, v.reps, v.weight_kg
+      FROM (VALUES ${sql.join(values, sql`, `)}) AS v(reps, weight_kg, position)
+      WHERE EXISTS (SELECT 1 FROM claimed)
+      ORDER BY v.position
+      RETURNING "id", "workout_id", "exercise_id", "reps", "weight_kg"
+    `);
+    if (result.rows.length === 0) return null;
+    return result.rows.map((row) => ({ kind: "strength" as const, ...row }));
   }
 
   const rows = await db
@@ -288,10 +334,13 @@ export async function addStrengthEntries(
   return rows.map((row) => ({ kind: "strength" as const, ...row }));
 }
 
+// Med submissionId gemmes registreringen højst én gang pr. id, se
+// addStrengthEntries; null betyder, at id'et er set før.
 export async function addCardioEntry(
   userId: string,
   data: Omit<CardioEntry, "id" | "kind">,
-): Promise<CardioEntry> {
+  submissionId?: string,
+): Promise<CardioEntry | null> {
   const workout = await getWorkoutById(userId, data.workout_id);
   if (!workout) {
     throw new Error("Workout findes ikke for denne bruger.");
@@ -299,6 +348,19 @@ export async function addCardioEntry(
   const exercises = await getExercises(userId);
   if (!exercises.some((exercise) => exercise.id === data.exercise_id && exercise.type === "cardio")) {
     throw new Error("Cardioøvelsen er ikke tilgængelig for denne bruger.");
+  }
+
+  if (submissionId) {
+    const result = await db.execute<Omit<CardioEntry, "kind">>(sql`
+      ${claimSubmissionSql(userId, submissionId)}
+      INSERT INTO "workout_cardio" ("workout_id", "exercise_id", "distance_km", "duration_sec")
+      SELECT ${data.workout_id}::uuid, ${data.exercise_id}::uuid,
+        ${data.distance_km}::double precision, ${data.duration_sec}::integer
+      WHERE EXISTS (SELECT 1 FROM claimed)
+      RETURNING "id", "workout_id", "exercise_id", "distance_km", "duration_sec"
+    `);
+    const [row] = result.rows;
+    return row ? { kind: "cardio", ...row } : null;
   }
 
   const [row] = await db

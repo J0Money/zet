@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyCardioDraft, isCardioDraft } from "@/lib/log-draft";
+import { draftKey, emptyCardioDraft, newSubmissionId, parseCardioDraft } from "@/lib/log-draft";
 import { createExerciseAction, logCardioEntry, type CreateExerciseState, type LogCardioEntryState } from "@/app/log/actions";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { formatPace } from "@/lib/format";
@@ -16,7 +16,7 @@ const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-
 export function CardioEntryForm({ userId, exercises, programs }: { userId: string; exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, isCardioDraft);
+  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, parseCardioDraft);
   const { distanceKm, minutes, seconds, selectedProgramId, searchQuery, exerciseId } = draft;
   const setDistanceKm = draftField(setDraft, "distanceKm");
   const setMinutes = draftField(setDraft, "minutes");
@@ -49,7 +49,8 @@ export function CardioEntryForm({ userId, exercises, programs }: { userId: strin
   const [prevState, setPrevState] = useState(state);
   if (state !== prevState) {
     setPrevState(state);
-    if (state.success) setDraft({ ...draft, distanceKm: "", minutes: "", seconds: "0" });
+    // Næste indtastning får et nyt engangs-id efter et bekræftet gem.
+    if (state.success) setDraft({ ...draft, submissionId: newSubmissionId(), distanceKm: "", minutes: "", seconds: "0" });
     if (state.values) {
       setDistanceKm(state.values.distanceKm);
       setMinutes(state.values.minutes);
@@ -58,7 +59,7 @@ export function CardioEntryForm({ userId, exercises, programs }: { userId: strin
   }
 
   useEffect(() => {
-    if (state.success) clearDraft({ ...draft, distanceKm: "", minutes: "", seconds: "0" });
+    if (state.success) clearDraft({ ...draft, submissionId: newSubmissionId(), distanceKm: "", minutes: "", seconds: "0" });
     // Kun et nyt svar fra serveren må rydde kladden, ikke næste indtastning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, clearDraft]);
@@ -85,6 +86,7 @@ export function CardioEntryForm({ userId, exercises, programs }: { userId: strin
     <form action={formAction} inert={isPending} className="flex flex-col gap-5" onChangeCapture={() => {
       setExerciseId(filteredExercises.some((exercise) => exercise.id === exerciseId) ? exerciseId : (filteredExercises[0]?.id ?? ""));
     }}>
+      <input type="hidden" name="submissionId" value={draft.submissionId} />
       {programs.length > 0 && (
         <div>
           <p className={labelClass}>Program</p>
