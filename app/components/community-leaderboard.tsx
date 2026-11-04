@@ -1,11 +1,27 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Trophy } from "@phosphor-icons/react";
-import { bigFiveLeaderboards, type LeaderboardResult, type LeaderboardExercise } from "@/lib/community-leaderboard";
+import { bigFiveLeaderboards, resolveRankedPin, type LeaderboardResult, type LeaderboardExercise } from "@/lib/community-leaderboard";
 import { equipmentLabel } from "@/lib/equipment";
+import {
+  MAX_RANKED_PINS,
+  parseRankedPins,
+  rankedPinId,
+  rankedPinsKey,
+  serializeRankedPins,
+  type RankedPin,
+} from "@/lib/community-ranked-pins";
 import { ProfileAvatar } from "./profile-avatar";
 import { formatDateDanish } from "@/lib/dates";
+
+const subscribe = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
+function equipmentBadgeLabel(equipment: RankedPin["equipment"]) {
+  return equipment === "unspecified" ? "Ikke angivet" : equipmentLabel[equipment];
+}
 
 const selectClass = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
 const optionClass = "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50";
@@ -20,11 +36,70 @@ function RankingRows({ name, results, currentUserId }: { name: string; results: 
       </ol>);
 }
 
+function emptyPinMessage(name: string, equipment: RankedPin["equipment"]) {
+  if (equipment === "unspecified") return `Ingen resultater endnu. Del en træning med ${name} for at tage den første plads.`;
+  return `Ingen resultater endnu. Del en træning med ${name} og ${equipmentLabel[equipment].toLowerCase()} for at tage den første plads.`;
+}
+
 export function CommunityLeaderboard({ exercises, currentUserId }: { exercises: LeaderboardExercise[]; currentUserId: string }) {
+  const ready = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+  if (!ready) {
+    return <CommunityLeaderboardBody exercises={exercises} currentUserId={currentUserId} pins={[]} setPins={null} />;
+  }
+  return <CommunityLeaderboardHydrated exercises={exercises} currentUserId={currentUserId} />;
+}
+
+function CommunityLeaderboardHydrated({ exercises, currentUserId }: { exercises: LeaderboardExercise[]; currentUserId: string }) {
+  const storageKey = rankedPinsKey(currentUserId);
+  const [pins, setPinsState] = useState<RankedPin[]>(() => {
+    try {
+      return parseRankedPins(localStorage.getItem(storageKey));
+    } catch {
+      return [];
+    }
+  });
+  const setPins = useCallback((next: RankedPin[] | ((previous: RankedPin[]) => RankedPin[])) => {
+    setPinsState((previous) => {
+      const resolved = typeof next === "function" ? next(previous) : next;
+      try {
+        localStorage.setItem(storageKey, serializeRankedPins(resolved));
+      } catch { /* Lokal lagring er valgfri. */ }
+      return resolved;
+    });
+  }, [storageKey]);
+  return <CommunityLeaderboardBody exercises={exercises} currentUserId={currentUserId} pins={pins} setPins={setPins} />;
+}
+
+function CommunityLeaderboardBody({
+  exercises,
+  currentUserId,
+  pins,
+  setPins,
+}: {
+  exercises: LeaderboardExercise[];
+  currentUserId: string;
+  pins: RankedPin[];
+  setPins: ((next: RankedPin[] | ((previous: RankedPin[]) => RankedPin[])) => void) | null;
+}) {
   const [exerciseKey, setExerciseKey] = useState(exercises[0]?.key ?? "");
   const selected = exercises.find((exercise) => exercise.key === exerciseKey) ?? exercises[0];
   const [equipment, setEquipment] = useState<string>(selected?.variants[0]?.equipment ?? "");
   const variant = selected?.variants.find((item) => item.equipment === equipment) ?? selected?.variants[0];
+  const activePinId = selected && variant ? rankedPinId({ exerciseKey: selected.key, name: selected.name, equipment: variant.equipment }) : null;
+  const isPinned = activePinId !== null && pins.some((pin) => rankedPinId(pin) === activePinId);
+  const pinLimitReached = pins.length >= MAX_RANKED_PINS;
+
+  const togglePin = () => {
+    if (!setPins || !selected || !variant) return;
+    const id = rankedPinId({ exerciseKey: selected.key, name: selected.name, equipment: variant.equipment });
+    if (pins.some((pin) => rankedPinId(pin) === id)) {
+      setPins(pins.filter((pin) => rankedPinId(pin) !== id));
+      return;
+    }
+    if (pins.length >= MAX_RANKED_PINS) return;
+    setPins([...pins, { exerciseKey: selected.key, name: selected.name, equipment: variant.equipment }]);
+  };
+
   return <section className="community-leaderboard space-y-5" aria-labelledby="leaderboard-heading">
     <div className="flex items-start justify-between gap-3">
       <div><p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">FÆLLESSKABETS TOP 3</p><h2 id="leaderboard-heading" className="mt-1 text-xl font-semibold tracking-tight">Ranked</h2></div>
@@ -41,6 +116,24 @@ export function CommunityLeaderboard({ exercises, currentUserId }: { exercises: 
           : <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen resultater endnu. Del en træning med {exercise.name} og stang for at tage den første plads.</p>}
       </section>)}
     </div>
+    {pins.length > 0 && <div className="space-y-4" aria-label="Dine fremhævede øvelser">
+      {pins.map((pin, index) => {
+        const resolved = resolveRankedPin(exercises, pin);
+        const badge = equipmentBadgeLabel(resolved.equipment);
+        return <section key={rankedPinId(pin)} className="zet-panel space-y-4" aria-labelledby={`pinned-heading-${index}`}>
+          <header className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0"><p className="text-xs font-medium text-zinc-500">DIN FREMHÆVNING</p><h3 id={`pinned-heading-${index}`} className="mt-1 break-words text-lg font-semibold">{resolved.name}</h3></div>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <span className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{badge}</span>
+              {setPins && <button type="button" className="min-h-11 rounded-lg px-2 text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300" onClick={() => setPins(pins.filter((item) => rankedPinId(item) !== rankedPinId(pin)))}>Fjern kort</button>}
+            </div>
+          </header>
+          {resolved.results.length ? <RankingRows name={resolved.name} results={resolved.results} currentUserId={currentUserId} />
+            : <p className="text-sm text-zinc-500 dark:text-zinc-400">{emptyPinMessage(resolved.name, resolved.equipment)}</p>}
+          {resolved.equipment === "unspecified" && <p className="text-xs text-zinc-500">Udstyr var ikke angivet i disse opslag. De sammenlignes separat.</p>}
+        </section>;
+      })}
+    </div>}
     <section className="zet-panel" aria-labelledby="other-ranked-heading">
       <h3 id="other-ranked-heading" className="text-lg font-semibold">Andre øvelser og udstyr</h3>
     {!selected ? <p className="mt-5 text-sm text-zinc-500">Del en styrketræning med træningsdetaljer for at starte ranglisten.</p> : <>
@@ -49,6 +142,13 @@ export function CommunityLeaderboard({ exercises, currentUserId }: { exercises: 
         <label className="min-w-0 text-xs font-medium">Udstyr<select className={selectClass} value={variant?.equipment} onChange={(event) => setEquipment(event.target.value)}>{selected.variants.map((item) => <option className={optionClass} key={item.equipment} value={item.equipment}>{item.equipment === "unspecified" ? "Ikke angivet" : equipmentLabel[item.equipment]}</option>)}</select></label>
       </div>
       <RankingRows name={selected.name} results={variant?.results ?? []} currentUserId={currentUserId} />
+      {setPins && variant && <div className="mt-4 space-y-2">
+        <button type="button" className="min-h-11 w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200" onClick={togglePin} disabled={!isPinned && pinLimitReached}>
+          {isPinned ? "Fjern fremhævning" : "Fremhæv som kort"}
+        </button>
+        {!isPinned && pinLimitReached && <p className="text-xs text-zinc-500">Du kan fremhæve højst {MAX_RANKED_PINS} øvelser. Fjern et kort ovenfor for at tilføje en ny.</p>}
+        {!isPinned && !pinLimitReached && <p className="text-xs text-zinc-500">Kortet vises under Big 5 på denne enhed.</p>}
+      </div>}
       {variant?.equipment === "unspecified" && <p className="mt-4 text-xs text-zinc-500">Udstyr var ikke angivet i disse opslag. De sammenlignes separat.</p>}
       {variant && variant.results.length < 3 && <p className="mt-4 text-xs text-zinc-500">Plads til flere! Del en træning med denne øvelse og samme udstyr.</p>}
     </>}

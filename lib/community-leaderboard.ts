@@ -20,6 +20,13 @@ export function bigFiveLeaderboards(exercises: LeaderboardExercise[]) {
   }));
 }
 
+export function resolveRankedPin(exercises: LeaderboardExercise[], pin: { exerciseKey: string; name: string; equipment: Equipment | "unspecified" }) {
+  const exercise = exercises.find((item) => item.key === pin.exerciseKey);
+  const name = exercise?.name ?? pin.name;
+  const results = exercise?.variants.find((variant) => variant.equipment === pin.equipment)?.results ?? [];
+  return { name, equipment: pin.equipment, results };
+}
+
 // Snapshots predate equipment metadata. Only explicit suffixes identify equipment;
 // never infer a machine or bodyweight category from an exercise's name.
 export function leaderboardExercise(name: string) {
