@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { createInvitation, revokeInvitation } from "@/lib/invitations";
-import { createPasswordReset } from "@/lib/password-reset";
+import { createPasswordReset, dismissPasswordResetRequest } from "@/lib/password-reset";
 
 export type CreateInvitationState = {
   error?: string;
@@ -33,6 +33,12 @@ export async function createPasswordResetAction(
   if (!result.success) return { error: result.message };
   const link = new URL(`/reset-password?token=${result.token}`, process.env.BETTER_AUTH_URL).toString();
   return { link, email: result.email, expiresAt: result.expiresAt.toISOString() };
+}
+
+export async function dismissPasswordResetRequestAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  await dismissPasswordResetRequest(formData.get("userId"));
+  revalidatePath("/admin/invitations");
 }
 
 export async function revokeInvitationAction(formData: FormData): Promise<void> {

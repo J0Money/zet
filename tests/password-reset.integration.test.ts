@@ -12,7 +12,10 @@ test("Nulstilling af adgangskode via engangslink", {
   const { db } = await import("../lib/db");
   const { user, account, session, verification } = await import("../lib/db/schema");
   const { auth } = await import("../lib/auth");
-  const { createPasswordReset, isPasswordResetTokenValid, resetPasswordWithToken } = await import("../lib/password-reset");
+  const {
+    createPasswordReset, isPasswordResetTokenValid, resetPasswordWithToken,
+    requestPasswordReset, listPasswordResetRequests, dismissPasswordResetRequest,
+  } = await import("../lib/password-reset");
   const id = randomUUID();
   const email = `zet-reset-${id}@example.invalid`;
   const oldPassword = randomBytes(24).toString("hex");
@@ -52,6 +55,21 @@ test("Nulstilling af adgangskode via engangslink", {
       assert.equal(await signIn(newPassword), true);
       assert.equal((await resetPasswordWithToken(link.token, oldPassword)).success, false);
       assert.equal(await isPasswordResetTokenValid(link.token), false);
+    });
+
+    await t.test("Anmodning fra login-siden: én pr. bruger, lukkes af link og afvisning", async () => {
+      const mine = async () => (await listPasswordResetRequests()).filter((request) => request.userId === id);
+      await requestPasswordReset(`ukendt-${email}`);
+      assert.equal((await mine()).length, 0);
+      await requestPasswordReset(` ${email.toUpperCase()} `);
+      await requestPasswordReset(email);
+      assert.equal((await mine()).length, 1);
+      assert.equal((await mine())[0].email, email);
+      assert.ok((await createPasswordReset(email)).success);
+      assert.equal((await mine()).length, 0);
+      await requestPasswordReset(email);
+      await dismissPasswordResetRequest(id);
+      assert.equal((await mine()).length, 0);
     });
 
     await t.test("Ugyldige links afvises", async () => {

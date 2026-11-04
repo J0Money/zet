@@ -5,6 +5,8 @@ import { listInvitations } from "@/lib/invitations";
 import { createPasswordResetAction } from "./actions";
 import { InvitationForm } from "./invitation-form";
 import { InvitationList } from "./invitation-list";
+import { ResetRequestList } from "./reset-request-list";
+import { listPasswordResetRequests } from "@/lib/password-reset";
 
 export const metadata: Metadata = {
   title: "Invitationer | ZET",
@@ -16,7 +18,7 @@ export default async function InvitationsAdminPage() {
   // Listen og adgangstjekket skal altid være friske, siden må ikke forhåndsgenereres.
   await connection();
   await requireAdmin();
-  const invitations = await listInvitations();
+  const [invitations, resetRequests] = await Promise.all([listInvitations(), listPasswordResetRequests()]);
 
   return (
     <div className="mx-auto w-full max-w-md px-5 pb-8 pt-10 sm:pt-16">
@@ -33,6 +35,9 @@ export default async function InvitationsAdminPage() {
         Lav et link, så en bruger selv kan vælge en ny adgangskode. Linket gælder i 24 timer og kan kun bruges én
         gang. Et nyt link gør det forrige ugyldigt, og brugeren logges ud alle steder, når koden er skiftet.
       </p>
+      <h3 className="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Anmodninger fra login-siden</h3>
+      <ResetRequestList requests={resetRequests} />
+      <h3 className="mb-3 mt-8 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Lav et link selv</h3>
       <InvitationForm linkAction={createPasswordResetAction} idPrefix="reset" submitLabel="Opret nulstillingslink" />
     </div>
   );

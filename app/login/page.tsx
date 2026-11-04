@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { LoginForm } from "./login-form";
 import { getRandomQuote } from "@/lib/motivation-quotes";
@@ -20,7 +21,10 @@ export default async function LoginPage() {
       <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Log ind</h1>
       <p className="mb-8 mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">Log ind med din e-mailadresse og adgangskode.</p>
       <LoginForm />
-      <p className="mt-6 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Har du ikke en konto? Åbn dit personlige invitationslink for at oprette en.</p>
+      <Link href="/forgot-password" className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-indigo-600 underline hover:text-indigo-800">
+        Glemt adgangskode?
+      </Link>
+      <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Har du ikke en konto? Åbn dit personlige invitationslink for at oprette en.</p>
       <p className="mt-10 text-center text-sm italic leading-6 text-zinc-400">&quot;{quote}&quot;</p>
     </div>
   );
