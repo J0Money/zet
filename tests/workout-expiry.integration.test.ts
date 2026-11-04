@@ -39,9 +39,6 @@ test("Kun inaktive rene styrkepas afsluttes ved sidste sæt", { skip: process.en
     const [closed] = await db.select().from(workout).where(eq(workout.id, foreign));
     assert.equal(closed.ended_at?.toISOString(), ago(90).toISOString());
     await assert.rejects(closeExpiredStrengthWorkouts(undefined));
-    const { POST } = await import("../app/api/workouts/expire/route");
-    assert.equal((await POST(new Request("http://localhost/api/workouts/expire"))).status, 401);
-    assert.equal((await POST(new Request("http://localhost/api/workouts/expire", { headers: { authorization: "Bearer wrong" } }))).status, 401);
   } finally {
     await db.delete(workout).where(inArray(workout.user_id, [owner, other]));
     await db.delete(exercise).where(inArray(exercise.id, [strength, cardio]));

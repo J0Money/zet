@@ -399,7 +399,6 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
         </button>}
       </div>
 
-      {state.warning && <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">{state.warning}</p>}
       {state.error && (
         <p role="alert" className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
           {state.error}
