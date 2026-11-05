@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { hasUnsavedEntries, clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, reviseSubmissionId, serializeDraft } from "../lib/log-draft";
+import { cardioDraftHasContent, DRAFT_NOTICE_TEXT, DRAFT_STORAGE_FAILED_TEXT, loadDraft, readDraft, saveDraft, strengthDraftHasContent, hasUnsavedEntries, clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, reviseSubmissionId, serializeDraft } from "../lib/log-draft";
 
 const now = Date.UTC(2026, 9, 30, 12);
 
@@ -156,4 +156,81 @@ test("Afslut ser kun udfyldte, ugemte sæt og cardio", () => {
   // Kun en huskenote i kladden er ikke et ugemt sæt.
   const onlyNote = { ...emptyStrengthDraft(), noteDrafts: { "group:Squat:none": "tekst" } };
   assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(onlyNote, now) }), "u1", now), false);
+});
+
+const withContent = { ...emptyStrengthDraft(), sets: [{ id: 0, reps: "8", weightKg: "60" }] };
+
+test("Udløbet kladde med indhold ryddes med årsag, tom kladde ryddes uden besked", () => {
+  const later = now + DRAFT_MAX_AGE_MS + 1;
+  assert.deepEqual(readDraft(serializeDraft(withContent, now), parseStrengthDraft, strengthDraftHasContent, later),
+    { kind: "cleared", reason: "expired", hadContent: true });
+  assert.deepEqual(readDraft(serializeDraft(emptyStrengthDraft(), now), parseStrengthDraft, strengthDraftHasContent, later),
+    { kind: "cleared", reason: "expired", hadContent: false });
+  // Seks tegn i en note tæller som indhold, standardværdien 0 sekunder gør ikke.
+  const note = { ...emptyStrengthDraft(), noteDrafts: { "group:Squat:none": "Sæde 4" } };
+  assert.equal(readDraft(serializeDraft(note, now), parseStrengthDraft, strengthDraftHasContent, later).kind, "cleared");
+  assert.equal((readDraft(serializeDraft(note, now), parseStrengthDraft, strengthDraftHasContent, later) as { hadContent: boolean }).hadContent, true);
+  const cardio = readDraft(serializeDraft(emptyCardioDraft(), now), parseCardioDraft, cardioDraftHasContent, later);
+  assert.deepEqual(cardio, { kind: "cleared", reason: "expired", hadContent: false });
+  const cardioFilled = readDraft(serializeDraft({ ...emptyCardioDraft(), distanceKm: "5" }, now), parseCardioDraft, cardioDraftHasContent, later);
+  assert.deepEqual(cardioFilled, { kind: "cleared", reason: "expired", hadContent: true });
+  // En gyldig, ikke udløbet kladde ryddes ikke.
+  assert.equal(readDraft(serializeDraft(withContent, now), parseStrengthDraft, strengthDraftHasContent, now).kind, "draft");
+  assert.deepEqual(readDraft(null, parseStrengthDraft, strengthDraftHasContent, now), { kind: "none" });
+  assert.deepEqual(readDraft("", parseStrengthDraft, strengthDraftHasContent, now), { kind: "none" });
+});
+
+test("Ulæselig kladde ryddes med årsag, og indholdet tælles stadig, når det kan ses", () => {
+  // Gyldigt format, men et felt er for langt: kladden kan ikke bruges, men havde indhold.
+  const tooLong = { ...withContent, searchQuery: "x".repeat(501) };
+  assert.deepEqual(readDraft(serializeDraft(tooLong, now), parseStrengthDraft, strengthDraftHasContent, now),
+    { kind: "cleared", reason: "unreadable", hadContent: true });
+  const emptyButInvalid = { ...emptyStrengthDraft(), searchQuery: "x".repeat(501) };
+  assert.deepEqual(readDraft(serializeDraft(emptyButInvalid, now), parseStrengthDraft, strengthDraftHasContent, now),
+    { kind: "cleared", reason: "unreadable", hadContent: false });
+  // Ødelagt tekst og for stor tekst: vi kan ikke se, hvad der stod, så der gives besked.
+  assert.deepEqual(readDraft("{", parseStrengthDraft, strengthDraftHasContent, now), { kind: "cleared", reason: "unreadable", hadContent: true });
+  assert.equal((readDraft("x".repeat(100_001), parseStrengthDraft, strengthDraftHasContent, now) as { reason: string }).reason, "unreadable");
+  // Uden tidsstempel og ur i fremtiden.
+  assert.equal(readDraft("[]", parseStrengthDraft, strengthDraftHasContent, now).kind, "cleared");
+  assert.equal((readDraft(serializeDraft(withContent, now + 24 * 60 * 60 * 1000), parseStrengthDraft, strengthDraftHasContent, now) as { reason: string }).reason, "unreadable");
+  // Uden hasContent (fx fanen Styrke/Cardio) giver ingen kladde besked.
+  assert.equal((readDraft(serializeDraft(tooLong, now), parseStrengthDraft, undefined, now) as { hadContent: boolean }).hadContent, false);
+  assert.ok(DRAFT_NOTICE_TEXT.expired.includes("2 dage") && DRAFT_NOTICE_TEXT.unreadable !== DRAFT_NOTICE_TEXT.expired);
+  assert.ok(![DRAFT_NOTICE_TEXT.expired, DRAFT_NOTICE_TEXT.unreadable, DRAFT_STORAGE_FAILED_TEXT].some((text) => /[—–]/.test(text)));
+});
+
+test("Lager der kaster fejl: læsning og skrivning melder fejl i stedet for at stoppe", () => {
+  const broken = {
+    getItem: () => { throw new Error("blokeret"); },
+    setItem: () => { throw new Error("fuldt"); },
+  };
+  const loaded = loadDraft(broken, "k", parseStrengthDraft, strengthDraftHasContent, now);
+  assert.deepEqual(loaded, { result: { kind: "none" }, raw: null, failed: true });
+  assert.equal(saveDraft(broken, "k", withContent, now), false);
+  // Et fungerende lager: skriv og læs samme kladde tilbage.
+  const data = new Map<string, string>();
+  const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
+  assert.equal(saveDraft(storage, "k", withContent, now), true);
+  const ok = loadDraft(storage, "k", parseStrengthDraft, strengthDraftHasContent, now);
+  assert.equal(ok.failed, false);
+  assert.deepEqual(ok.result, { kind: "draft", value: withContent });
+  assert.equal(loadDraft(storage, "mangler", parseStrengthDraft, undefined, now).result.kind, "none");
+});
+
+test("Kladde fra en anden fane: tom kladde med nyt id erstatter de gemte sæt", () => {
+  // Fane A gemmer, rydder og skriver en tom kladde med nyt engangs-id. Fane B læser den.
+  const data = new Map<string, string>();
+  const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
+  const key = draftKey("u1", "strength");
+  saveDraft(storage, key, withContent, now);
+  const cleared = { ...withContent, submissionId: newSubmissionId(), sets: [{ id: 0, reps: "", weightKg: "" }] };
+  saveDraft(storage, key, cleared, now + 1000);
+  const seenByB = loadDraft(storage, key, parseStrengthDraft, undefined, now + 1000).result;
+  assert.equal(seenByB.kind, "draft");
+  if (seenByB.kind !== "draft") return;
+  assert.notEqual(seenByB.value.submissionId, withContent.submissionId);
+  assert.deepEqual(seenByB.value.sets, [{ id: 0, reps: "", weightKg: "" }]);
+  // Samme indhold igen (fx B's eget ekko) er ens og skrives ikke tilbage: ingen løkke.
+  assert.equal(JSON.stringify(seenByB.value), JSON.stringify(cleared));
 });

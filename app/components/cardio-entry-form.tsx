@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyCardioDraft, newSubmissionId, parseCardioDraft, reviseSubmissionId } from "@/lib/log-draft";
+import { DraftNotices } from "@/app/components/draft-notices";
+import { cardioDraftHasContent, draftKey, emptyCardioDraft, newSubmissionId, parseCardioDraft, reviseSubmissionId } from "@/lib/log-draft";
 import { createExerciseAction, logCardioEntry, type CreateExerciseState, type LogCardioEntryState } from "@/app/log/actions";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { formatPace } from "@/lib/format";
@@ -16,7 +17,8 @@ const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-
 export function CardioEntryForm({ userId, exercises, programs }: { userId: string; exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "cardio"), emptyCardioDraft, parseCardioDraft, reviseSubmissionId);
+  const { draft, setDraft, clearDraft, notice, dismissNotice, storageFailed } = useLocalDraft(
+    draftKey(userId, "cardio"), emptyCardioDraft, parseCardioDraft, reviseSubmissionId, { hasContent: cardioDraftHasContent });
   const { distanceKm, minutes, seconds, selectedProgramId, searchQuery, exerciseId } = draft;
   const setDistanceKm = draftField(setDraft, "distanceKm");
   const setMinutes = draftField(setDraft, "minutes");
@@ -87,6 +89,7 @@ export function CardioEntryForm({ userId, exercises, programs }: { userId: strin
       setExerciseId(filteredExercises.some((exercise) => exercise.id === exerciseId) ? exerciseId : (filteredExercises[0]?.id ?? ""));
     }}>
       <input type="hidden" name="submissionId" value={draft.submissionId} />
+      <DraftNotices notice={notice} onDismiss={dismissNotice} storageFailed={storageFailed} />
       {programs.length > 0 && (
         <div>
           <p className={labelClass}>Program</p>

@@ -42,7 +42,7 @@ function DraftLogFormTabs({
   exerciseNotes,
   preferredEquipment,
 }: Props) {
-  const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), defaultTab, parseTab);
+  const { draft: tab, setDraft: setTab } = useLocalDraft<Tab>(draftKey(userId, "tab"), defaultTab, parseTab, undefined, { sync: false });
 
   return (
     <div className="flex flex-col gap-5">

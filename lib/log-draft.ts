@@ -119,17 +119,80 @@ export function draftKey(userId: string, kind: string) {
 export function serializeDraft(value: unknown, now = Date.now()) {
   return JSON.stringify({ savedAt: now, value });
 }
-export function parseDraft<T>(raw: string | null, parse: (value: unknown) => T | null, now = Date.now()): T | null {
-  if (!raw || raw.length > 100_000) return null;
-  try {
-    const stored: unknown = JSON.parse(raw);
-    if (!object(stored) || typeof stored.savedAt !== "number") return null;
-    // Et tidspunkt i fremtiden (forkert ur) tæller også som ugyldigt.
-    const age = now - stored.savedAt;
-    if (!(age >= -60_000 && age <= DRAFT_MAX_AGE_MS)) return null;
-    return parse(stored.value);
-  } catch { return null; }
+export type DraftClearReason = "expired" | "unreadable";
+export type DraftRead<T> =
+  | { kind: "none" }
+  | { kind: "draft"; value: T }
+  // Kladden skal ryddes. hadContent siger, om der stod udfyldte felter i den.
+  | { kind: "cleared"; reason: DraftClearReason; hadContent: boolean };
+
+const filled = (value: unknown) => typeof value === "string" && value.trim() !== "";
+// Rummelige tjek, der også virker på kladder, som ikke består valideringen.
+// Standardværdien 0 sekunder og tomme felter tæller ikke som indhold.
+export function strengthDraftHasContent(value: unknown): boolean {
+  if (!object(value)) return false;
+  return (Array.isArray(value.sets) && value.sets.some((row) => object(row) && (filled(row.reps) || filled(row.weightKg))))
+    || (object(value.noteDrafts) && Object.values(value.noteDrafts).some(filled));
 }
+export function cardioDraftHasContent(value: unknown): boolean {
+  return object(value) && (filled(value.distanceKm) || filled(value.minutes));
+}
+
+// Læser en gemt kladde og siger, hvorfor den evt. skal ryddes. Rører ikke ved
+// lageret, så den kan bruges under rendering og i tests.
+export function readDraft<T>(
+  raw: string | null,
+  parse: (value: unknown) => T | null,
+  hasContent: (value: unknown) => boolean = () => false,
+  now = Date.now(),
+): DraftRead<T> {
+  if (!raw) return { kind: "none" };
+  // Kan indholdet ikke læses, ved vi ikke, om der stod noget i det: vis så beskeden.
+  if (raw.length > 100_000) return { kind: "cleared", reason: "unreadable", hadContent: true };
+  let stored: unknown;
+  try { stored = JSON.parse(raw); } catch { return { kind: "cleared", reason: "unreadable", hadContent: true }; }
+  if (!object(stored) || typeof stored.savedAt !== "number") {
+    return { kind: "cleared", reason: "unreadable", hadContent: false };
+  }
+  const hadContent = hasContent(stored.value);
+  const age = now - stored.savedAt;
+  // Et tidspunkt i fremtiden (forkert ur) tæller også som ugyldigt.
+  if (age > DRAFT_MAX_AGE_MS) return { kind: "cleared", reason: "expired", hadContent };
+  if (age < -60_000) return { kind: "cleared", reason: "unreadable", hadContent };
+  try {
+    const value = parse(stored.value);
+    return value === null ? { kind: "cleared", reason: "unreadable", hadContent } : { kind: "draft", value };
+  } catch { return { kind: "cleared", reason: "unreadable", hadContent }; }
+}
+export function parseDraft<T>(raw: string | null, parse: (value: unknown) => T | null, now = Date.now()): T | null {
+  const result = readDraft(raw, parse, undefined, now);
+  return result.kind === "draft" ? result.value : null;
+}
+// Læsning og skrivning mod lageret, der aldrig kaster. failed betyder, at lageret
+// ikke kan bruges (privat fane, fuld eller blokeret lagring), så formularen kan
+// sige det til brugeren i stedet for at tie.
+export function loadDraft<T>(
+  storage: Pick<Storage, "getItem">,
+  key: string,
+  parse: (value: unknown) => T | null,
+  hasContent?: (value: unknown) => boolean,
+  now = Date.now(),
+): { result: DraftRead<T>; raw: string | null; failed: boolean } {
+  try {
+    const raw = storage.getItem(key);
+    return { result: readDraft(raw, parse, hasContent, now), raw, failed: false };
+  } catch { return { result: { kind: "none" }, raw: null, failed: true }; }
+}
+export function saveDraft(storage: Pick<Storage, "setItem">, key: string, value: unknown, now = Date.now()): boolean {
+  try { storage.setItem(key, serializeDraft(value, now)); return true; } catch { return false; }
+}
+
+export const DRAFT_NOTICE_TEXT: Record<DraftClearReason, string> = {
+  expired: "Din gamle kladde blev ryddet, fordi den var over 2 dage gammel.",
+  unreadable: "Din gamle kladde kunne ikke læses og blev ryddet.",
+};
+export const DRAFT_STORAGE_FAILED_TEXT = "Din kladde kan ikke gemmes i denne browser. Gem dine indtastninger, før du lukker siden.";
+
 export function clearAllDrafts(storage: Storage) {
   const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
     .filter((key): key is string => key?.startsWith(DRAFT_KEY_PREFIX) ?? false);

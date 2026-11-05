@@ -14,7 +14,8 @@ import type { ExerciseHistory } from "@/lib/workouts";
 import { formatSetsSummary } from "@/lib/format";
 import { formatDateDanish } from "@/lib/dates";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
-import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft, reviseSubmissionId } from "@/lib/log-draft";
+import { DraftNotices } from "@/app/components/draft-notices";
+import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft, reviseSubmissionId, strengthDraftHasContent } from "@/lib/log-draft";
 
 const initialState: LogStrengthSetState = {};
 const initialCreateState: CreateExerciseState = {};
@@ -38,7 +39,8 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
-  const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft, reviseSubmissionId);
+  const { draft, setDraft, clearDraft, notice, dismissNotice, storageFailed } = useLocalDraft(
+    draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft, reviseSubmissionId, { hasContent: strengthDraftHasContent });
   const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets, noteDrafts } = draft;
   const setSelectedTags = draftField(setDraft, "selectedTags");
   const setSelectedProgramId = draftField(setDraft, "selectedProgramId");
@@ -203,6 +205,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
     <form action={formAction} inert={isPending} className="flex flex-col gap-5">
       <input type="hidden" name="submissionId" value={draft.submissionId} />
       <Confetti trigger={confettiTrigger} />
+      <DraftNotices notice={notice} onDismiss={dismissNotice} storageFailed={storageFailed} />
 
       {state.success && state.newRecord && (
         <p className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm font-medium leading-6 text-amber-800 dark:text-amber-200">
