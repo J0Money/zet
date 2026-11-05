@@ -6,6 +6,7 @@ import { Confetti } from "@/app/components/confetti";
 import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
 import { ExerciseNote } from "@/app/components/exercise-note";
+import { equipmentLabel } from "@/lib/equipment";
 import { choiceKey, defaultWheelKey, groupExercises, wheelOptions, type WheelKey } from "@/lib/exercise-groups";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
@@ -21,6 +22,7 @@ const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-70
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
 type SetRow = { id: number; reps: string; weightKg: string };
+const UNDO_SECONDS = 6;
 
 function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
@@ -37,7 +39,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
   const { draft, setDraft, clearDraft } = useLocalDraft(draftKey(userId, "strength"), emptyStrengthDraft, parseStrengthDraft, reviseSubmissionId);
-  const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets } = draft;
+  const { selectedTags, selectedProgramId, searchQuery, selectedChoiceKey, slotByChoice, sets, noteDrafts } = draft;
   const setSelectedTags = draftField(setDraft, "selectedTags");
   const setSelectedProgramId = draftField(setDraft, "selectedProgramId");
   const setSearchQuery = draftField(setDraft, "searchQuery");
@@ -52,6 +54,14 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   const nextId = useRef(1);
   const newRowId = () => Math.max(nextId.current++, ...sets.map((row) => row.id + 1));
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  // Sidst fjernede sæt, så "Fortryd" kan sætte det tilbage på sin plads.
+  const [removed, setRemoved] = useState<{ row: SetRow; index: number } | null>(null);
+  // Beskeden forsvinder af sig selv. Et nyt fjernet sæt starter tiden forfra.
+  useEffect(() => {
+    if (!removed) return;
+    const timer = setTimeout(() => setRemoved(null), UNDO_SECONDS * 1000);
+    return () => clearTimeout(timer);
+  }, [removed]);
 
   // Efter et vellykket gem starter listen af sæt forfra, klar til næste
   // øvelse, og en ny rekord udløser konfetti. Næste indtastning får et nyt
@@ -61,6 +71,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
     setPreviousResult(state);
     if (state.success) {
       setDraft({ ...draft, submissionId: newSubmissionId(), sets: [emptySet(0)] });
+      setRemoved(null);
       if (state.newRecord) setConfettiTrigger((count) => count + 1);
     }
   }
@@ -151,7 +162,29 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   }
 
   function removeSet(id: number) {
-    setSets((current) => current.length > 1 ? current.filter((set) => set.id !== id) : current);
+    const index = sets.findIndex((set) => set.id === id);
+    const row = sets[index];
+    if (!row || sets.length <= 1) return;
+    setSets((current) => current.filter((set) => set.id !== id));
+    // En helt tom række kan bare fjernes. Er der tastet noget, kan det fortrydes.
+    setRemoved(row.reps === "" && row.weightKg === "" ? null : { row, index });
+  }
+
+  function undoRemove() {
+    if (!removed) return;
+    // Har et nyt sæt fået samme id i mellemtiden, får det gendannede et nyt.
+    const row = sets.some((set) => set.id === removed.row.id) ? { ...removed.row, id: newRowId() } : removed.row;
+    setSets((current) => [...current.slice(0, removed.index), row, ...current.slice(removed.index)]);
+    setRemoved(null);
+  }
+
+  // undefined lukker noten og fjerner den uafsluttede tekst fra kladden.
+  function setNoteDraft(key: string, value: string | undefined) {
+    setDraft((current) => {
+      const noteDrafts = { ...current.noteDrafts };
+      if (value === undefined) delete noteDrafts[key]; else noteDrafts[key] = value;
+      return { ...current, noteDrafts };
+    });
   }
 
   function updateSet(id: number, field: "reps" | "weightKg", value: string) {
@@ -386,7 +419,9 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
           <ExerciseNote key={`${currentChoice.key}:${currentSlot.key}`}
             exerciseId={(currentSlot.variant ?? currentChoice.variants[0]).id}
             equipment={currentSlot.key}
-            note={currentSlot.variant ? exerciseNotes[currentSlot.variant.id] ?? "" : ""}>
+            note={currentSlot.variant ? exerciseNotes[currentSlot.variant.id] ?? "" : ""}
+            draft={noteDrafts[`${currentChoice.key}:${currentSlot.key}`]}
+            onDraftChange={(value) => setNoteDraft(`${currentChoice.key}:${currentSlot.key}`, value)}>
             <button type="button" onClick={addSet}
               className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600">
               + Tilføj sæt
@@ -399,6 +434,14 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
         >
           + Tilføj sæt
         </button>}
+        <div role="status" className="empty:hidden">
+          {removed && (
+            <p className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 text-sm text-zinc-700 dark:text-zinc-300">
+              Sæt {removed.index + 1} er fjernet.
+              <button type="button" onClick={undoRemove} className="min-h-11 font-semibold text-indigo-600 dark:text-indigo-400">Fortryd</button>
+            </p>
+          )}
+        </div>
       </div>
 
       {state.error && (
@@ -407,9 +450,27 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
         </p>
       )}
 
+      {currentChoice && currentSlot ? (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300" aria-live="polite">
+          <p>
+            Sættene gemmes på <span className="font-semibold text-zinc-900 dark:text-zinc-50">{currentChoice.label}</span>
+            {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentSlot.variant ? "" : ", ny variant"}).
+          </p>
+          {selectedChoiceKey !== null && selectedChoiceKey !== currentChoice.key && (
+            <p className="mt-1 font-medium text-amber-800 dark:text-amber-200">
+              Din valgte øvelse vises ikke med den nuværende søgning eller det nuværende filter. Tjek, at det er den rigtige øvelse.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+          Der er ingen øvelse valgt. Ændr søgningen eller filteret, så en øvelse vises.
+        </p>
+      )}
+
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || !currentChoice}
         className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? "Gemmer…" : sets.length === 1 ? "Gem sæt" : `Gem ${sets.length} sæt`}

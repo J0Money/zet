@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, reviseSubmissionId, serializeDraft } from "../lib/log-draft";
+import { hasUnsavedEntries, clearAllDrafts, draftKey, DRAFT_MAX_AGE_MS, emptyStrengthDraft, emptyCardioDraft, isSubmissionId, newSubmissionId, parseStrengthDraft, parseCardioDraft, parseDraft, reviseSubmissionId, serializeDraft } from "../lib/log-draft";
 
 const now = Date.UTC(2026, 9, 30, 12);
 
@@ -101,4 +101,59 @@ test("Logout rydder alle kladder, også ældre versioner, men intet andet", () =
   } as Storage;
   clearAllDrafts(storage);
   assert.deepEqual([...data.keys()], ["zet-theme"]);
+});
+
+test("Uafsluttede huskenoter gemmes i kladden og overlever genindlæsning", () => {
+  const draft = { ...emptyStrengthDraft(), noteDrafts: { "group:Squat:machine": "Sæde 4", "group:Row:none": "" } };
+  assert.deepEqual(parseDraft(serializeDraft(draft, now), parseStrengthDraft, now)?.noteDrafts, draft.noteDrafts);
+  assert.deepEqual(emptyStrengthDraft().noteDrafts, {});
+});
+
+test("Kladder uden noteDrafts kan stadig læses og får en tom liste", () => {
+  const old: Record<string, unknown> = { ...emptyStrengthDraft(), sets: [{ id: 2, reps: "6", weightKg: "80" }] };
+  delete old.noteDrafts;
+  const restored = parseDraft(serializeDraft(old, now), parseStrengthDraft, now);
+  assert.ok(restored);
+  assert.deepEqual(restored.noteDrafts, {});
+  assert.deepEqual(restored.sets, [{ id: 2, reps: "6", weightKg: "80" }]);
+  // Også kladder fra før engangs-id'et: begge felter mangler.
+  delete old.submissionId;
+  const oldest = parseDraft(serializeDraft(old, now), parseStrengthDraft, now);
+  assert.ok(oldest && isSubmissionId(oldest.submissionId));
+  assert.deepEqual(oldest.noteDrafts, {});
+});
+
+test("Ugyldige noteDrafts afvises: forkert type, for lang tekst, for mange", () => {
+  const strength = emptyStrengthDraft();
+  const tooMany = Object.fromEntries(Array.from({ length: 101 }, (_, index) => [`k${index}`, "x"]));
+  for (const noteDrafts of [[], "tekst", null, { a: 5 }, { a: "x".repeat(501) }, { ["k".repeat(201)]: "x" }, tooMany]) {
+    assert.equal(parseDraft(serializeDraft({ ...strength, noteDrafts }, now), parseStrengthDraft, now), null);
+  }
+});
+
+test("En ændret huskenote giver ikke nyt engangs-id, men ændrede sæt gør", () => {
+  const draft = { ...emptyStrengthDraft(), sets: [{ id: 0, reps: "8", weightKg: "60" }] };
+  const withNote = { ...draft, noteDrafts: { "group:Squat:none": "Bænk 30" } as Record<string, string> };
+  assert.equal(reviseSubmissionId(draft, withNote).submissionId, draft.submissionId);
+  assert.equal(reviseSubmissionId(withNote, { ...withNote, noteDrafts: {} }).submissionId, draft.submissionId);
+  const both = { ...withNote, sets: [{ id: 0, reps: "9", weightKg: "60" }] };
+  assert.notEqual(reviseSubmissionId(draft, both).submissionId, draft.submissionId);
+});
+
+test("Afslut ser kun udfyldte, ugemte sæt og cardio", () => {
+  const storage = (entries: Record<string, string>) => ({ getItem: (key: string) => entries[key] ?? null });
+  const strengthKey = draftKey("u1", "strength");
+  const cardioKey = draftKey("u1", "cardio");
+  assert.equal(hasUnsavedEntries(storage({}), "u1", now), false);
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(emptyStrengthDraft(), now), [cardioKey]: serializeDraft(emptyCardioDraft(), now) }), "u1", now), false);
+  const filled = { ...emptyStrengthDraft(), sets: [{ id: 0, reps: "", weightKg: "" }, { id: 1, reps: "8", weightKg: "" }] };
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(filled, now) }), "u1", now), true);
+  assert.equal(hasUnsavedEntries(storage({ [cardioKey]: serializeDraft({ ...emptyCardioDraft(), minutes: "20" }, now) }), "u1", now), true);
+  // En anden bruger, en udløbet kladde og en ødelagt kladde tæller ikke.
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(filled, now) }), "u2", now), false);
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(filled, now) }), "u1", now + DRAFT_MAX_AGE_MS + 1), false);
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: "{" }), "u1", now), false);
+  // Kun en huskenote i kladden er ikke et ugemt sæt.
+  const onlyNote = { ...emptyStrengthDraft(), noteDrafts: { "group:Squat:none": "tekst" } };
+  assert.equal(hasUnsavedEntries(storage({ [strengthKey]: serializeDraft(onlyNote, now) }), "u1", now), false);
 });

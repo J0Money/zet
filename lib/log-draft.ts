@@ -28,8 +28,10 @@ export function isSubmissionId(value: unknown): value is string {
 // der gemmes på, og en genindlæsning uden ændringer beholder stadig id'et.
 export function reviseSubmissionId<T extends { submissionId: string }>(previous: T, next: T): T {
   if (next === previous || next.submissionId !== previous.submissionId) return next;
-  const unchanged = JSON.stringify({ ...previous, submissionId: null })
-    === JSON.stringify({ ...next, submissionId: null });
+  // Uafsluttede huskenoter (noteDrafts) tæller ikke med: de bliver aldrig sendt
+  // med Gem-knappen, så en ændret note er ikke et ændret sæt.
+  const unchanged = JSON.stringify({ ...previous, submissionId: null, noteDrafts: null })
+    === JSON.stringify({ ...next, submissionId: null, noteDrafts: null });
   return unchanged ? next : { ...next, submissionId: newSubmissionId() };
 }
 
@@ -41,6 +43,10 @@ export type StrengthDraft = {
   selectedChoiceKey: string | null;
   slotByChoice: Record<string, WheelKey>;
   sets: { id: number; reps: string; weightKg: string }[];
+  // Uafsluttet huskenote pr. øvelsesvariant (nøgle: "øvelsesgruppe:udstyr").
+  // En nøgle findes kun, mens noten er åben til redigering. Ældre kladder har
+  // ikke feltet og får en tom liste.
+  noteDrafts: Record<string, string>;
 };
 export type CardioDraft = {
   submissionId: string;
@@ -54,7 +60,7 @@ export type CardioDraft = {
 export function emptyStrengthDraft(): StrengthDraft {
   return {
     submissionId: newSubmissionId(), selectedTags: [], selectedProgramId: null, searchQuery: "",
-    selectedChoiceKey: null, slotByChoice: {}, sets: [{ id: 0, reps: "", weightKg: "" }],
+    selectedChoiceKey: null, slotByChoice: {}, sets: [{ id: 0, reps: "", weightKg: "" }], noteDrafts: {},
   };
 }
 export function emptyCardioDraft(): CardioDraft {
@@ -69,12 +75,18 @@ const text = (value: unknown): value is string => typeof value === "string" && v
 const nullableText = (value: unknown) => value === null || text(value);
 // Kladder gemt før engangs-id'et fandtes har intet id. De beholdes og får et nyt.
 const optionalSubmissionId = (value: unknown) => value === undefined || isSubmissionId(value);
+// Kladder gemt før huskenoter fandt sted har intet noteDrafts-felt.
+const optionalNoteDrafts = (value: unknown) => value === undefined
+  || (object(value) && Object.keys(value).length <= 100
+    && Object.entries(value).every(([key, note]) => key.length <= 200 && text(note)));
 function withSubmissionId<T extends { submissionId: string }>(value: Record<string, unknown>): T {
   return { ...value, submissionId: isSubmissionId(value.submissionId) ? value.submissionId : newSubmissionId() } as T;
 }
 
 export function parseStrengthDraft(value: unknown): StrengthDraft | null {
-  return isStoredStrengthDraft(value) ? withSubmissionId<StrengthDraft>(value) : null;
+  return isStoredStrengthDraft(value)
+    ? { ...withSubmissionId<StrengthDraft>(value), noteDrafts: (value.noteDrafts ?? {}) as Record<string, string> }
+    : null;
 }
 export function parseCardioDraft(value: unknown): CardioDraft | null {
   return isStoredCardioDraft(value) ? withSubmissionId<CardioDraft>(value) : null;
@@ -89,7 +101,8 @@ function isStoredStrengthDraft(value: unknown): value is Record<string, unknown>
     && Array.isArray(value.sets) && value.sets.length > 0 && value.sets.length <= 100
     && value.sets.every((row) => object(row) && Number.isSafeInteger(row.id)
       && Number(row.id) >= 0 && text(row.reps) && text(row.weightKg))
-    && new Set(value.sets.map((row) => row.id)).size === value.sets.length;
+    && new Set(value.sets.map((row) => row.id)).size === value.sets.length
+    && optionalNoteDrafts(value.noteDrafts);
 }
 function isStoredCardioDraft(value: unknown): value is Record<string, unknown> {
   return object(value) && optionalSubmissionId(value.submissionId) && nullableText(value.selectedProgramId)
@@ -121,4 +134,15 @@ export function clearAllDrafts(storage: Storage) {
   const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
     .filter((key): key is string => key?.startsWith(DRAFT_KEY_PREFIX) ?? false);
   for (const key of keys) storage.removeItem(key);
+}
+
+// Står der udfyldte, ugemte sæt eller cardio i kladderne? Bruges af Afslut-knappen.
+// Tomme felter og standardværdien 0 sekunder tæller ikke som indtastning.
+export function hasUnsavedEntries(storage: Pick<Storage, "getItem">, userId: string, now = Date.now()): boolean {
+  try {
+    const strength = parseDraft(storage.getItem(draftKey(userId, "strength")), parseStrengthDraft, now);
+    if (strength?.sets.some((row) => row.reps.trim() !== "" || row.weightKg.trim() !== "")) return true;
+    const cardio = parseDraft(storage.getItem(draftKey(userId, "cardio")), parseCardioDraft, now);
+    return Boolean(cardio && (cardio.distanceKm.trim() !== "" || cardio.minutes.trim() !== ""));
+  } catch { return false; }
 }

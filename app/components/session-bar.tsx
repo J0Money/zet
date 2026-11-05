@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { endWorkoutAction, startWorkoutAction } from "@/app/log/session-actions";
 import { formatTimeDanish } from "@/lib/dates";
 import { formatClock } from "@/lib/format";
+import { hasUnsavedEntries } from "@/lib/log-draft";
 
 // Et ur, der opdateres hvert sekund. useSyncExternalStore er Reacts måde at
 // læse noget uden for React (her klokken) uden en effect med setState:
@@ -23,7 +24,7 @@ function useElapsedSeconds(startedAt: string): number | null {
   return now === null ? null : now - Math.floor(new Date(startedAt).getTime() / 1000);
 }
 
-function ActiveSession({ startedAt }: { startedAt: string }) {
+function ActiveSession({ startedAt, userId }: { startedAt: string; userId: string }) {
   const elapsed = useElapsedSeconds(startedAt);
   // Sticky: linjen bliver stående øverst, mens man scroller ned til formularen
   // og sættene, så uret altid kan ses. Toppen tager højde for udskæringen på
@@ -40,7 +41,13 @@ function ActiveSession({ startedAt }: { startedAt: string }) {
       <form
         action={endWorkoutAction}
         onSubmit={(event) => {
-          if (!window.confirm("Vil du afslutte træningen? Vælg Annuller for at fortsætte.")) {
+          // Kladden ligger i browseren og skrives, hver gang formularen ændres,
+          // så den kan læses lige her, når der trykkes på Afslut.
+          const unsaved = hasUnsavedEntries(localStorage, userId);
+          const message = unsaved
+            ? "Du har sæt, der ikke er gemt. De bliver stående i formularen, men hører til et nyt pas, hvis du gemmer dem senere. Vil du afslutte træningen? Vælg Annuller for at gemme dem først."
+            : "Vil du afslutte træningen? Vælg Annuller for at fortsætte.";
+          if (!window.confirm(message)) {
             event.preventDefault();
           }
         }}
@@ -56,8 +63,8 @@ function ActiveSession({ startedAt }: { startedAt: string }) {
   );
 }
 
-export function SessionBar({ startedAt }: { startedAt: string | null }) {
-  if (startedAt) return <ActiveSession startedAt={startedAt} />;
+export function SessionBar({ startedAt, userId }: { startedAt: string | null; userId: string }) {
+  if (startedAt) return <ActiveSession startedAt={startedAt} userId={userId} />;
   return (
     <div className="zet-panel flex items-center justify-between gap-3">
       <p className="text-sm text-zinc-500 dark:text-zinc-400">Ingen træning i gang. Log et sæt, så starter den af sig selv.</p>

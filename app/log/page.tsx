@@ -84,7 +84,7 @@ export default async function LogPage() {
         Administrer programmer →
       </Link>
 
-      <SessionBar startedAt={activeWorkout?.started_at ?? null} />
+      <SessionBar startedAt={activeWorkout?.started_at ?? null} userId={currentUser.id} />
 
       <LogFormTabs
         key={currentUser.id}
