@@ -1,5 +1,5 @@
 import "server-only";
-import { DeleteObjectCommand, GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, NoSuchKey, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 // Railways Buckets er private og S3-kompatible. Værdierne sættes som Variable References til bucketten.
 let client: S3Client | undefined;
@@ -34,4 +34,12 @@ export async function getAvatarObject(key: string) {
 
 export async function deleteAvatarObject(key: string) {
   await s3().send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
+}
+
+// Sletter alle billeder under brugerens præfiks (ved kontosletning), også rester
+// fra tidligere billeder. Højst 1000 pr. omgang; en bruger har normalt ét.
+export async function deleteAvatarObjectsFor(userId: string) {
+  const listed = await s3().send(new ListObjectsV2Command({ Bucket: process.env.S3_BUCKET, Prefix: `avatars/${userId}/` }));
+  const keys = (listed.Contents ?? []).flatMap((item) => (item.Key ? [{ Key: item.Key }] : []));
+  if (keys.length) await s3().send(new DeleteObjectsCommand({ Bucket: process.env.S3_BUCKET, Delete: { Objects: keys } }));
 }

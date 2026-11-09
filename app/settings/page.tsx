@@ -10,6 +10,7 @@ import { pushConfigured } from "@/lib/push";
 import { getProfileImage } from "@/lib/avatars";
 import { avatarStorageConfigured } from "@/lib/avatar-storage";
 import { ProfileImageSettings } from "@/app/components/profile-image-settings";
+import { DeleteAccountSection } from "@/app/components/delete-account-section";
 
 // Siden afhænger af den aktuelle bruger (admin-status), så den kan ikke
 // forhåndsgenereres statisk.
@@ -56,6 +57,8 @@ export default async function SettingsPage() {
         <h2 className="zet-sectionTitle">Konto</h2>
         <LogoutButton />
       </section>
+
+      <DeleteAccountSection />
     </div>
   );
 }
