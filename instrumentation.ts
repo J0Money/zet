@@ -7,4 +7,6 @@ export async function register() {
   if (!process.env.RAILWAY_ENVIRONMENT_NAME) return;
   const { startWorkoutExpiryTimer } = await import("./lib/workout-expiry-timer");
   startWorkoutExpiryTimer();
+  const { startRetentionCleanupTimer } = await import("./lib/retention-cleanup-timer");
+  startRetentionCleanupTimer();
 }
