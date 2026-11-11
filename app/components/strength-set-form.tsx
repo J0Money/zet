@@ -7,13 +7,15 @@ import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
 import { ExerciseNote } from "@/app/components/exercise-note";
 import { equipmentLabel } from "@/lib/equipment";
-import { choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions } from "@/lib/exercise-groups";
+import { BottomSheet } from "@/app/components/bottom-sheet";
+import { ExerciseCard } from "@/app/components/exercise-card";
+import { choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions, type ExerciseChoice } from "@/lib/exercise-groups";
 import { SIDES, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type ExerciseSide } from "@/lib/exercise-side";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
 import { formatSetsSummary } from "@/lib/format";
-import { formatDateDanish } from "@/lib/dates";
+import { formatDateDanish, formatShortDateDanish } from "@/lib/dates";
 import { useLocalDraft, draftField } from "@/app/components/use-local-draft";
 import { DraftNotices } from "@/app/components/draft-notices";
 import { draftKey, emptyStrengthDraft, newSubmissionId, parseStrengthDraft, reviseSubmissionId, strengthDraftHasContent } from "@/lib/log-draft";
@@ -28,6 +30,20 @@ const UNDO_SECONDS = 6;
 
 function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
+}
+
+function choiceMuscles(choice: ExerciseChoice): MuscleGroup[] {
+  return [...new Set(choice.variants.flatMap((variant) => variant.muscle_groups))];
+}
+
+// "Sidst 3. nov", ud fra den nyeste afsluttede træning af en hvilken som helst variant.
+function choiceLastLabel(choice: ExerciseChoice, history: Record<string, ExerciseHistory>): string | null {
+  let latest: string | null = null;
+  for (const variant of choice.variants) {
+    const date = history[variant.id]?.lastDate;
+    if (date && (!latest || date > latest)) latest = date;
+  }
+  return latest ? `Sidst ${formatShortDateDanish(latest)}` : null;
 }
 
 export function StrengthSetForm({ userId, isAdmin, exercises, programs, exerciseHistory, exerciseNotes, preferredEquipment }: {
@@ -52,6 +68,9 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
   const setSets = draftField(setDraft, "sets");
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  // Skuffen med udstyr, sæt og Gem. Åbner med et tryk på et kort, og af sig selv,
+  // hvis en gendannet kladde har indtastede sæt, så de ikke ligger skjulte.
+  const [sheetOpen, setSheetOpen] = useState(() => selectedChoiceKey !== null && strengthDraftHasContent(draft));
   // Hvilket udstyr (plads på hjulet) der sidst er valgt i hver gruppe, så valget
   // huskes, hvis man skifter øvelse og tilbage igen. Gemt som udstyr og ikke som
   // id, så valget består, når en ny variant er blevet oprettet.
@@ -76,6 +95,8 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
     if (state.success) {
       setDraft({ ...draft, submissionId: newSubmissionId(), sets: [emptySet(0)] });
       setRemoved(null);
+      // Tilbage til kortene, klar til næste øvelse.
+      setSheetOpen(false);
       if (state.newRecord) setConfettiTrigger((count) => count + 1);
     }
   }
@@ -102,6 +123,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
       setSelectedChoiceKey(key);
       setSlotByChoice((current) => ({ ...current, [key]: "none" }));
       setShowCreateForm(false);
+      setSheetOpen(true);
     }
   }
 
@@ -128,8 +150,15 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
     .filter((exercise) => selectedTags.length === 0 || exercise.muscle_groups.some((group) => selectedTags.includes(group)))
     .filter((exercise) => !programExerciseIds || programExerciseIds.has(exercise.id))
     .filter((exercise) => !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery));
-  const choices = groupExercises(filteredExercises);
-  const currentChoice = choices.find((choice) => choice.key === selectedChoiceKey) ?? choices[0];
+  // Kortene følger søgning og filtre. Den åbne øvelse hentes fra alle øvelser,
+  // så den ikke skifter, hvis du ændrer filteret, mens skuffen er åben.
+  const cards = useMemo(
+    () => groupExercises(filteredExercises).sort((a, b) => a.label.localeCompare(b.label, "da")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allExercises, selectedTags, selectedProgramId, searchQuery, programs],
+  );
+  const allChoices = useMemo(() => groupExercises(allExercises), [allExercises]);
+  const currentChoice = allChoices.find((choice) => choice.key === selectedChoiceKey);
   const wheelSlots = currentChoice ? wheelOptions(currentChoice) : [];
   // Valget er udstyr og eventuelt side. Først det, du har valgt her, så det
   // du sidst loggede, så øvelsens første plads.
@@ -145,6 +174,11 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
   const currentSide: ExerciseSide = storedSlot && currentSlot?.equipment ? storedSlot.side : "both";
   const currentKey = currentSlot ? slotKey(currentSlot.equipment, currentSide) : "";
   const currentVariant = currentChoice && currentSlot ? variantFor(currentChoice, currentSlot.equipment, currentSide) : null;
+
+  function openChoice(key: string) {
+    setSelectedChoiceKey(key);
+    setSheetOpen(true);
+  }
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -221,6 +255,12 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
       {state.success && state.newRecord && (
         <p className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm font-medium leading-6 text-amber-800 dark:text-amber-200">
           🎉 Ny personlig rekord!
+        </p>
+      )}
+
+      {state.success && !state.newRecord && (
+        <p role="status" className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 px-4 py-3 text-sm font-medium leading-6 text-emerald-800 dark:text-emerald-200">
+          Sættene er gemt.
         </p>
       )}
 
@@ -303,37 +343,52 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
             </button>
           )}
         </div>
-        <div className="flex gap-2">
-          <div className="w-1/3 shrink-0">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
-              placeholder="Søg…"
-              aria-label="Søg i øvelser"
-              className={inputClass}
+        <input
+          id="exercise-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+          placeholder="Søg i øvelser…"
+          aria-label="Søg i øvelser"
+          className={inputClass}
+        />
+        {/* Kortene viser grupper. Trykker du på et, åbner skuffen med udstyr, sæt og Gem. */}
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {cards.map((choice) => (
+            <ExerciseCard
+              key={choice.key}
+              label={choice.label}
+              muscles={choiceMuscles(choice)}
+              lastLabel={choiceLastLabel(choice, exerciseHistory)}
+              selected={choice.key === currentChoice?.key}
+              onSelect={() => openChoice(choice.key)}
             />
-          </div>
-          <div className="min-w-0 flex-1">
-            <select
-              id="exerciseId"
-              value={currentChoice?.key ?? ""}
-              onChange={(event) => setSelectedChoiceKey(event.target.value)}
-              className={inputClass}
-            >
-              {choices.map((choice) => (
-                <option key={choice.key} value={choice.key}>
-                  {choice.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          ))}
         </div>
-        {/* Valglisten viser kun grupper. Serveren finder (eller opretter) varianten ud fra et medlem af gruppen og udstyret. */}
-        <input type="hidden" name="exerciseId" value={(currentVariant ?? currentChoice?.variants[0])?.id ?? ""} />
+        {cards.length === 0 && (
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
+        )}
+      </div>
+
+      {showCreateForm && (
+        <CreateExerciseForm
+          formId="create-strength-exercise"
+          type="strength"
+          state={createState}
+          isPending={isCreatingExercise}
+          onCancel={() => setShowCreateForm(false)}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {sheetOpen && currentChoice && (
+      <BottomSheet label={currentChoice.label} onClose={() => setSheetOpen(false)}>
+      <div>
+        {/* Serveren finder (eller opretter) varianten ud fra et medlem af gruppen og udstyret. */}
+        <input type="hidden" name="exerciseId" value={(currentVariant ?? currentChoice.variants[0]).id} />
         <input type="hidden" name="equipment" value={currentKey} />
-        {currentChoice && currentSlot && (
+        {currentSlot && (
           <div className="mt-3">
             <EquipmentWheel
               options={wheelSlots}
@@ -367,10 +422,6 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
             )}
           </div>
         )}
-        {filteredExercises.length === 0 && (
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Ingen øvelser matcher. Prøv en anden søgning, eller opret den som ny øvelse.</p>
-        )}
-        {currentChoice && (
           <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-3 text-sm" aria-label="Din øvelseshistorik">
             <div aria-live="polite" className="space-y-2">
               <p className="text-zinc-600 dark:text-zinc-300">
@@ -391,19 +442,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
               </button>
             )}
           </div>
-        )}
       </div>
-
-      {showCreateForm && (
-        <CreateExerciseForm
-          formId="create-strength-exercise"
-          type="strength"
-          state={createState}
-          isPending={isCreatingExercise}
-          onCancel={() => setShowCreateForm(false)}
-          isAdmin={isAdmin}
-        />
-      )}
 
       <div className="flex flex-col gap-3">
         {sets.map((set, index) => (
@@ -485,31 +524,24 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
         </p>
       )}
 
-      {currentChoice && currentSlot ? (
+      {currentSlot && (
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300" aria-live="polite">
           <p>
             Sættene gemmes på <span className="font-semibold text-zinc-900 dark:text-zinc-50">{currentChoice.label}</span>
             {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentSide !== "both" ? `, ${sideShortLabel[currentSide]}` : ""}{currentVariant ? "" : ", ny variant"}).
           </p>
-          {selectedChoiceKey !== null && selectedChoiceKey !== currentChoice.key && (
-            <p className="mt-1 font-medium text-amber-800 dark:text-amber-200">
-              Din valgte øvelse vises ikke med den nuværende søgning eller det nuværende filter. Tjek, at det er den rigtige øvelse.
-            </p>
-          )}
         </div>
-      ) : (
-        <p className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-          Der er ingen øvelse valgt. Ændr søgningen eller filteret, så en øvelse vises.
-        </p>
       )}
 
       <button
         type="submit"
-        disabled={isPending || !currentChoice}
+        disabled={isPending}
         className="min-h-12 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
       >
         {isPending ? "Gemmer…" : sets.length === 1 ? "Gem sæt" : `Gem ${sets.length} sæt`}
       </button>
+      </BottomSheet>
+      )}
     </form>
     </>
   );
