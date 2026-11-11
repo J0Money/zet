@@ -127,6 +127,13 @@
       "when": 1793802175891,
       "tag": "0017_log_submissions",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794384808685,
+      "tag": "0018_exercise_side_alias",
+      "breakpoints": true
     }
   ]
 }

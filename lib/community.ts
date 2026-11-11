@@ -5,16 +5,19 @@ import { communityComment, communityPost, communityReaction, user } from "@/lib/
 import { communityText, isCommunityId } from "@/lib/community-input";
 import { buildCommunitySummary } from "@/lib/community-summary";
 import { buildLeaderboard } from "@/lib/community-leaderboard";
-import { getEntries, getExercises, getWorkoutById, getWorkouts } from "@/lib/workout-store";
+import { getEntries, getExerciseAliases, getExercises, getWorkoutById, getWorkouts } from "@/lib/workout-store";
 
 const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
 // Called only after requireUser. No private workouts or current exercise data.
 export async function getCommunityLeaderboard() {
-  const posts = await db.select({ id: communityPost.id, userId: communityPost.user_id,
-    name: user.name, image: user.image, summary: communityPost.summary,
-  }).from(communityPost).innerJoin(user, eq(user.id, communityPost.user_id));
-  return buildLeaderboard(posts);
+  const [posts, aliases] = await Promise.all([
+    db.select({ id: communityPost.id, userId: communityPost.user_id,
+      name: user.name, image: user.image, summary: communityPost.summary,
+    }).from(communityPost).innerJoin(user, eq(user.id, communityPost.user_id)),
+    getExerciseAliases(),
+  ]);
+  return buildLeaderboard(posts, aliases);
 }
 
 export async function getSharePreview(userId: string, workoutId: string) {

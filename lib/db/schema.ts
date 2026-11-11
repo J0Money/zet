@@ -47,6 +47,10 @@ export const equipment = pgEnum("equipment", [
   "other",
 ]);
 
+// Om en øvelse laves med begge sider eller én arm/ét ben ad gangen. Ved én
+// side er vægten kg pr. hånd eller ben.
+export const exerciseSide = pgEnum("exercise_side", ["both", "single_arm", "single_leg"]);
+
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
@@ -196,7 +200,20 @@ export const exercise = pgTable("exercise", {
   // Begge er null for øvelser uden varianter.
   group_name: text("group_name"),
   equipment: equipment("equipment"),
+  // Side er også en variant med egen rekord, ligesom udstyr.
+  side: exerciseSide("side").notNull().default("both"),
 });
+
+// Gamle og alternative navne for en bevægelse (fx efter en sammenlægning), så
+// søgning ved oprettelse og Ranked kan finde den rigtige øvelse. base_name er
+// bevægelsens navn (group_name eller name på exercise).
+export const exerciseAlias = pgTable("exercise_alias", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  alias: text("alias").notNull(),
+  base_name: text("base_name").notNull(),
+  type: exerciseType("type").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("exercise_alias_unique").on(sql`lower(${table.alias})`, table.type)]);
 
 // En privat huskenote pr. bruger og præcis øvelsesvariant.
 export const exerciseNote = pgTable("exercise_note", {

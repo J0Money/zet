@@ -31,6 +31,8 @@ export function CreateExerciseForm({
   // ukontrollerede felter efter hver formularhandling).
   const [name, setName] = useState("");
   const healthError = healthWarning(name);
+  // Serveren fandt øvelser, der ligner. Gælder kun, så længe navnet er det samme.
+  const similar = state.similar && state.similarFor === name.trim() ? state.similar : null;
 
   function toggleGroup(group: MuscleGroup) {
     setSelectedGroups((current) => {
@@ -87,6 +89,17 @@ export function CreateExerciseForm({
         </div>
       )}
 
+      {similar && (
+        <div role="alert" className="rounded-xl bg-amber-50 dark:bg-amber-950 p-3 text-sm leading-6 text-amber-900 dark:text-amber-200">
+          <input form={formId} type="hidden" name="confirmSimilar" value={state.similarFor} />
+          <p>Findes den allerede? Disse ligner:</p>
+          <ul className="list-disc pl-5 font-medium">
+            {similar.map((label) => <li key={label}>{label}</li>)}
+          </ul>
+          <p>Vælg den i listen, hvis det er den samme. Ellers tryk Opret alligevel.</p>
+        </div>
+      )}
+
       {state.error && (
         <p role="alert" className="text-sm leading-6 text-red-600 dark:text-red-400">
           {state.error}
@@ -100,7 +113,7 @@ export function CreateExerciseForm({
           disabled={isPending || Boolean(healthError)}
           className="min-h-11 flex-1 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
         >
-          {isPending ? "Opretter…" : "Opret øvelse"}
+          {isPending ? "Opretter…" : similar ? "Opret alligevel" : "Opret øvelse"}
         </button>
         <button
           type="button"

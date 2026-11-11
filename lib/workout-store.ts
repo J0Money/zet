@@ -8,7 +8,8 @@ import { closeExpiredStrengthWorkouts } from "./workout-expiry";
 import { displayExerciseName } from "./exercise-names";
 import { and, eq, or, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { exercise, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
+import { exercise, exerciseAlias, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
+import type { ExerciseAlias } from "./exercise-match";
 import type { CardioEntry, Entry, Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry, Workout } from "@/lib/types";
 
 // Synlige øvelser: indbyggede (user_id null), brugerens egne, og andre
@@ -33,6 +34,11 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
     .where(or(isNull(exercise.user_id), eq(exercise.user_id, userId), eq(exercise.is_shared, true)))
     .groupBy(exercise.id);
   return rows.map((row) => ({ ...row, name: displayExerciseName(row.name) }));
+}
+
+// Gamle navne fra sammenlagte øvelser. Ingen persondata, så alle må læse dem.
+export async function getExerciseAliases(): Promise<ExerciseAlias[]> {
+  return db.select({ alias: exerciseAlias.alias, base_name: exerciseAlias.base_name, type: exerciseAlias.type }).from(exerciseAlias);
 }
 
 // Opretter en øvelse, der er delt med alle (is_shared), men stadig kender sin

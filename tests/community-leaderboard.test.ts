@@ -34,6 +34,14 @@ test("Equipment stays separate; identical results share rank with stable orderin
  assert.deepEqual(board[0].variants.find((v) => v.equipment === "barbell")!.results.map((r) => [r.userId,r.rank]), [["a",1],["b",1],["c",3]]);
  assert.deepEqual(buildLeaderboard(posts.slice().reverse()), board);
 });
+test("Gamle navne fra sammenlagte øvelser tæller med under det nye navn", () => {
+ const aliases = [{ alias: "Leg Curls", base_name: "Leg curl", type: "strength" as const }];
+ const board = buildLeaderboard([post("a", 50, 8, "Leg Curls (Machine)"), post("b", 60, 8, "Leg curl (Machine)")], aliases);
+ assert.equal(board.length, 1);
+ assert.equal(board[0].name, "Leg curl");
+ assert.deepEqual(board[0].variants[0].results.map((r) => r.userId), ["b", "a"]);
+ assert.equal(buildLeaderboard([post("a", 50, 8, "Leg Curls (Machine)"), post("b", 60, 8, "Leg curl (Machine)")]).length, 2);
+});
 test("Legacy record-only snapshots, cardio and invalid numbers do not qualify", () => {
  const old = post("old",200); delete old.summary.exercises;
  old.summary.records = [{ exercise:"Bænkpres (Stang)", weightKg:200,reps:10,previousWeightKg:100,previousReps:10 }];

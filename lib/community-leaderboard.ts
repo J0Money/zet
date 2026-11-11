@@ -1,6 +1,7 @@
 import type { CommunitySummary } from "./community-summary";
 import type { Equipment } from "./types";
 import { englishExerciseName, equipmentName } from "./exercise-names";
+import { aliasLookup, matchKey, type ExerciseAlias } from "./exercise-match";
 
 export type LeaderboardPost = { id: string; userId: string; name: string; image: string | null; summary: CommunitySummary };
 export type LeaderboardResult = { userId: string; name: string; image: string | null; weightKg: number; reps: number; postId: string; date: string; rank: number };
@@ -22,25 +23,30 @@ export function bigFiveLeaderboards(exercises: LeaderboardExercise[]) {
 
 // Snapshots predate equipment metadata. Only explicit suffixes identify equipment;
 // never infer a machine or bodyweight category from an exercise's name.
-export function leaderboardExercise(name: string) {
+// aliases: gamle navne fra sammenlagte øvelser (matchKey -> bevægelsens navn),
+// så gamle delte opslag følger med til den øvelse, de blev lagt ind i.
+export function leaderboardExercise(name: string, aliases?: Map<string, string>) {
   const translated = englishExerciseName(name).trim();
+  const renamed = (base: string) => aliases?.get(matchKey(base)) ?? base;
   for (const [equipment, label] of Object.entries(equipmentName)) {
     const suffix = ` (${label})`;
     if (translated.toLowerCase().endsWith(suffix.toLowerCase())) {
-      let base = translated.slice(0, -suffix.length).trim();
+      let base = renamed(translated.slice(0, -suffix.length).trim());
       if (equipment === "barbell" && base.toLowerCase() === "overhead press") base = "Shoulder press";
       if (equipment === "barbell" && base.toLowerCase() === "barbell row") base = "Row";
       return { key: base.toLocaleLowerCase("en"), name: base, equipment: equipment as Equipment };
     }
   }
-  return { key: translated.toLocaleLowerCase("en"), name: translated, equipment: "unspecified" as const };
+  const base = renamed(translated);
+  return { key: base.toLocaleLowerCase("en"), name: base, equipment: "unspecified" as const };
 }
 const score = (a: { weightKg: number; reps: number }, b: { weightKg: number; reps: number }) => b.weightKg - a.weightKg || b.reps - a.reps;
-export function buildLeaderboard(posts: LeaderboardPost[]): LeaderboardExercise[] {
+export function buildLeaderboard(posts: LeaderboardPost[], aliases: ExerciseAlias[] = []): LeaderboardExercise[] {
+  const aliasNames = aliasLookup(aliases, "strength");
   const groups = new Map<string, { name: string; variants: Map<Equipment | "unspecified", Map<string, LeaderboardResult>> }>();
   for (const post of posts) {
     for (const exercise of post.summary.exercises ?? []) {
-      const choice = leaderboardExercise(exercise.name);
+      const choice = leaderboardExercise(exercise.name, aliasNames);
       if (!choice.key) continue;
       for (const set of exercise.sets) {
         if (set.kind !== "strength" || !Number.isFinite(set.weightKg) || set.weightKg < 0 || !Number.isInteger(set.reps) || set.reps < 1) continue;

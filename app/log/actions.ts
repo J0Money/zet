@@ -6,7 +6,8 @@ import { rejectHealthText } from "@/lib/health-notice";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { EQUIPMENT } from "@/lib/equipment";
-import { equipmentName } from "@/lib/exercise-names";
+import { displayExerciseName, equipmentName } from "@/lib/exercise-names";
+import { findExerciseMatches } from "@/lib/exercise-match";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
 import { isSubmissionId } from "@/lib/log-draft";
 import type { Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
@@ -15,6 +16,7 @@ import {
   addStrengthEntries,
   createExercise,
   getEntries,
+  getExerciseAliases,
   getExercises,
   getOrStartActiveWorkout,
 } from "@/lib/workout-store";
@@ -58,8 +60,11 @@ async function resolveVariant(
   if (wanted === null) return { error: "Øvelsen findes ikke uden udstyr." };
 
   const name = `${groupName} (${equipmentName[wanted]})`;
+  // Den synlige liste har udstyret på dansk ("Squat (Stang)"), så der
+  // sammenlignes med navnet, som det vises.
+  const shownName = displayExerciseName(name).toLowerCase();
   const sameName = visible.find(
-    (exercise) => exercise.type === "strength" && exercise.name.toLowerCase() === name.toLowerCase(),
+    (exercise) => exercise.type === "strength" && exercise.name.toLowerCase() === shownName,
   );
   if (sameName) return { exercise: sameName };
 
@@ -255,6 +260,10 @@ export async function logCardioEntry(
 export type CreateExerciseState = {
   error?: string;
   exercise?: Exercise;
+  // Øvelser, der ligner navnet i similarFor. Brugeren kan vælge en af dem i
+  // listen eller sende samme navn igen for at oprette alligevel.
+  similar?: string[];
+  similarFor?: string;
 };
 
 export async function createExerciseAction(
@@ -289,20 +298,20 @@ export async function createExerciseAction(
   }
 
   // Udstyr vælges først, når man logger et sæt (på hjulet), så en ny øvelse
-  // oprettes uden udstyr. Et navn tæller som optaget, både hvis en øvelse hedder
-  // det, og hvis det er navnet på en gruppe af varianter (fx "Flyes", hvor kun
-  // "Flyes (Kabel)" og "Flyes (Maskine)" findes), ellers ville der komme en
-  // ekstra linje med næsten samme navn.
-  const visibleExercises = await getExercises(currentUser.id);
-  const normalizedName = name.toLowerCase();
-  const isDuplicate = visibleExercises.some(
-    (existing) =>
-      existing.type === exerciseType &&
-      (existing.name.trim().toLowerCase() === normalizedName ||
-        existing.group_name?.trim().toLowerCase() === normalizedName),
-  );
-  if (isDuplicate) {
-    return { error: `"${name}" findes allerede, vælg den i listen i stedet for at oprette den igen.` };
+  // oprettes uden udstyr. Et navn tæller som optaget, hvis en øvelse eller en
+  // gruppe af varianter er den samme bevægelse, også med anden stavning,
+  // flertal, dansk navn eller udstyr i parentes (se lib/exercise-match.ts).
+  const [visibleExercises, aliases] = await Promise.all([getExercises(currentUser.id), getExerciseAliases()]);
+  const matches = findExerciseMatches(name, exerciseType, visibleExercises, aliases);
+  if (matches.exact) {
+    return { error: matches.exact.toLowerCase() === name.toLowerCase()
+      ? `"${name}" findes allerede, vælg den i listen i stedet for at oprette den igen.`
+      : `"${name}" findes allerede som "${matches.exact}". Vælg den i listen. Udstyr vælger du, når du logger.` };
+  }
+  // Navne, der kun ligner, spærrer ikke: første gang vises de, og sendes samme
+  // navn igen med bekræftelsen, oprettes øvelsen.
+  if (matches.similar.length > 0 && formData.get("confirmSimilar") !== name) {
+    return { similar: matches.similar, similarFor: name };
   }
 
   const created = await createExercise(currentUser.id, {
