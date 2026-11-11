@@ -1,18 +1,24 @@
 import { EQUIPMENT } from "@/lib/equipment";
+import { slotKey, type ExerciseSide } from "@/lib/exercise-side";
 import type { Entry, Equipment, Exercise } from "@/lib/types";
 
 // entries kommer fra getEntries, sorteret efter registreringstid, ældst først.
 // Kun brugerens egne sæt gives ind. Historikken ændres ikke.
-export function lastEquipmentByChoice(exercises: Exercise[], entries: Entry[]): Record<string, WheelKey> {
+export function lastEquipmentByChoice(exercises: Exercise[], entries: Entry[]): Record<string, string> {
   const byId = new Map(exercises.map(exercise => [exercise.id, exercise]));
-  const result: Record<string, WheelKey> = {};
+  const result: Record<string, string> = {};
   for (const entry of entries) {
     const exercise = byId.get(entry.exercise_id);
     if (entry.kind === "strength" && exercise?.type === "strength") {
-      result[choiceKey(exercise)] = exercise.equipment ?? "none";
+      result[choiceKey(exercise)] = slotKey(exercise.equipment, exercise.side ?? "both");
     }
   }
   return result;
+}
+
+// Varianten med præcis dette udstyr og denne side, hvis den findes.
+export function variantFor(choice: ExerciseChoice, equipment: Equipment | null, side: ExerciseSide): Exercise | null {
+  return choice.variants.find((variant) => variant.equipment === equipment && (variant.side ?? "both") === side) ?? null;
 }
 
 // Én linje i øvelseslisten. Alle varianter af samme øvelse hører til samme

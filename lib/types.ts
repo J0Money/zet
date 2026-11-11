@@ -32,6 +32,8 @@ export type Exercise = {
   // En øvelse en bruger har oprettet er privat, til en admin har godkendt den
   // (is_shared). Indbyggede øvelser har user_id null og tæller som delte.
   is_shared?: boolean;
+  // Mangler den, gælder begge sider.
+  side?: "both" | "single_arm" | "single_leg";
 };
 
 export type Workout = {

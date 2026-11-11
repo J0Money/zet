@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { buildMergeStatements } from "@/lib/exercise-merge";
-import { displayExerciseName, equipmentName } from "@/lib/exercise-names";
+import { displayExerciseName, variantName } from "@/lib/exercise-names";
+import type { ExerciseSide } from "@/lib/exercise-side";
 import { matchKey } from "@/lib/exercise-match";
 import type { Equipment, ExerciseType, MuscleGroup } from "@/lib/types";
 
@@ -155,7 +156,7 @@ export async function mergePendingExercise(
         sourceId: source.id, sourceName: source.name, targetId: match.id, targetName: match.name,
       }));
     } else {
-      const name = source.equipment ? `${targetBase} (${equipmentName[source.equipment]})` : targetBase;
+      const name = variantName(targetBase, source.equipment, source.side as ExerciseSide);
       statements.push(query(
         `UPDATE exercise SET group_name = $2, name = $3, is_shared = true WHERE id = $1::uuid`,
         [source.id, targetBase, name],

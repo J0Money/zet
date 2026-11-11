@@ -7,7 +7,6 @@ import { CardioEntryForm } from "@/app/components/cardio-entry-form";
 import { StrengthSetForm } from "@/app/components/strength-set-form";
 import type { Exercise, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
-import type { WheelKey } from "@/lib/exercise-groups";
 
 type Tab = "strength" | "cardio";
 const parseTab = (value: unknown): Tab | null => value === "strength" || value === "cardio" ? value : null;
@@ -19,12 +18,14 @@ const serverSnapshot = () => false;
 
 type Props = {
   userId: string;
+  isAdmin: boolean;
   strengthExercises: Exercise[];
   cardioExercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
   exerciseNotes: Record<string, string>;
-  preferredEquipment: Record<string, WheelKey>;
+  // Sidst valgte plads pr. øvelse, som tekst fra slotKey (fx "cable:single_arm").
+  preferredEquipment: Record<string, string>;
 };
 
 export function LogFormTabs(props: Props) {
@@ -35,6 +36,7 @@ export function LogFormTabs(props: Props) {
 
 function DraftLogFormTabs({
   userId,
+  isAdmin,
   strengthExercises,
   cardioExercises,
   programs,
@@ -73,10 +75,10 @@ function DraftLogFormTabs({
 
       <div className="zet-panel">
         <div hidden={tab !== "strength"}>
-          <StrengthSetForm userId={userId} exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} exerciseNotes={exerciseNotes} preferredEquipment={preferredEquipment} />
+          <StrengthSetForm userId={userId} isAdmin={isAdmin} exercises={strengthExercises} programs={programs} exerciseHistory={exerciseHistory} exerciseNotes={exerciseNotes} preferredEquipment={preferredEquipment} />
         </div>
         <div hidden={tab !== "cardio"}>
-          <CardioEntryForm userId={userId} exercises={cardioExercises} programs={programs} />
+          <CardioEntryForm userId={userId} isAdmin={isAdmin} exercises={cardioExercises} programs={programs} />
         </div>
       </div>
     </div>

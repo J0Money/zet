@@ -6,12 +6,12 @@ import { setExerciseNote } from "@/lib/exercise-notes";
 import { rejectHealthText } from "@/lib/health-notice";
 import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
-import { EQUIPMENT } from "@/lib/equipment";
-import { displayExerciseName, equipmentName } from "@/lib/exercise-names";
+import { displayExerciseName, variantName } from "@/lib/exercise-names";
+import { parseSlotKey } from "@/lib/exercise-side";
 import { findExerciseMatches } from "@/lib/exercise-match";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
 import { isSubmissionId } from "@/lib/log-draft";
-import type { Equipment, Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
+import type { Exercise, ExerciseType, MuscleGroup, StrengthEntry } from "@/lib/types";
 import {
   addCardioEntry,
   addStrengthEntries,
@@ -48,19 +48,19 @@ async function resolveVariant(
   equipmentRaw: string,
 ): Promise<{ exercise: Exercise } | { error: string }> {
   if (!equipmentRaw) return { exercise: selected };
-  if (equipmentRaw !== "none" && !(EQUIPMENT as string[]).includes(equipmentRaw)) {
-    return { error: "Ugyldigt udstyr." };
-  }
-  const wanted = equipmentRaw === "none" ? null : (equipmentRaw as Equipment);
+  // Valget er udstyr og eventuelt side, fx "cable" eller "cable:single_arm".
+  const slot = parseSlotKey(equipmentRaw);
+  if (!slot) return { error: "Ugyldigt udstyr." };
+  const { equipment: wanted, side } = slot;
   const groupName = selected.group_name ?? selected.name;
   const members = visible.filter(
     (exercise) => exercise.type === "strength" && (exercise.group_name ?? exercise.name) === groupName,
   );
-  const found = members.find((member) => member.equipment === wanted);
+  const found = members.find((member) => member.equipment === wanted && (member.side ?? "both") === side);
   if (found) return { exercise: found };
   if (wanted === null) return { error: "Øvelsen findes ikke uden udstyr." };
 
-  const name = `${groupName} (${equipmentName[wanted]})`;
+  const name = variantName(groupName, wanted, side);
   // Den synlige liste har udstyret på dansk ("Squat (Stang)"), så der
   // sammenlignes med navnet, som det vises.
   const shownName = displayExerciseName(name).toLowerCase();
@@ -75,6 +75,7 @@ async function resolveVariant(
     muscleGroups: selected.muscle_groups,
     groupName,
     equipment: wanted,
+    side,
     // En ny variant af en delt øvelse er delt. Er den valgte øvelse stadig
     // privat (venter på godkendelse), er varianten det også.
     shared: selected.user_id === null || Boolean(selected.is_shared),
@@ -98,15 +99,13 @@ export async function saveExerciseNote(
   const visible = await getExercises(currentUser.id);
   const selected = visible.find((item) => item.id === input.exerciseId && item.type === "strength");
   if (!selected) return { error: "Vælg en gyldig styrkeøvelse." };
-  if (input.equipment !== "none" && !(EQUIPMENT as string[]).includes(input.equipment)) {
-    return { error: "Vælg gyldigt udstyr." };
-  }
+  const slot = parseSlotKey(input.equipment);
+  if (!slot) return { error: "Vælg gyldigt udstyr." };
   const note = input.note.trim();
   // En tom note må ikke oprette en ubrugt variant.
-  const wanted = input.equipment === "none" ? null : input.equipment;
   const existing = visible.find((item) => item.type === "strength"
     && (item.group_name ?? item.name) === (selected.group_name ?? selected.name)
-    && item.equipment === wanted);
+    && item.equipment === slot.equipment && (item.side ?? "both") === slot.side);
   if (!note && !existing) return { savedNote: "" };
   const resolved = existing ? { exercise: existing }
     : await resolveVariant(currentUser.id, visible, selected, input.equipment);

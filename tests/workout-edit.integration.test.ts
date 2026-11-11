@@ -57,6 +57,18 @@ test("Workout editor saves atomically, isolates owners and keeps shared snapshot
   assert.equal((await db.select().from(exercise).where(eq(exercise.user_id, owner))).filter((e) => e.group_name === "Strength" && e.equipment === "machine").length, 0);
   await saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), equipmentInput);
   assert.equal((await db.select().from(exercise).where(eq(exercise.user_id, owner))).filter((e) => e.group_name === "Strength" && e.equipment === "cable").length, 1);
+
+  // Én arm er en egen variant med samme udstyr og skal ikke blandes med begge sider.
+  const sideEntries = equipmentInput.entries.map((e) => ({ ...e, id: randomUUID(), equipment: "cable:single_arm" as string }));
+  await saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), { ...input, entries: sideEntries });
+  await saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), { ...input, entries: sideEntries });
+  const cable = (await db.select().from(exercise).where(eq(exercise.user_id, owner))).filter((e) => e.group_name === "Strength" && e.equipment === "cable");
+  assert.deepEqual(cable.map((e) => e.side).sort(), ["both", "single_arm"]);
+  const single = cable.find((e) => e.side === "single_arm")!;
+  assert.equal(single.name, "Strength (Cable, Single arm)");
+  assert.equal((await getEntries(owner)).filter((e) => e.exercise_id === single.id).length, 2);
+  assert.deepEqual((await db.select().from(exerciseMuscleGroup).where(eq(exerciseMuscleGroup.exercise_id, single.id))).map((g) => g.muscle_group), ["chest"]);
+  assert.equal(cable.length, 2);
  } finally {
   await db.delete(workout).where(inArray(workout.user_id, [owner, other]));
   await db.delete(exercise).where(inArray(exercise.user_id, [owner, other]));

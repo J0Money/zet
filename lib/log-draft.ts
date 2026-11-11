@@ -1,6 +1,5 @@
-import { EQUIPMENT } from "./equipment";
 import { MUSCLE_GROUPS } from "./muscle-groups";
-import type { WheelKey } from "./exercise-groups";
+import { parseSlotKey } from "./exercise-side";
 import type { MuscleGroup } from "./types";
 
 // Engangs-id for én indtastning. Serveren gemmer hvert id højst én gang, så et
@@ -41,7 +40,8 @@ export type StrengthDraft = {
   selectedProgramId: string | null;
   searchQuery: string;
   selectedChoiceKey: string | null;
-  slotByChoice: Record<string, WheelKey>;
+  // Tekst fra slotKey: udstyr og eventuelt side, fx "cable" eller "cable:single_arm".
+  slotByChoice: Record<string, string>;
   sets: { id: number; reps: string; weightKg: string }[];
   // Uafsluttet huskenote pr. øvelsesvariant (nøgle: "øvelsesgruppe:udstyr").
   // En nøgle findes kun, mens noten er åben til redigering. Ældre kladder har
@@ -97,7 +97,7 @@ function isStoredStrengthDraft(value: unknown): value is Record<string, unknown>
     && nullableText(value.selectedChoiceKey)
     && Array.isArray(value.selectedTags) && value.selectedTags.every((tag) => MUSCLE_GROUPS.includes(tag))
     && object(value.slotByChoice) && Object.values(value.slotByChoice).every((slot) =>
-      typeof slot === "string" && (slot === "none" || (EQUIPMENT as readonly string[]).includes(slot)))
+      parseSlotKey(slot) !== null)
     && Array.isArray(value.sets) && value.sets.length > 0 && value.sets.length <= 100
     && value.sets.every((row) => object(row) && Number.isSafeInteger(row.id)
       && Number(row.id) >= 0 && text(row.reps) && text(row.weightKg))

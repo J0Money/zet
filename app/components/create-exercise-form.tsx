@@ -19,12 +19,15 @@ export function CreateExerciseForm({
   state,
   isPending,
   onCancel,
+  isAdmin,
 }: {
   formId: string;
   type: ExerciseType;
   state: CreateExerciseState;
   isPending: boolean;
   onCancel: () => void;
+  // Admins nye øvelser deles med det samme, andres venter på godkendelse.
+  isAdmin: boolean;
 }) {
   const [selectedGroups, setSelectedGroups] = useState<Set<MuscleGroup>>(new Set());
   // Kontrolleret, så navnet bevares efter en fejl (React nulstiller ellers
@@ -63,7 +66,9 @@ export function CreateExerciseForm({
           onChange={(event) => setName(event.target.value)}
           className={inputClass}
         />
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Du kan bruge øvelsen med det samme. Den er kun synlig for dig, til en admin har godkendt den. {HEALTH_NOTICE}</p>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{isAdmin
+          ? "Øvelsen deles med alle med det samme."
+          : "Du kan bruge øvelsen med det samme. Den er kun synlig for dig, til en admin har godkendt den."} {HEALTH_NOTICE}</p>
         {healthError && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{healthError}</p>}
       </div>
 

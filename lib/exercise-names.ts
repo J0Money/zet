@@ -1,5 +1,6 @@
 import type { Equipment } from "./types";
 import { equipmentLabel } from "./equipment";
+import { sideName, sideShortLabel, type ExerciseSide } from "./exercise-side";
 
 export const equipmentName: Record<Equipment, string> = {
   barbell: "Barbell", dumbbells: "Dumbbells", machine: "Machine", cable: "Cable", bodyweight: "Bodyweight", other: "Other",
@@ -18,18 +19,26 @@ export const englishExerciseNames: Record<string, string> = {
   "Svømning": "Swimming", "Trappemaskine": "Stair climber", "Hop i reb": "Jump rope",
 };
 export function englishExerciseName(name: string): string {
-  const suffix = name.match(/^(.*) \((Stang|Maskine|Kabel|kabel|Kropsvægt|Andet|Dumbbells|Barbell|Machine|Cable|Bodyweight|Other)\)$/);
+  const suffix = name.match(/^(.*) \((Stang|Maskine|Kabel|kabel|Kropsvægt|Andet|Dumbbells|Barbell|Machine|Cable|Bodyweight|Other)(, Single arm|, Single leg)?\)$/);
   if (!suffix) return englishExerciseNames[name] ?? name;
   const labels: Record<string, string> = { Stang: "Barbell", Maskine: "Machine", Kabel: "Cable", kabel: "Cable", Kropsvægt: "Bodyweight", Andet: "Other" };
-  return `${englishExerciseNames[suffix[1]] ?? suffix[1]} (${labels[suffix[2]] ?? suffix[2]})`;
+  return `${englishExerciseNames[suffix[1]] ?? suffix[1]} (${labels[suffix[2]] ?? suffix[2]}${suffix[3] ?? ""})`;
+}
+
+// Navnet på en variant: "Row", "Row (Cable)" eller "Row (Cable, Single arm)".
+// Uden udstyr er navnet bare gruppen.
+export function variantName(group: string, equipment: Equipment | null, side: ExerciseSide = "both"): string {
+  if (!equipment) return group;
+  return `${group} (${equipmentName[equipment]}${side === "both" ? "" : `, ${sideName[side]}`})`;
 }
 
 // Exercise names stay English; equipment follows the Danish selectors.
 export function displayExerciseName(name: string): string {
   const translated = englishExerciseName(name);
-  for (const [key, label] of Object.entries(equipmentName)) {
-    const suffix = ` (${label})`;
-    if (translated.endsWith(suffix)) return `${translated.slice(0, -suffix.length)} (${equipmentLabel[key as Equipment]})`;
-  }
-  return translated;
+  const match = translated.match(/^(.*) \(([^(),]+)(?:, (Single arm|Single leg))?\)$/);
+  if (!match) return translated;
+  const equipment = (Object.keys(equipmentName) as Equipment[]).find((key) => equipmentName[key] === match[2]);
+  if (!equipment) return translated;
+  const side = match[3] === "Single arm" ? sideShortLabel.single_arm : match[3] === "Single leg" ? sideShortLabel.single_leg : null;
+  return `${match[1]} (${equipmentLabel[equipment]}${side ? `, ${side}` : ""})`;
 }

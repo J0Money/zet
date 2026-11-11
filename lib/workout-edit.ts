@@ -5,6 +5,7 @@ import { db } from "./db";
 import { getWorkoutById } from "./workout-store";
 import { WorkoutEditError, validateWorkoutEdit, type WorkoutEdit } from "./workout-edit-input";
 import { equipmentName } from "./exercise-names";
+import { sideName } from "./exercise-side";
 
 const versionSql = sql`md5(row_to_json(w)::text || coalesce((select jsonb_agg(to_jsonb(s) order by s.id)::text from workout_set s where s.workout_id = w.id), '') || coalesce((select jsonb_agg(to_jsonb(c) order by c.id)::text from workout_cardio c where c.workout_id = w.id), ''))`;
 export async function getWorkoutEditVersion(userId: string, id: string): Promise<string> {
@@ -30,35 +31,39 @@ export async function saveWorkoutEdit(userId: string, id: string, version: strin
     changed as (update workout w set date = ${input.date}::date, notes = ${input.notes}, started_at = ${start}::timestamptz, ended_at = ${end}::timestamptz from allowed a where w.id = a.id returning w.id),
     requested as (
       select distinct on (coalesce(e.group_name, e.name), i.kind, i.equipment)
-        coalesce(e.group_name, e.name) as group_name, i.kind, nullif(i.equipment, 'none') as equipment, e.id as source_id
+        coalesce(e.group_name, e.name) as group_name, i.kind, nullif(split_part(i.equipment, ':', 1), 'none') as equipment,
+        coalesce(nullif(split_part(i.equipment, ':', 2), ''), 'both') as side, e.id as source_id
       from incoming i join exercise e on e.id = i.exercise_id cross join changed w where i.equipment is not null
       order by coalesce(e.group_name, e.name), i.kind, i.equipment, e.id
     ),
     matched as (
       select r.*, (select e.id from exercise e where e.type::text = r.kind
         and coalesce(e.group_name, e.name) = r.group_name and e.equipment::text is not distinct from r.equipment
+        and e.side::text = r.side
         and (e.user_id is null or e.user_id = ${userId}::uuid or e.is_shared) order by e.id limit 1) as existing_id
       from requested r
     ),
     created_variants as (
-      insert into exercise (user_id, name, type, group_name, equipment, is_shared)
-      select ${userId}::uuid, case when m.equipment is null then m.group_name else m.group_name || ' (' || (${JSON.stringify(equipmentName)}::jsonb ->> m.equipment) || ')' end,
-        m.kind::exercise_type, m.group_name, m.equipment::equipment,
+      insert into exercise (user_id, name, type, group_name, equipment, side, is_shared)
+      select ${userId}::uuid, case when m.equipment is null then m.group_name else m.group_name || ' (' || (${JSON.stringify(equipmentName)}::jsonb ->> m.equipment)
+          || case when m.side = 'both' then '' else ', ' || (${JSON.stringify(sideName)}::jsonb ->> m.side) end || ')' end,
+        m.kind::exercise_type, m.group_name, m.equipment::equipment, m.side::exercise_side,
         (select o.is_shared or o.user_id is null from exercise o where o.id = m.source_id) from matched m where m.existing_id is null
-      returning id, group_name, type, equipment
+      returning id, group_name, type, equipment, side
     ),
     copied_muscles as (
       insert into exercise_muscle_group (exercise_id, muscle_group)
       select v.id, g.muscle_group from created_variants v join matched m on m.group_name = v.group_name
-        and m.kind = v.type::text and m.equipment is not distinct from v.equipment::text
+        and m.kind = v.type::text and m.equipment is not distinct from v.equipment::text and m.side = v.side::text
       join exercise_muscle_group g on g.exercise_id = m.source_id returning exercise_id
     ),
     resolved as (
       select i.*, case when i.equipment is null then i.exercise_id else coalesce(m.existing_id, v.id) end as resolved_id
       from incoming i join exercise e on e.id = i.exercise_id
       left join matched m on m.group_name = coalesce(e.group_name, e.name) and m.kind = i.kind
-        and m.equipment is not distinct from nullif(i.equipment, 'none')
-      left join created_variants v on v.group_name = m.group_name and v.type::text = m.kind and v.equipment::text is not distinct from m.equipment
+        and m.equipment is not distinct from nullif(split_part(i.equipment, ':', 1), 'none')
+        and m.side = coalesce(nullif(split_part(i.equipment, ':', 2), ''), 'both')
+      left join created_variants v on v.group_name = m.group_name and v.type::text = m.kind and v.equipment::text is not distinct from m.equipment and v.side::text = m.side
     ),
     removed_strength as (delete from workout_set s using changed w where s.workout_id = w.id and not exists (select 1 from incoming i where i.id = s.id) returning s.id),
     removed_cardio as (delete from workout_cardio c using changed w where c.workout_id = w.id and not exists (select 1 from incoming i where i.id = c.id) returning c.id),

@@ -5,6 +5,7 @@ import { CardioEntryRow } from "@/app/components/cardio-entry-row";
 import { LogFormTabs } from "@/app/components/log-form-tabs";
 import { SessionBar } from "@/app/components/session-bar";
 import { StrengthEntryRow } from "@/app/components/strength-entry-row";
+import { isCurrentUserAdmin } from "@/lib/admin";
 import { getPrograms } from "@/lib/programs";
 import type { Entry } from "@/lib/types";
 import { getActiveWorkout, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
@@ -23,11 +24,12 @@ export default async function LogPage() {
   const currentUser = await requireUser();
   // getActiveWorkout kan afslutte et udløbet pas, så pas og sæt hentes først
   // bagefter. De øvrige opslag er uafhængige og hentes samtidig.
-  const [exerciseNotes, exercises, programs, activeWorkout] = await Promise.all([
+  const [exerciseNotes, exercises, programs, activeWorkout, isAdmin] = await Promise.all([
     getExerciseNotes(currentUser.id),
     getExercises(currentUser.id),
     getPrograms(currentUser.id),
     getActiveWorkout(currentUser.id),
+    isCurrentUserAdmin(),
   ]);
   const [entries, workouts] = await Promise.all([getEntries(currentUser.id), getWorkouts(currentUser.id)]);
 
@@ -89,6 +91,7 @@ export default async function LogPage() {
       <LogFormTabs
         key={currentUser.id}
         userId={currentUser.id}
+        isAdmin={isAdmin}
         strengthExercises={strengthExercises}
         cardioExercises={cardioExercises}
         programs={programs}

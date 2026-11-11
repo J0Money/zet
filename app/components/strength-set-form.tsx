@@ -7,7 +7,8 @@ import { CreateExerciseForm } from "@/app/components/create-exercise-form";
 import { EquipmentWheel } from "@/app/components/equipment-wheel";
 import { ExerciseNote } from "@/app/components/exercise-note";
 import { equipmentLabel } from "@/lib/equipment";
-import { choiceKey, defaultWheelKey, groupExercises, wheelOptions, type WheelKey } from "@/lib/exercise-groups";
+import { choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions } from "@/lib/exercise-groups";
+import { SIDES, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type ExerciseSide } from "@/lib/exercise-side";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
@@ -29,13 +30,14 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
-export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, exerciseNotes, preferredEquipment }: {
+export function StrengthSetForm({ userId, isAdmin, exercises, programs, exerciseHistory, exerciseNotes, preferredEquipment }: {
   userId: string;
+  isAdmin: boolean;
   exercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
   exerciseNotes: Record<string, string>;
-  preferredEquipment: Record<string, WheelKey>;
+  preferredEquipment: Record<string, string>;
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
@@ -129,11 +131,20 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   const choices = groupExercises(filteredExercises);
   const currentChoice = choices.find((choice) => choice.key === selectedChoiceKey) ?? choices[0];
   const wheelSlots = currentChoice ? wheelOptions(currentChoice) : [];
-  const currentSlot = currentChoice
-    ? wheelSlots.find((slot) => slot.key === slotByChoice[currentChoice.key]) ??
-      wheelSlots.find((slot) => slot.key === preferredEquipment[currentChoice.key]) ??
-      wheelSlots.find((slot) => slot.key === defaultWheelKey(wheelSlots))
+  // Valget er udstyr og eventuelt side. Først det, du har valgt her, så det
+  // du sidst loggede, så øvelsens første plads.
+  const storedSlot = currentChoice
+    ? [slotByChoice[currentChoice.key], preferredEquipment[currentChoice.key]]
+        .map(parseSlotKey)
+        .find((parsed) => parsed && wheelSlots.some((slot) => slot.key === (parsed.equipment ?? "none")))
     : undefined;
+  const currentSlot = currentChoice
+    ? wheelSlots.find((slot) => slot.key === (storedSlot ? (storedSlot.equipment ?? "none") : defaultWheelKey(wheelSlots)))
+    : undefined;
+  // Uden udstyr har altid begge sider.
+  const currentSide: ExerciseSide = storedSlot && currentSlot?.equipment ? storedSlot.side : "both";
+  const currentKey = currentSlot ? slotKey(currentSlot.equipment, currentSide) : "";
+  const currentVariant = currentChoice && currentSlot ? variantFor(currentChoice, currentSlot.equipment, currentSide) : null;
 
   function toggleTag(group: MuscleGroup) {
     setSelectedTags((current) => {
@@ -142,7 +153,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
   }
 
   // Brug kun den præcise variant, aldrig en anden plads i samme gruppe.
-  const selectedHistory = currentSlot?.variant ? exerciseHistory[currentSlot.variant.id] : undefined;
+  const selectedHistory = currentVariant ? exerciseHistory[currentVariant.id] : undefined;
   const lastSet = selectedHistory?.lastSets.at(-1);
 
   function reuseLastSet() {
@@ -194,7 +205,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
       ...current,
       selectedChoiceKey: currentChoice?.key ?? null,
       slotByChoice: currentChoice && currentSlot
-        ? { ...current.slotByChoice, [currentChoice.key]: currentSlot.key } : current.slotByChoice,
+        ? { ...current.slotByChoice, [currentChoice.key]: currentKey } : current.slotByChoice,
       sets: current.sets.map((set) => set.id === id ? { ...set, [field]: value } : set),
     }));
   }
@@ -320,16 +331,36 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
           </div>
         </div>
         {/* Valglisten viser kun grupper. Serveren finder (eller opretter) varianten ud fra et medlem af gruppen og udstyret. */}
-        <input type="hidden" name="exerciseId" value={(currentSlot?.variant ?? currentChoice?.variants[0])?.id ?? ""} />
-        <input type="hidden" name="equipment" value={currentSlot?.key ?? ""} />
+        <input type="hidden" name="exerciseId" value={(currentVariant ?? currentChoice?.variants[0])?.id ?? ""} />
+        <input type="hidden" name="equipment" value={currentKey} />
         {currentChoice && currentSlot && (
           <div className="mt-3">
             <EquipmentWheel
               options={wheelSlots}
               selectedKey={currentSlot.key}
-              onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: key }))}
+              onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(key === "none" ? null : key, currentSide) }))}
             />
-            {!currentSlot.variant && (
+            {currentSlot.equipment && (
+              <div role="radiogroup" aria-label="Side" className="mt-2 flex justify-center gap-2">
+                {SIDES.map((side) => (
+                  <button
+                    key={side}
+                    type="button"
+                    role="radio"
+                    aria-checked={side === currentSide}
+                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(currentSlot.equipment, side) }))}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                      side === currentSide
+                        ? "bg-indigo-600 text-white"
+                        : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
+                    }`}
+                  >
+                    {sideLabel[side]}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!currentVariant && (
               <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
                 Ny variant, den oprettes, når du gemmer et sæt eller en note.
               </p>
@@ -370,6 +401,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
           state={createState}
           isPending={isCreatingExercise}
           onCancel={() => setShowCreateForm(false)}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -392,7 +424,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
               />
             </div>
             <div className="flex-1">
-              {index === 0 && <p className={labelClass}>Vægt (kg)</p>}
+              {index === 0 && <p className={labelClass}>Vægt ({weightUnit[currentSide]})</p>}
               <input
                 name="weightKg"
                 aria-label={`Vægt i kg, sæt ${index + 1}`}
@@ -419,12 +451,12 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
           </div>
         ))}
         {currentChoice && currentSlot ? (
-          <ExerciseNote key={`${currentChoice.key}:${currentSlot.key}`}
-            exerciseId={(currentSlot.variant ?? currentChoice.variants[0]).id}
-            equipment={currentSlot.key}
-            note={currentSlot.variant ? exerciseNotes[currentSlot.variant.id] ?? "" : ""}
-            draft={noteDrafts[`${currentChoice.key}:${currentSlot.key}`]}
-            onDraftChange={(value) => setNoteDraft(`${currentChoice.key}:${currentSlot.key}`, value)}>
+          <ExerciseNote key={`${currentChoice.key}:${currentKey}`}
+            exerciseId={(currentVariant ?? currentChoice.variants[0]).id}
+            equipment={currentKey}
+            note={currentVariant ? exerciseNotes[currentVariant.id] ?? "" : ""}
+            draft={noteDrafts[`${currentChoice.key}:${currentKey}`]}
+            onDraftChange={(value) => setNoteDraft(`${currentChoice.key}:${currentKey}`, value)}>
             <button type="button" onClick={addSet}
               className="min-h-11 self-start rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 px-4 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:border-indigo-300 hover:text-indigo-600">
               + Tilføj sæt
@@ -457,7 +489,7 @@ export function StrengthSetForm({ userId, exercises, programs, exerciseHistory, 
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300" aria-live="polite">
           <p>
             Sættene gemmes på <span className="font-semibold text-zinc-900 dark:text-zinc-50">{currentChoice.label}</span>
-            {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentSlot.variant ? "" : ", ny variant"}).
+            {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentSide !== "both" ? `, ${sideShortLabel[currentSide]}` : ""}{currentVariant ? "" : ", ny variant"}).
           </p>
           {selectedChoiceKey !== null && selectedChoiceKey !== currentChoice.key && (
             <p className="mt-1 font-medium text-amber-800 dark:text-amber-200">

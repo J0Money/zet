@@ -1,5 +1,5 @@
-import type { Entry, Equipment, Workout } from "./types";
-import { EQUIPMENT } from "./equipment";
+import type { Entry, Workout } from "./types";
+import { parseSlotKey } from "./exercise-side";
 
 export class WorkoutEditError extends Error {}
 
@@ -21,7 +21,8 @@ export function parseWorkoutTime(value: string, original: string | null): string
   return candidates[0].toISOString();
 }
 
-export type EditEntry = Entry & { equipment?: Equipment | "none" };
+// equipment er udstyr og eventuelt side som tekst fra slotKey, fx "cable:single_arm".
+export type EditEntry = Entry & { equipment?: string };
 export type WorkoutEdit = { date: string; start: string; end: string; notes: string; entries: EditEntry[] };
 export function validateWorkoutEdit(input: WorkoutEdit, original: Workout) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || !Number.isFinite(Date.parse(input.date)) || new Date(input.date).toISOString().slice(0, 10) !== input.date) throw new WorkoutEditError("Vælg en gyldig dato.");
@@ -37,7 +38,7 @@ export function validateWorkoutEdit(input: WorkoutEdit, original: Workout) {
   const ids = new Set<string>();
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   for (const entry of input.entries) {
-    if (entry.equipment !== undefined && entry.equipment !== "none" && !EQUIPMENT.includes(entry.equipment)) throw new WorkoutEditError("Ugyldigt udstyr.");
+    if (entry.equipment !== undefined && !parseSlotKey(entry.equipment)) throw new WorkoutEditError("Ugyldigt udstyr.");
     if (!uuid.test(entry.id) || !uuid.test(entry.exercise_id) || ids.has(entry.id)) throw new WorkoutEditError("Ugyldig registrering.");
     ids.add(entry.id);
     if (entry.kind === "strength") {

@@ -14,7 +14,7 @@ const initialCreateState: CreateExerciseState = {};
 const inputClass = "w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-base text-zinc-900 dark:text-zinc-50 shadow-sm focus:border-indigo-600";
 const labelClass = "mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300";
 
-export function CardioEntryForm({ userId, exercises, programs }: { userId: string; exercises: Exercise[]; programs: TrainingProgram[] }) {
+export function CardioEntryForm({ userId, isAdmin, exercises, programs }: { userId: string; isAdmin: boolean; exercises: Exercise[]; programs: TrainingProgram[] }) {
   const [state, formAction, isPending] = useActionState(logCardioEntry, initialState);
   const [createState, createFormAction, isCreatingExercise] = useActionState(createExerciseAction, initialCreateState);
   const { draft, setDraft, clearDraft, notice, dismissNotice, storageFailed } = useLocalDraft(
@@ -177,6 +177,7 @@ export function CardioEntryForm({ userId, exercises, programs }: { userId: strin
           state={createState}
           isPending={isCreatingExercise}
           onCancel={() => setShowCreateForm(false)}
+          isAdmin={isAdmin}
         />
       )}
 
