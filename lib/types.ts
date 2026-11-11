@@ -29,6 +29,9 @@ export type Exercise = {
   // Varianter af samme øvelse deler group_name, fx "Bænkpres" med stang og maskine.
   group_name: string | null;
   equipment: Equipment | null;
+  // En øvelse en bruger har oprettet er privat, til en admin har godkendt den
+  // (is_shared). Indbyggede øvelser har user_id null og tæller som delte.
+  is_shared?: boolean;
 };
 
 export type Workout = {

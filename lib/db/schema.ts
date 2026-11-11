@@ -192,7 +192,8 @@ export const exercise = pgTable("exercise", {
   type: exerciseType("type").notNull(),
   // En øvelse en bruger har oprettet (user_id sat) er kun synlig for andre,
   // hvis den er delt. Standard er false, så en øvelse aldrig bliver delt ved
-  // et uheld, createExercise() sætter den eksplicit til true.
+  // et uheld. En bruger-oprettet øvelse er privat, til en admin godkender den
+  // (lib/exercise-approval.ts); admins egne øvelser deles med det samme.
   is_shared: boolean("is_shared").notNull().default(false),
   // Varianter af samme øvelse (fx bænkpres med stang, dumbbells eller maskine)
   // er hver sin øvelse, så rekorder og volumen forbliver pr. variant. De

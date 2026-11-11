@@ -63,7 +63,7 @@ export function CreateExerciseForm({
           onChange={(event) => setName(event.target.value)}
           className={inputClass}
         />
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Øvelsen kan ses af alle i ZET. {HEALTH_NOTICE}</p>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Du kan bruge øvelsen med det samme. Den er kun synlig for dig, til en admin har godkendt den. {HEALTH_NOTICE}</p>
         {healthError && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{healthError}</p>}
       </div>
 

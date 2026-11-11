@@ -43,7 +43,8 @@ export async function saveWorkoutEdit(userId: string, id: string, version: strin
     created_variants as (
       insert into exercise (user_id, name, type, group_name, equipment, is_shared)
       select ${userId}::uuid, case when m.equipment is null then m.group_name else m.group_name || ' (' || (${JSON.stringify(equipmentName)}::jsonb ->> m.equipment) || ')' end,
-        m.kind::exercise_type, m.group_name, m.equipment::equipment, true from matched m where m.existing_id is null
+        m.kind::exercise_type, m.group_name, m.equipment::equipment,
+        (select o.is_shared or o.user_id is null from exercise o where o.id = m.source_id) from matched m where m.existing_id is null
       returning id, group_name, type, equipment
     ),
     copied_muscles as (

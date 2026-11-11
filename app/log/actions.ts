@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/session";
+import { isCurrentUserAdmin } from "@/lib/admin";
 import { setExerciseNote } from "@/lib/exercise-notes";
 import { rejectHealthText } from "@/lib/health-notice";
 import { revalidatePath } from "next/cache";
@@ -74,6 +75,9 @@ async function resolveVariant(
     muscleGroups: selected.muscle_groups,
     groupName,
     equipment: wanted,
+    // En ny variant af en delt øvelse er delt. Er den valgte øvelse stadig
+    // privat (venter på godkendelse), er varianten det også.
+    shared: selected.user_id === null || Boolean(selected.is_shared),
   });
   return { exercise: created };
 }
@@ -320,6 +324,9 @@ export async function createExerciseAction(
     muscleGroups,
     groupName: null,
     equipment: null,
+    // Almindelige brugere opretter en privat øvelse, som en admin godkender.
+    // Admin deler med det samme.
+    shared: await isCurrentUserAdmin(),
   });
 
   revalidatePath("/log");

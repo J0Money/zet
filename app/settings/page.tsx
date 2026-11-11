@@ -5,6 +5,7 @@ import { LogoutButton } from "@/app/components/logout-button";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/session";
+import { countPendingExercises } from "@/lib/exercise-approval";
 import { PushSettings } from "@/app/components/push-settings";
 import { pushConfigured } from "@/lib/push";
 import { getProfileImage } from "@/lib/avatars";
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
   const currentUser = await requireUser();
   const image = await getProfileImage(currentUser.id);
   const isAdmin = await isCurrentUserAdmin();
+  const pendingExercises = isAdmin ? await countPendingExercises() : 0;
 
   return (
     <div className="zet-page flex flex-col gap-6">
@@ -47,6 +49,16 @@ export default async function SettingsPage() {
             <span className="flex items-center gap-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
               <ShieldCheck aria-hidden="true" size={20} />
               Administrer invitationer
+            </span>
+            <span aria-hidden="true" className="text-zinc-400 dark:text-zinc-500">→</span>
+          </Link>
+          <Link
+            href="/admin/exercises"
+            className="zet-panel flex items-center justify-between gap-3 transition-colors hover:border-indigo-200 dark:hover:border-indigo-800"
+          >
+            <span className="flex items-center gap-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <ShieldCheck aria-hidden="true" size={20} />
+              Godkend øvelser{pendingExercises > 0 && ` (${pendingExercises})`}
             </span>
             <span aria-hidden="true" className="text-zinc-400 dark:text-zinc-500">→</span>
           </Link>

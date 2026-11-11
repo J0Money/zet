@@ -27,6 +27,7 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
       type: exercise.type,
       group_name: exercise.group_name,
       equipment: exercise.equipment,
+      is_shared: exercise.is_shared,
       muscle_groups: sql<MuscleGroup[]>`coalesce(json_agg(${exerciseMuscleGroup.muscle_group}) filter (where ${exerciseMuscleGroup.muscle_group} is not null), '[]'::json)`,
     })
     .from(exercise)
@@ -41,11 +42,12 @@ export async function getExerciseAliases(): Promise<ExerciseAlias[]> {
   return db.select({ alias: exerciseAlias.alias, base_name: exerciseAlias.base_name, type: exerciseAlias.type }).from(exerciseAlias);
 }
 
-// Opretter en øvelse, der er delt med alle (is_shared), men stadig kender sin
-// ejer (user_id). Den opfører sig derefter som enhver anden øvelse: den kan
-// vælges igen, og den tæller med i personlige rekorder, volumen osv. Dubletter tjekkes af
-// kaldende kode (app/log/actions.ts), ikke her, da det kræver den fulde,
-// synlige øvelsesliste.
+// Opretter en øvelse, der kender sin ejer (user_id). shared er false for
+// almindelige brugere: øvelsen er privat, til en admin har godkendt den på
+// /admin/exercises (lib/exercise-approval.ts). Ejeren kan bruge den med det
+// samme, og den tæller med i personlige rekorder, volumen osv. Dubletter
+// tjekkes af kaldende kode (app/log/actions.ts), ikke her, da det kræver den
+// fulde, synlige øvelsesliste.
 export async function createExercise(
   userId: string,
   input: {
@@ -54,6 +56,7 @@ export async function createExercise(
     muscleGroups: MuscleGroup[];
     groupName: string | null;
     equipment: Equipment | null;
+    shared: boolean;
   },
 ): Promise<Exercise> {
   const [created] = await db
@@ -62,7 +65,7 @@ export async function createExercise(
       user_id: userId,
       name: input.name,
       type: input.type,
-      is_shared: true,
+      is_shared: input.shared,
       group_name: input.groupName,
       equipment: input.equipment,
     })
@@ -82,6 +85,7 @@ export async function createExercise(
     muscle_groups: input.muscleGroups,
     group_name: created.group_name,
     equipment: created.equipment,
+    is_shared: created.is_shared,
   };
 }
 
