@@ -34,6 +34,8 @@ export type Exercise = {
   is_shared?: boolean;
   // Mangler den, gælder begge sider.
   side?: "both" | "single_arm" | "single_leg";
+  // Greb på kabel (lib/exercise-side.ts). null eller mangler: ikke angivet.
+  grip?: "rope" | "straight_bar" | "ez_bar" | "wide_bar" | "v_grip" | "single_handle" | "two_handles" | "no_grip" | null;
 };
 
 export type Workout = {

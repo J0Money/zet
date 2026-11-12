@@ -6,7 +6,7 @@
 import "server-only";
 import { closeExpiredStrengthWorkouts } from "./workout-expiry";
 import { displayExerciseName } from "./exercise-names";
-import type { ExerciseSide } from "./exercise-side";
+import type { CableGrip, ExerciseSide } from "./exercise-side";
 import { and, eq, or, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { exercise, exerciseAlias, exerciseMuscleGroup, workout as workoutTable, workoutCardio, workoutSet } from "@/lib/db/schema";
@@ -30,6 +30,7 @@ export async function getExercises(userId: string): Promise<Exercise[]> {
       equipment: exercise.equipment,
       is_shared: exercise.is_shared,
       side: exercise.side,
+      grip: exercise.grip,
       muscle_groups: sql<MuscleGroup[]>`coalesce(json_agg(${exerciseMuscleGroup.muscle_group}) filter (where ${exerciseMuscleGroup.muscle_group} is not null), '[]'::json)`,
     })
     .from(exercise)
@@ -59,6 +60,7 @@ export async function createExercise(
     groupName: string | null;
     equipment: Equipment | null;
     side?: ExerciseSide;
+    grip?: CableGrip | null;
     shared: boolean;
   },
 ): Promise<Exercise> {
@@ -72,6 +74,7 @@ export async function createExercise(
       group_name: input.groupName,
       equipment: input.equipment,
       side: input.side ?? "both",
+      grip: input.equipment === "cable" ? input.grip ?? null : null,
     })
     .returning();
 
@@ -91,6 +94,7 @@ export async function createExercise(
     equipment: created.equipment,
     is_shared: created.is_shared,
     side: created.side,
+    grip: created.grip,
   };
 }
 

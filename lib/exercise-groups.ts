@@ -1,5 +1,5 @@
 import { EQUIPMENT } from "@/lib/equipment";
-import { slotKey, type ExerciseSide } from "@/lib/exercise-side";
+import { slotKey, type Slot } from "@/lib/exercise-side";
 import type { Entry, Equipment, Exercise } from "@/lib/types";
 
 // entries kommer fra getEntries, sorteret efter registreringstid, ældst først.
@@ -10,15 +10,22 @@ export function lastEquipmentByChoice(exercises: Exercise[], entries: Entry[]): 
   for (const entry of entries) {
     const exercise = byId.get(entry.exercise_id);
     if (entry.kind === "strength" && exercise?.type === "strength") {
-      result[choiceKey(exercise)] = slotKey(exercise.equipment, exercise.side ?? "both");
+      result[choiceKey(exercise)] = slotKey(exercise.equipment, exercise.side ?? "both", exercise.grip ?? null);
     }
   }
   return result;
 }
 
-// Varianten med præcis dette udstyr og denne side, hvis den findes.
-export function variantFor(choice: ExerciseChoice, equipment: Equipment | null, side: ExerciseSide): Exercise | null {
-  return choice.variants.find((variant) => variant.equipment === equipment && (variant.side ?? "both") === side) ?? null;
+// Om en variant har præcis dette udstyr, denne side og dette greb.
+export function matchesSlot(exercise: Exercise, slot: Slot): boolean {
+  return exercise.equipment === slot.equipment
+    && (exercise.side ?? "both") === slot.side
+    && (exercise.grip ?? null) === slot.grip;
+}
+
+// Varianten med præcis dette udstyr, denne side og dette greb, hvis den findes.
+export function variantFor(choice: ExerciseChoice, slot: Slot): Exercise | null {
+  return choice.variants.find((variant) => matchesSlot(variant, slot)) ?? null;
 }
 
 // Én linje i øvelseslisten. Alle varianter af samme øvelse hører til samme

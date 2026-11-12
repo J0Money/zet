@@ -5,7 +5,7 @@ import { localWorkoutTime, type EditEntry } from "@/lib/workout-edit-input";
 import { saveWorkoutAction, deleteWorkoutAction } from "@/app/history/actions";
 import { choiceKey, groupExercises, variantFor } from "@/lib/exercise-groups";
 import { EQUIPMENT, equipmentLabel } from "@/lib/equipment";
-import { SIDES, parseSlotKey, sideLabel, slotKey, weightUnit, type ExerciseSide } from "@/lib/exercise-side";
+import { GRIPS, SIDES, gripLabel, parseSlotKey, sideLabel, slotKey, weightUnit, type CableGrip, type ExerciseSide, type Slot } from "@/lib/exercise-side";
 import { HEALTH_NOTICE, healthWarning } from "@/lib/health-notice";
 const field = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-zinc-300 bg-transparent px-3 py-2 text-base dark:border-zinc-700";
 const button = "min-h-11 rounded-xl border border-zinc-300 px-4 text-sm font-medium dark:border-zinc-700";
@@ -14,28 +14,32 @@ function ExerciseEquipmentSelect({ exercises, entry, onChange }: { exercises: Ex
     .sort((a, b) => a.label.localeCompare(b.label, "da"));
   const selected = exercises.find((exercise) => exercise.id === entry.exercise_id);
   const group = selected ? choices.find((choice) => choice.key === choiceKey(selected)) : undefined;
-  // Udstyr og side som tekst fra slotKey, fx "cable:single_arm".
-  const equipment = entry.equipment ?? slotKey(selected?.equipment ?? null, selected?.side ?? "both");
-  const slot = parseSlotKey(equipment) ?? { equipment: null, side: "both" as const };
+  // Udstyr, side og greb som tekst fra slotKey, fx "cable:single_arm" eller "cable:both:rope".
+  const equipment = entry.equipment ?? slotKey(selected?.equipment ?? null, selected?.side ?? "both", selected?.grip ?? null);
+  const slot: Slot = parseSlotKey(equipment) ?? { equipment: null, side: "both", grip: null };
   const colors = "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50";
   return <div className="grid gap-3 sm:grid-cols-2">
     <label className="min-w-0 text-sm">Øvelse<select required className={`${field} ${colors}`} value={group?.key ?? ""} onChange={(event) => {
       const next = choices.find((choice) => choice.key === event.target.value);
-      const variant = (next && variantFor(next, slot.equipment, slot.side))
+      const variant = (next && variantFor(next, slot))
         ?? next?.variants.find((exercise) => exercise.equipment === slot.equipment) ?? next?.variants[0];
       if (variant) onChange({ exercise_id: variant.id, equipment });
     }}>
       {!group && <option value="" disabled className={colors}>Vælg øvelse</option>}
       {choices.map((choice) => <option className={colors} key={choice.key} value={choice.key}>{choice.label}</option>)}
     </select></label>
-    <label className="min-w-0 text-sm">Udstyr<select required disabled={!group} className={`${field} ${colors}`} value={group ? (slot.equipment ?? "none") : ""} onChange={(event) => onChange({ equipment: slotKey(event.target.value === "none" ? null : event.target.value as Equipment, slot.side) })}>
+    <label className="min-w-0 text-sm">Udstyr<select required disabled={!group} className={`${field} ${colors}`} value={group ? (slot.equipment ?? "none") : ""} onChange={(event) => onChange({ equipment: slotKey(event.target.value === "none" ? null : event.target.value as Equipment, slot.side, slot.grip) })}>
       {!group && <option value="" className={colors}>Vælg øvelse først</option>}
       <option className={colors} value="none">Uden udstyr</option>
       {EQUIPMENT.map((item) => <option className={colors} key={item} value={item}>{equipmentLabel[item]}</option>)}
     </select></label>
-    {entry.kind === "strength" && <label className="min-w-0 text-sm">Side<select disabled={!group || !slot.equipment} className={`${field} ${colors}`} value={slot.side} onChange={(event) => onChange({ equipment: slotKey(slot.equipment, event.target.value as ExerciseSide) })}>
+    {entry.kind === "strength" && <label className="min-w-0 text-sm">Side<select disabled={!group || !slot.equipment} className={`${field} ${colors}`} value={slot.side} onChange={(event) => onChange({ equipment: slotKey(slot.equipment, event.target.value as ExerciseSide, slot.grip) })}>
       {SIDES.map((item) => <option className={colors} key={item} value={item}>{sideLabel[item]}</option>)}
     </select>{slot.side !== "both" && <span className="mt-1 block text-xs text-zinc-500">Vægten er {weightUnit[slot.side]}.</span>}</label>}
+    {entry.kind === "strength" && slot.equipment === "cable" && <label className="min-w-0 text-sm">Greb<select disabled={!group} className={`${field} ${colors}`} value={slot.grip ?? ""} onChange={(event) => onChange({ equipment: slotKey("cable", slot.side, (event.target.value || null) as CableGrip | null) })}>
+      <option className={colors} value="">Ikke angivet</option>
+      {GRIPS.map((item) => <option className={colors} key={item} value={item}>{gripLabel[item]}</option>)}
+    </select></label>}
   </div>;
 }
 export function WorkoutEditor({ workout, entries, exercises, version, shared }: { workout: Workout; entries: Entry[]; exercises: Exercise[]; version: string; shared: boolean }) {

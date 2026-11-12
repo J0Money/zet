@@ -141,6 +141,13 @@
       "when": 1794470782371,
       "tag": "0019_exercise_image",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794479915175,
+      "tag": "0020_cable_grip",
+      "breakpoints": true
     }
   ]
 }

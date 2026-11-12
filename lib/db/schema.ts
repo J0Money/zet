@@ -9,6 +9,7 @@ import type { CommunitySummary } from "../community-summary";
 import {
   bigint,
   boolean,
+  check,
   date,
   doublePrecision,
   index,
@@ -50,6 +51,18 @@ export const equipment = pgEnum("equipment", [
 // Om en øvelse laves med begge sider eller én arm/ét ben ad gangen. Ved én
 // side er vægten kg pr. hånd eller ben.
 export const exerciseSide = pgEnum("exercise_side", ["both", "single_arm", "single_leg"]);
+
+// Greb på kabeltårnet. Kun kabeløvelser har greb; null er "ikke angivet".
+export const cableGrip = pgEnum("cable_grip", [
+  "rope",
+  "straight_bar",
+  "ez_bar",
+  "wide_bar",
+  "v_grip",
+  "single_handle",
+  "two_handles",
+  "no_grip",
+]);
 
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -203,7 +216,9 @@ export const exercise = pgTable("exercise", {
   equipment: equipment("equipment"),
   // Side er også en variant med egen rekord, ligesom udstyr.
   side: exerciseSide("side").notNull().default("both"),
-});
+  // Greb er også en variant med egen rekord. Kun på kabel (se check nedenfor).
+  grip: cableGrip("grip"),
+}, (table) => [check("exercise_grip_only_cable", sql`${table.grip} IS NULL OR ${table.equipment} = 'cable'`)]);
 
 // Gamle og alternative navne for en bevægelse (fx efter en sammenlægning), så
 // søgning ved oprettelse og Ranked kan finde den rigtige øvelse. base_name er

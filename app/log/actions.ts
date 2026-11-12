@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getTodayInCopenhagen } from "@/lib/dates";
 import { displayExerciseName, variantName } from "@/lib/exercise-names";
 import { parseSlotKey } from "@/lib/exercise-side";
+import { matchesSlot } from "@/lib/exercise-groups";
 import { findExerciseMatches } from "@/lib/exercise-match";
 import { MUSCLE_GROUPS } from "@/lib/muscle-groups";
 import { isSubmissionId } from "@/lib/log-draft";
@@ -48,19 +49,20 @@ async function resolveVariant(
   equipmentRaw: string,
 ): Promise<{ exercise: Exercise } | { error: string }> {
   if (!equipmentRaw) return { exercise: selected };
-  // Valget er udstyr og eventuelt side, fx "cable" eller "cable:single_arm".
+  // Valget er udstyr og eventuelt side og greb, fx "cable", "cable:single_arm"
+  // eller "cable:both:rope".
   const slot = parseSlotKey(equipmentRaw);
   if (!slot) return { error: "Ugyldigt udstyr." };
-  const { equipment: wanted, side } = slot;
+  const { equipment: wanted, side, grip } = slot;
   const groupName = selected.group_name ?? selected.name;
   const members = visible.filter(
     (exercise) => exercise.type === "strength" && (exercise.group_name ?? exercise.name) === groupName,
   );
-  const found = members.find((member) => member.equipment === wanted && (member.side ?? "both") === side);
+  const found = members.find((member) => matchesSlot(member, slot));
   if (found) return { exercise: found };
   if (wanted === null) return { error: "Øvelsen findes ikke uden udstyr." };
 
-  const name = variantName(groupName, wanted, side);
+  const name = variantName(groupName, wanted, side, grip);
   // Den synlige liste har udstyret på dansk ("Squat (Stang)"), så der
   // sammenlignes med navnet, som det vises.
   const shownName = displayExerciseName(name).toLowerCase();
@@ -76,6 +78,7 @@ async function resolveVariant(
     groupName,
     equipment: wanted,
     side,
+    grip,
     // En ny variant af en delt øvelse er delt. Er den valgte øvelse stadig
     // privat (venter på godkendelse), er varianten det også.
     shared: selected.user_id === null || Boolean(selected.is_shared),
@@ -105,7 +108,7 @@ export async function saveExerciseNote(
   // En tom note må ikke oprette en ubrugt variant.
   const existing = visible.find((item) => item.type === "strength"
     && (item.group_name ?? item.name) === (selected.group_name ?? selected.name)
-    && item.equipment === slot.equipment && (item.side ?? "both") === slot.side);
+    && matchesSlot(item, slot));
   if (!note && !existing) return { savedNote: "" };
   const resolved = existing ? { exercise: existing }
     : await resolveVariant(currentUser.id, visible, selected, input.equipment);

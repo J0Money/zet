@@ -69,6 +69,17 @@ test("Workout editor saves atomically, isolates owners and keeps shared snapshot
   assert.equal((await getEntries(owner)).filter((e) => e.exercise_id === single.id).length, 2);
   assert.deepEqual((await db.select().from(exerciseMuscleGroup).where(eq(exerciseMuscleGroup.exercise_id, single.id))).map((g) => g.muscle_group), ["chest"]);
   assert.equal(cable.length, 2);
+
+  // Greb er også en egen variant: reb med én arm er hverken "begge sider" eller "én arm uden greb".
+  const gripEntries = equipmentInput.entries.map((e) => ({ ...e, id: randomUUID(), equipment: "cable:single_arm:rope" as string }));
+  await saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), { ...input, entries: gripEntries });
+  await saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), { ...input, entries: gripEntries });
+  const withGrip = (await db.select().from(exercise).where(eq(exercise.user_id, owner))).filter((e) => e.group_name === "Strength" && e.grip === "rope");
+  assert.equal(withGrip.length, 1);
+  assert.equal(withGrip[0].name, "Strength (Cable, Rope, Single arm)");
+  assert.equal(withGrip[0].side, "single_arm");
+  assert.equal((await getEntries(owner)).filter((e) => e.exercise_id === withGrip[0].id).length, 2);
+  await assert.rejects(saveWorkoutEdit(owner, id, await getWorkoutEditVersion(owner, id), { ...input, entries: gripEntries.map((e) => ({ ...e, equipment: "machine:both:rope" })) }));
  } finally {
   await db.delete(workout).where(inArray(workout.user_id, [owner, other]));
   await db.delete(exercise).where(inArray(exercise.user_id, [owner, other]));

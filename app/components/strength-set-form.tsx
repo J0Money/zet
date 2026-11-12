@@ -10,7 +10,7 @@ import { equipmentLabel } from "@/lib/equipment";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ExerciseCard } from "@/app/components/exercise-card";
 import { choiceImage, choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions, type ExerciseChoice, type ExerciseImageInfo } from "@/lib/exercise-groups";
-import { SIDES, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type ExerciseSide } from "@/lib/exercise-side";
+import { GRIPS, SIDES, gripLabel, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type CableGrip, type ExerciseSide } from "@/lib/exercise-side";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
@@ -196,8 +196,12 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
     : undefined;
   // Uden udstyr har altid begge sider.
   const currentSide: ExerciseSide = storedSlot && currentSlot?.equipment ? storedSlot.side : "both";
-  const currentKey = currentSlot ? slotKey(currentSlot.equipment, currentSide) : "";
-  const currentVariant = currentChoice && currentSlot ? variantFor(currentChoice, currentSlot.equipment, currentSide) : null;
+  // Greb findes kun på kabel. null er "ikke angivet".
+  const currentGrip: CableGrip | null = storedSlot && currentSlot?.equipment === "cable" ? storedSlot.grip : null;
+  const currentKey = currentSlot ? slotKey(currentSlot.equipment, currentSide, currentGrip) : "";
+  const currentVariant = currentChoice && currentSlot
+    ? variantFor(currentChoice, { equipment: currentSlot.equipment, side: currentSide, grip: currentGrip })
+    : null;
 
   function openChoice(key: string) {
     setSelectedChoiceKey(key);
@@ -418,7 +422,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
             <EquipmentWheel
               options={wheelSlots}
               selectedKey={currentSlot.key}
-              onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(key === "none" ? null : key, currentSide) }))}
+              onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(key === "none" ? null : key, currentSide, currentGrip) }))}
             />
             {currentSlot.equipment && (
               <div role="radiogroup" aria-label="Side" className="mt-2 flex justify-center gap-2">
@@ -428,7 +432,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
                     type="button"
                     role="radio"
                     aria-checked={side === currentSide}
-                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(currentSlot.equipment, side) }))}
+                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(currentSlot.equipment, side, currentGrip) }))}
                     className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                       side === currentSide
                         ? "bg-indigo-600 text-white"
@@ -436,6 +440,26 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
                     }`}
                   >
                     {sideLabel[side]}
+                  </button>
+                ))}
+              </div>
+            )}
+            {currentSlot.equipment === "cable" && (
+              <div role="radiogroup" aria-label="Greb" className="mt-2 flex flex-wrap justify-center gap-1.5">
+                {[null, ...GRIPS].map((grip) => (
+                  <button
+                    key={grip ?? "unset"}
+                    type="button"
+                    role="radio"
+                    aria-checked={grip === currentGrip}
+                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey("cable", currentSide, grip) }))}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                      grip === currentGrip
+                        ? "bg-indigo-600 text-white"
+                        : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
+                    }`}
+                  >
+                    {grip ? gripLabel[grip] : "Ikke angivet"}
                   </button>
                 ))}
               </div>
@@ -553,7 +577,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300" aria-live="polite">
           <p>
             Sættene gemmes på <span className="font-semibold text-zinc-900 dark:text-zinc-50">{currentChoice.label}</span>
-            {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentSide !== "both" ? `, ${sideShortLabel[currentSide]}` : ""}{currentVariant ? "" : ", ny variant"}).
+            {" "}({currentSlot.equipment ? equipmentLabel[currentSlot.equipment] : "uden udstyr"}{currentGrip ? `, ${gripLabel[currentGrip].toLowerCase()}` : ""}{currentSide !== "both" ? `, ${sideShortLabel[currentSide]}` : ""}{currentVariant ? "" : ", ny variant"}).
           </p>
         </div>
       )}

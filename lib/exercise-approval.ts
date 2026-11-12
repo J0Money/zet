@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { buildMergeStatements } from "@/lib/exercise-merge";
 import { displayExerciseName, variantName } from "@/lib/exercise-names";
-import type { ExerciseSide } from "@/lib/exercise-side";
+import type { CableGrip, ExerciseSide } from "@/lib/exercise-side";
 import { matchKey } from "@/lib/exercise-match";
 import type { Equipment, ExerciseType, MuscleGroup } from "@/lib/types";
 
@@ -85,11 +85,11 @@ export async function listShareTargets(): Promise<{ type: ExerciseType; base: st
   return rows.map((row) => ({ ...row, label: displayExerciseName(row.base) }));
 }
 
-type Variant = { id: string; name: string; equipment: Equipment | null; side: string };
+type Variant = { id: string; name: string; equipment: Equipment | null; side: string; grip: CableGrip | null };
 
 async function pendingVariants(ownerId: string, type: ExerciseType, base: string): Promise<Variant[]> {
   return (await query(
-    `SELECT id, name, equipment, side FROM exercise
+    `SELECT id, name, equipment, side, grip FROM exercise
      WHERE user_id = $1::uuid AND is_shared = false AND type = $2::exercise_type AND coalesce(group_name, name) = $3
      ORDER BY id`,
     [ownerId, type, base],
@@ -136,7 +136,7 @@ export async function mergePendingExercise(
     || typeof targetBase !== "string" || !targetBase) return { ok: false, error: "invalid" };
   const sources = await pendingVariants(ownerId, type, base);
   const targets = (await query(
-    `SELECT id, name, equipment, side FROM exercise
+    `SELECT id, name, equipment, side, grip FROM exercise
      WHERE (user_id IS NULL OR is_shared) AND type = $1::exercise_type AND coalesce(group_name, name) = $2 ORDER BY id`,
     [type, targetBase],
   )) as Variant[];
@@ -150,13 +150,13 @@ export async function mergePendingExercise(
     ),
   ];
   for (const source of sources) {
-    const match = targets.find((target) => target.equipment === source.equipment && target.side === source.side);
+    const match = targets.find((target) => target.equipment === source.equipment && target.side === source.side && target.grip === source.grip);
     if (match) {
       statements.push(...buildMergeStatements(query, {
         sourceId: source.id, sourceName: source.name, targetId: match.id, targetName: match.name,
       }));
     } else {
-      const name = variantName(targetBase, source.equipment, source.side as ExerciseSide);
+      const name = variantName(targetBase, source.equipment, source.side as ExerciseSide, source.grip);
       statements.push(query(
         `UPDATE exercise SET group_name = $2, name = $3, is_shared = true WHERE id = $1::uuid`,
         [source.id, targetBase, name],
