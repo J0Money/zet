@@ -10,7 +10,7 @@ import { equipmentLabel } from "@/lib/equipment";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ExerciseCard } from "@/app/components/exercise-card";
 import { choiceImage, choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions, type ExerciseChoice, type ExerciseImageInfo } from "@/lib/exercise-groups";
-import { GRIPS, SIDES, gripLabel, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type CableGrip, type ExerciseSide } from "@/lib/exercise-side";
+import { GRIPS, gripLabel, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type CableGrip, type ExerciseSide } from "@/lib/exercise-side";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
 import type { ExerciseHistory } from "@/lib/workouts";
@@ -425,44 +425,19 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
               onSelect={(key) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(key === "none" ? null : key, currentSide, currentGrip) }))}
             />
             {currentSlot.equipment && (
-              <div role="radiogroup" aria-label="Side" className="mt-2 flex justify-center gap-2">
-                {SIDES.map((side) => (
-                  <button
-                    key={side}
-                    type="button"
-                    role="radio"
-                    aria-checked={side === currentSide}
-                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(currentSlot.equipment, side, currentGrip) }))}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                      side === currentSide
-                        ? "bg-indigo-600 text-white"
-                        : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
-                    }`}
-                  >
-                    {sideLabel[side]}
-                  </button>
-                ))}
-              </div>
+              <SideToggle
+                side={currentSide}
+                // Benøvelser er ét ben, alt andet én arm. Har du allerede valgt
+                // en side, beholdes den.
+                oneSide={currentSide !== "both" ? currentSide : choiceMuscles(currentChoice).includes("legs") ? "single_leg" : "single_arm"}
+                onChange={(side) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey(currentSlot.equipment, side, currentGrip) }))}
+              />
             )}
             {currentSlot.equipment === "cable" && (
-              <div role="radiogroup" aria-label="Greb" className="mt-2 flex flex-wrap justify-center gap-1.5">
-                {[null, ...GRIPS].map((grip) => (
-                  <button
-                    key={grip ?? "unset"}
-                    type="button"
-                    role="radio"
-                    aria-checked={grip === currentGrip}
-                    onClick={() => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey("cable", currentSide, grip) }))}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                      grip === currentGrip
-                        ? "bg-indigo-600 text-white"
-                        : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
-                    }`}
-                  >
-                    {grip ? gripLabel[grip] : "Ikke angivet"}
-                  </button>
-                ))}
-              </div>
+              <GripRow
+                selected={currentGrip}
+                onSelect={(grip) => setSlotByChoice((current) => ({ ...current, [currentChoice.key]: slotKey("cable", currentSide, grip) }))}
+              />
             )}
             {!currentVariant && (
               <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
@@ -594,5 +569,89 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
       )}
     </form>
     </>
+  );
+}
+
+// Grebene på én linje, som man swiper sidelæns i. Det valgte greb rulles ind
+// i rækken, når skuffen åbner, så man kan se det uden at lede.
+function GripRow({ selected, onSelect }: { selected: CableGrip | null; onSelect: (grip: CableGrip | null) => void }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = rowRef.current;
+    const active = row?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!row || !active) return;
+    // Ruller kun rækken, ikke siden, og kun hvis grebet ikke allerede kan ses.
+    const rowBox = row.getBoundingClientRect();
+    const box = active.getBoundingClientRect();
+    if (box.left < rowBox.left || box.right > rowBox.right - 32) {
+      row.scrollLeft += box.left - rowBox.left - 16;
+    }
+  }, [selected]);
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">Greb</p>
+      <div
+        ref={rowRef}
+        role="radiogroup"
+        aria-label="Greb"
+        className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+      >
+        {[null, ...GRIPS].map((grip) => (
+          <button
+            key={grip ?? "unset"}
+            type="button"
+            role="radio"
+            aria-checked={grip === selected}
+            onClick={() => onSelect(grip)}
+            className={`shrink-0 snap-start whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium last:mr-8 ${
+              grip === selected
+                ? "bg-indigo-600 text-white"
+                : "border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300"
+            }`}
+          >
+            {grip ? gripLabel[grip] : "Ikke angivet"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Side som to halvdele i fuld bredde: begge sider eller én side (oneSide,
+// én arm eller ét ben efter øvelsen). Ved én side er vægten pr. hånd eller ben.
+function SideToggle({ side, oneSide, onChange }: {
+  side: ExerciseSide;
+  oneSide: Exclude<ExerciseSide, "both">;
+  onChange: (side: ExerciseSide) => void;
+}) {
+  const options: { value: ExerciseSide; label: string }[] = [
+    { value: "both", label: oneSide === "single_leg" ? "Begge ben" : "Begge arme" },
+    { value: oneSide, label: sideLabel[oneSide] },
+  ];
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">Side</p>
+      <div role="radiogroup" aria-label="Side" className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={side === option.value}
+            onClick={() => onChange(option.value)}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+              side === option.value
+                ? "bg-white text-indigo-600 shadow-sm dark:bg-zinc-700 dark:text-indigo-400"
+                : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {side !== "both" && (
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Vægten er {weightUnit[side]}.</p>
+      )}
+    </div>
   );
 }
