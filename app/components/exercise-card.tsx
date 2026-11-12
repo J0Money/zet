@@ -26,8 +26,10 @@ const tints: Record<MuscleGroup, string> = {
   full_body: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300",
 };
 
-export function ExerciseCard({ label, muscles, lastLabel, selected, onSelect }: {
+export function ExerciseCard({ label, imageSrc, muscles, lastLabel, selected, onSelect }: {
   label: string;
+  // Billede af øvelsen. Mangler det, vises ikon og farve for muskelgruppen.
+  imageSrc?: string;
   muscles: MuscleGroup[];
   // Fx "Sidst 3. nov", tom hvis øvelsen ikke er brugt før.
   lastLabel: string | null;
@@ -45,9 +47,15 @@ export function ExerciseCard({ label, muscles, lastLabel, selected, onSelect }: 
         selected ? "border-indigo-600" : "border-zinc-200 hover:border-indigo-300 dark:border-zinc-700"
       }`}
     >
-      <span aria-hidden="true" className={`flex h-24 items-center justify-center ${tints[primary]}`}>
-        <ItemIcon size={44} weight="duotone" />
-      </span>
+      {imageSrc ? (
+        // Billederne er små WebP-filer fra vores egen rute, så next/image er ikke nødvendig.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageSrc} alt="" loading="lazy" className="h-28 w-full bg-white object-contain p-1" />
+      ) : (
+        <span aria-hidden="true" className={`flex h-28 items-center justify-center ${tints[primary]}`}>
+          <ItemIcon size={44} weight="duotone" />
+        </span>
+      )}
       <span className="flex flex-1 flex-col gap-0.5 p-3">
         <span className="text-sm font-semibold leading-5 text-zinc-900 dark:text-zinc-50">{label}</span>
         <span className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">

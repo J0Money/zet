@@ -55,6 +55,23 @@ export function groupExercises(exercises: Exercise[]): ExerciseChoice[] {
   return choices;
 }
 
+// Billede pr. bevægelse (lib/exercise-images.ts henter dem). Nøglen er
+// "type|gruppenavn" med små bogstaver, så alle varianter deler billedet.
+export type ExerciseImageInfo = {
+  src: string;
+  author: string | null;
+  license: string | null;
+  sourceUrl: string | null;
+  aiGenerated: boolean;
+};
+
+export const exerciseImageKey = (type: string, baseName: string) => `${type}|${baseName.toLowerCase()}`;
+
+export function choiceImage(choice: ExerciseChoice, images: Record<string, ExerciseImageInfo>): ExerciseImageInfo | undefined {
+  const first = choice.variants[0];
+  return first ? images[exerciseImageKey(first.type, first.group_name ?? first.name)] : undefined;
+}
+
 // "none" er den neutrale plads for en øvelse uden udstyr.
 export type WheelKey = Equipment | "none";
 

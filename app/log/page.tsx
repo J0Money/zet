@@ -11,6 +11,7 @@ import type { Entry } from "@/lib/types";
 import { getActiveWorkout, getEntries, getExercises, getWorkouts } from "@/lib/workout-store";
 import { getExerciseHistory } from "@/lib/workouts";
 import { getExerciseNotes } from "@/lib/exercise-notes";
+import { getExerciseImages } from "@/lib/exercise-images";
 import { lastEquipmentByChoice } from "@/lib/exercise-groups";
 
 // Tillader at siden renderes fuldt ud pr. request ("blocking"), i stedet for
@@ -24,12 +25,13 @@ export default async function LogPage() {
   const currentUser = await requireUser();
   // getActiveWorkout kan afslutte et udløbet pas, så pas og sæt hentes først
   // bagefter. De øvrige opslag er uafhængige og hentes samtidig.
-  const [exerciseNotes, exercises, programs, activeWorkout, isAdmin] = await Promise.all([
+  const [exerciseNotes, exercises, programs, activeWorkout, isAdmin, exerciseImages] = await Promise.all([
     getExerciseNotes(currentUser.id),
     getExercises(currentUser.id),
     getPrograms(currentUser.id),
     getActiveWorkout(currentUser.id),
     isCurrentUserAdmin(),
+    getExerciseImages(),
   ]);
   const [entries, workouts] = await Promise.all([getEntries(currentUser.id), getWorkouts(currentUser.id)]);
 
@@ -97,6 +99,7 @@ export default async function LogPage() {
         programs={programs}
         exerciseHistory={exerciseHistory}
         exerciseNotes={exerciseNotes}
+        exerciseImages={exerciseImages}
         preferredEquipment={lastEquipmentByChoice(strengthExercises, entries)}
       />
 

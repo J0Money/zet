@@ -134,6 +134,13 @@
       "when": 1794384808685,
       "tag": "0018_exercise_side_alias",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794470782371,
+      "tag": "0019_exercise_image",
+      "breakpoints": true
     }
   ]
 }

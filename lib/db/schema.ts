@@ -216,6 +216,21 @@ export const exerciseAlias = pgTable("exercise_alias", {
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("exercise_alias_unique").on(sql`lower(${table.alias})`, table.type)]);
 
+// Ét billede pr. bevægelse (gruppenavn), så alle varianter deler det. Billedet
+// ligger i vores egen bucket (image_key). author, license og source_url bruges
+// til kreditering af billeder med fri licens (fx wger); null for egne billeder.
+export const exerciseImage = pgTable("exercise_image", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  base_name: text("base_name").notNull(),
+  type: exerciseType("type").notNull(),
+  image_key: text("image_key").notNull(),
+  author: text("author"),
+  license: text("license"),
+  source_url: text("source_url"),
+  is_ai_generated: boolean("is_ai_generated").notNull().default(false),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("exercise_image_unique").on(sql`lower(${table.base_name})`, table.type)]);
+
 // En privat huskenote pr. bruger og præcis øvelsesvariant.
 export const exerciseNote = pgTable("exercise_note", {
   id: uuid("id").primaryKey().defaultRandom(),

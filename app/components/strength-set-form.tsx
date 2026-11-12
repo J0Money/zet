@@ -9,7 +9,7 @@ import { ExerciseNote } from "@/app/components/exercise-note";
 import { equipmentLabel } from "@/lib/equipment";
 import { BottomSheet } from "@/app/components/bottom-sheet";
 import { ExerciseCard } from "@/app/components/exercise-card";
-import { choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions, type ExerciseChoice } from "@/lib/exercise-groups";
+import { choiceImage, choiceKey, defaultWheelKey, groupExercises, variantFor, wheelOptions, type ExerciseChoice, type ExerciseImageInfo } from "@/lib/exercise-groups";
 import { SIDES, parseSlotKey, sideLabel, sideShortLabel, slotKey, weightUnit, type ExerciseSide } from "@/lib/exercise-side";
 import { MUSCLE_GROUPS, muscleGroupLabel } from "@/lib/muscle-groups";
 import type { Exercise, MuscleGroup, TrainingProgram } from "@/lib/types";
@@ -32,6 +32,29 @@ function emptySet(id: number): SetRow {
   return { id, reps: "", weightKg: "" };
 }
 
+const LICENSE_URL: Record<string, string> = {
+  "CC BY-SA 3": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "CC BY-SA 4": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "CC BY 4": "https://creativecommons.org/licenses/by/4.0/",
+  "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+};
+
+// Kreditering, som licensen kræver: ophav, licens og kilde.
+function ImageCredit({ image }: { image?: ExerciseImageInfo }) {
+  if (!image?.license) return null;
+  const link = "underline underline-offset-2";
+  const licenseUrl = LICENSE_URL[image.license];
+  return (
+    <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+      Billede: {image.author ?? "ukendt"}
+      {image.sourceUrl && <>, <a className={link} href={image.sourceUrl} target="_blank" rel="noreferrer">wger.de</a></>}
+      {", "}
+      {licenseUrl ? <a className={link} href={licenseUrl} target="_blank" rel="noreferrer">{image.license}</a> : image.license}
+      {image.aiGenerated && ", AI-genereret"}. Skaleret til ZET.
+    </p>
+  );
+}
+
 function choiceMuscles(choice: ExerciseChoice): MuscleGroup[] {
   return [...new Set(choice.variants.flatMap((variant) => variant.muscle_groups))];
 }
@@ -46,13 +69,14 @@ function choiceLastLabel(choice: ExerciseChoice, history: Record<string, Exercis
   return latest ? `Sidst ${formatShortDateDanish(latest)}` : null;
 }
 
-export function StrengthSetForm({ userId, isAdmin, exercises, programs, exerciseHistory, exerciseNotes, preferredEquipment }: {
+export function StrengthSetForm({ userId, isAdmin, exercises, programs, exerciseHistory, exerciseNotes, exerciseImages, preferredEquipment }: {
   userId: string;
   isAdmin: boolean;
   exercises: Exercise[];
   programs: TrainingProgram[];
   exerciseHistory: Record<string, ExerciseHistory>;
   exerciseNotes: Record<string, string>;
+  exerciseImages: Record<string, ExerciseImageInfo>;
   preferredEquipment: Record<string, string>;
 }) {
   const [state, formAction, isPending] = useActionState(logStrengthSet, initialState);
@@ -359,6 +383,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
             <ExerciseCard
               key={choice.key}
               label={choice.label}
+              imageSrc={choiceImage(choice, exerciseImages)?.src}
               muscles={choiceMuscles(choice)}
               lastLabel={choiceLastLabel(choice, exerciseHistory)}
               selected={choice.key === currentChoice?.key}
@@ -540,6 +565,7 @@ export function StrengthSetForm({ userId, isAdmin, exercises, programs, exercise
       >
         {isPending ? "Gemmer…" : sets.length === 1 ? "Gem sæt" : `Gem ${sets.length} sæt`}
       </button>
+      <ImageCredit image={choiceImage(currentChoice, exerciseImages)} />
       </BottomSheet>
       )}
     </form>
