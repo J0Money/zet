@@ -6,6 +6,7 @@ import { communityText, isCommunityId } from "@/lib/community-input";
 import { buildCommunitySummary } from "@/lib/community-summary";
 import { buildLeaderboard } from "@/lib/community-leaderboard";
 import { getEntries, getExerciseAliases, getExercises, getWorkoutById, getWorkouts } from "@/lib/workout-store";
+import { countRateLimitAttempt } from "@/lib/rate-limit";
 
 const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -123,10 +124,17 @@ export async function addWorkoutDetails(userId: string, postId: string, preview:
   return updated.length ? { success: true } : { error: "Opslaget er ændret. Genindlæs siden." };
 }
 
+// Beskytter mod at spamme en anden brugers telefon med push-notifikationer
+// (en kommentar sender altid en notifikation til opslagets ejer, se notifyComment).
+const COMMENT_LIMIT = 10;
+const COMMENT_WINDOW_MS = 5 * 60 * 1000;
+
 export async function addComment(userId: string, postId: string, commentId: string, body: string) {
   const parsed = communityText(body, true);
   if (parsed.error) return { error: parsed.error };
   if (!isCommunityId(postId) || !isCommunityId(commentId)) return { error: "Opslaget kunne ikke findes." };
+  const attempts = await countRateLimitAttempt(`comment:${userId}`, COMMENT_WINDOW_MS);
+  if (attempts > COMMENT_LIMIT) return { error: "For mange kommentarer på kort tid. Vent lidt, og prøv igen." };
   // INSERT SELECT undgår at kommentere et opslag, der er trukket tilbage.
   // Klientens UUID gør gentagne indsendelser idempotente.
   const rows = await db.insert(communityComment).select(db.select({

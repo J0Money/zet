@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { account, user } from "@/lib/db/schema";
 import { ownedAvatarKey } from "@/lib/avatar-image";
 import { avatarStorageConfigured, deleteAvatarObject, deleteAvatarObjectsFor } from "@/lib/avatar-storage";
+import { countRateLimitAttempt } from "@/lib/rate-limit";
 
 // Kontosletning (punkt 12 i docs/privacy-readiness.md). Brugeren bekræfter med
 // adgangskoden, og alt, der hører til brugeren, slettes i ÉN databasetransaktion.
@@ -32,18 +33,10 @@ const messages = {
 } as const;
 const fail = (code: keyof typeof messages): DeleteAccountResult => ({ success: false, code, message: messages[code] });
 
-// Tæller forsøget atomisk (ét statement), før adgangskoden kontrolleres, så
-// samtidige gæt også tælles. Fast vindue fra det første forsøg.
+// Tæller forsøget atomisk, før adgangskoden kontrolleres, så samtidige gæt
+// også tælles. Fast vindue fra det første forsøg. Delt mønster i lib/rate-limit.ts.
 async function countAttempt(userId: string): Promise<number> {
-  const rows = await db.$client.query(
-    `INSERT INTO rate_limit (key, count, last_request) VALUES ($1, 1, $2::bigint)
-     ON CONFLICT (key) DO UPDATE SET
-       count = CASE WHEN rate_limit.last_request < $2::bigint - $3::bigint THEN 1 ELSE rate_limit.count + 1 END,
-       last_request = CASE WHEN rate_limit.last_request < $2::bigint - $3::bigint THEN $2::bigint ELSE rate_limit.last_request END
-     RETURNING count`,
-    [attemptKey(userId), Date.now(), DELETE_ATTEMPT_WINDOW_MS],
-  );
-  return Number((rows as { count: number }[])[0].count);
+  return countRateLimitAttempt(attemptKey(userId), DELETE_ATTEMPT_WINDOW_MS);
 }
 
 // Alle trin kører i rækkefølge i samme transaktion. Senere trin ser tidligere
