@@ -5,11 +5,12 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { config } from "dotenv";
-import { neon } from "@neondatabase/serverless";
+import { createSqlClient } from "../lib/db/client";
 
 config({ path: ".env.local", quiet: true });
 const enabled = process.env.ZET_RUN_APPROVAL_TESTS === "1";
-const sql = enabled ? neon(process.env.DATABASE_URL!) : null;
+const client = enabled ? createSqlClient(process.env.DATABASE_URL!) : null;
+const sql = client?.sql ?? null;
 const users = [randomUUID(), randomUUID()];
 const run = randomUUID().slice(0, 6);
 const n = (label: string) => `Zz AT ${label} ${run}`;
@@ -23,6 +24,9 @@ after(async () => {
   await sql`delete from exercise_alias where alias like ${`Zz AT %${run}`}`;
   await sql`delete from exercise where name like ${`Zz AT %${run}%`}`;
   await sql`delete from "user" where id = any(${users}::uuid[])`;
+  await client!.pool.end();
+  const { sqlClient } = await import("../lib/db");
+  await sqlClient.pool.end();
 });
 
 test("Godkend, læg sammen og slet øvelser, brugere har oprettet", { skip: !enabled }, async () => {

@@ -1,7 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { db } from "./db";
+import { sqlClient, statement } from "./db";
 
 // Fælles regel for servertjek og genåbning af appen. Tomme pas og pas med
 // cardio berøres aldrig. Sluttiden er sidste styrkesæt, ikke tjekkets tid.
@@ -32,11 +32,10 @@ async function closeExpired(userId: string | undefined, workoutId: string | unde
       AND a.last_set <= now() - interval '1 hour'
   `);
   // Korte tabel-låse sikrer, at et samtidigt nyt sæt eller cardio ikke bliver
-  // overset mellem læsning og afslutning. Neon understøtter denne samlede
-  // ikke-interaktive transaktion. Ingen låse holdes mellem HTTP-kald.
-  await db.$client.transaction([
-    db.$client.query("SET LOCAL lock_timeout = '3s'"),
-    db.$client.query("LOCK TABLE workout, workout_set, workout_cardio IN SHARE ROW EXCLUSIVE MODE"),
-    db.$client.query(query.sql, query.params),
+  // overset mellem læsning og afslutning.
+  await sqlClient.transaction([
+    statement("SET LOCAL lock_timeout = '3s'"),
+    statement("LOCK TABLE workout, workout_set, workout_cardio IN SHARE ROW EXCLUSIVE MODE"),
+    statement(query.sql, query.params),
   ]);
 }

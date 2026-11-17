@@ -10,10 +10,11 @@ test("Kontosletning", { skip: process.env.ZET_RUN_DELETE_TESTS !== "1" }, async 
   config({ path: ".env.local", quiet: true });
   // Testen må aldrig røre det rigtige billedlager.
   delete process.env.S3_ENDPOINT;
-  const { db } = await import("../lib/db");
+  const { sqlClient, statement } = await import("../lib/db");
+  t.after(() => sqlClient.pool.end());
   const { auth } = await import("../lib/auth");
   const { deleteAccount, buildDeletionStatements, DELETE_ATTEMPT_LIMIT } = await import("../lib/account-deletion");
-  const q = (text: string, params: unknown[] = []) => db.$client.query(text, params) as Promise<Record<string, unknown>[]>;
+  const q = (text: string, params: unknown[] = []) => sqlClient.query(text, params);
 
   const tag = randomUUID().slice(0, 8);
   const emailFor = (id: string) => `zet-delete-${tag}-${id}@example.invalid`;
@@ -149,11 +150,11 @@ test("Kontosletning", { skip: process.env.ZET_RUN_DELETE_TESTS !== "1" }, async 
     await t.test("(d) Den sidste admin kan ikke slette sig selv (vagten kører i en transaktion, der altid rulles tilbage)", async () => {
       const probe = async (demoteOthers: boolean) => {
         const statements = [
-          ...(demoteOthers ? [db.$client.query(`UPDATE "user" SET role = 'member' WHERE role = 'admin' AND id <> $1::uuid`, [D])] : []),
+          ...(demoteOthers ? [statement(`UPDATE "user" SET role = 'member' WHERE role = 'admin' AND id <> $1::uuid`, [D])] : []),
           ...buildDeletionStatements(D).slice(0, 3), // lock_timeout, set_config og vagten
-          db.$client.query(`DO $$ BEGIN RAISE EXCEPTION 'ZET_TEST_ROLLBACK'; END $$`),
+          statement(`DO $$ BEGIN RAISE EXCEPTION 'ZET_TEST_ROLLBACK'; END $$`),
         ];
-        try { await db.$client.transaction(statements); } catch (error) { return (error as Error).message; }
+        try { await sqlClient.transaction(statements); } catch (error) { return (error as Error).message; }
         return "ingen fejl";
       };
       assert.match(await probe(true), /ZET_LAST_ADMIN/);   // D er eneste admin: blokeret

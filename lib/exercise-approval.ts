@@ -1,5 +1,5 @@
 import "server-only";
-import { db } from "@/lib/db";
+import { sqlClient, statement, type Statement } from "@/lib/db";
 import { buildMergeStatements } from "@/lib/exercise-merge";
 import { displayExerciseName, variantName } from "@/lib/exercise-names";
 import type { CableGrip, ExerciseSide } from "@/lib/exercise-side";
@@ -32,7 +32,7 @@ export type PendingExercise = {
 };
 
 const baseOf = (row: { group_name: string | null; name: string }) => row.group_name ?? row.name;
-const query = (text: string, params: unknown[] = []) => db.$client.query(text, params);
+const query = (text: string, params: unknown[] = []) => sqlClient.query(text, params);
 const isUuid = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 export const isExerciseType = (value: unknown): value is ExerciseType => value === "strength" || value === "cardio";
@@ -96,9 +96,9 @@ async function pendingVariants(ownerId: string, type: ExerciseType, base: string
   )) as Variant[];
 }
 
-async function run(statements: unknown[]): Promise<ApprovalResult> {
+async function run(statements: Statement[]): Promise<ApprovalResult> {
   try {
-    await db.$client.transaction(statements as never);
+    await sqlClient.transaction(statements);
     return { ok: true };
   } catch {
     // Vagterne i sammenlægningen stopper hele transaktionen, hvis noget er ændret.
@@ -118,7 +118,7 @@ export async function approvePendingExercise(ownerId: unknown, type: unknown, ba
   const variants = await pendingVariants(ownerId, type, base);
   if (!variants.length) return { ok: false, error: "changed" };
   return run([
-    query(
+    statement(
       `UPDATE exercise SET is_shared = true
        WHERE id = ANY($1::uuid[]) AND user_id = $2::uuid AND is_shared = false RETURNING id`,
       [variants.map((variant) => variant.id), ownerId],
@@ -142,8 +142,8 @@ export async function mergePendingExercise(
   )) as Variant[];
   if (!sources.length || !targets.length) return { ok: false, error: "changed" };
 
-  const statements: unknown[] = [
-    query(
+  const statements: Statement[] = [
+    statement(
       `SELECT 1 / (CASE WHEN (SELECT count(*) FROM exercise WHERE id = ANY($1::uuid[]) AND user_id = $2::uuid AND is_shared = false) = $3
          AND (SELECT count(*) FROM exercise WHERE id = ANY($4::uuid[]) AND (user_id IS NULL OR is_shared)) = $5 THEN 1 ELSE 0 END)`,
       [sources.map((s) => s.id), ownerId, sources.length, targets.map((t) => t.id), targets.length],
@@ -152,19 +152,19 @@ export async function mergePendingExercise(
   for (const source of sources) {
     const match = targets.find((target) => target.equipment === source.equipment && target.side === source.side && target.grip === source.grip);
     if (match) {
-      statements.push(...buildMergeStatements(query, {
+      statements.push(...buildMergeStatements(statement, {
         sourceId: source.id, sourceName: source.name, targetId: match.id, targetName: match.name,
       }));
     } else {
       const name = variantName(targetBase, source.equipment, source.side as ExerciseSide, source.grip);
-      statements.push(query(
+      statements.push(statement(
         `UPDATE exercise SET group_name = $2, name = $3, is_shared = true WHERE id = $1::uuid`,
         [source.id, targetBase, name],
       ));
     }
   }
   // Det gamle navn gemmes, så søgning og Ranked kan genkende det.
-  statements.push(query(
+  statements.push(statement(
     `INSERT INTO exercise_alias (alias, base_name, type)
      SELECT $1, $2, $3::exercise_type
      WHERE lower($1) <> lower($2) AND NOT EXISTS (
@@ -183,7 +183,7 @@ export async function deletePendingExercise(ownerId: unknown, type: unknown, bas
   if (rows.some((row) => row.sets + row.cardio + row.programs > 0)) return { ok: false, error: "used" };
   // Muskelgrupper og huskenoter følger med via cascade.
   return run([
-    query(
+    statement(
       `DELETE FROM exercise WHERE id = ANY($1::uuid[]) AND user_id = $2::uuid AND is_shared = false RETURNING id`,
       [rows.map((row) => row.id), ownerId],
     ),

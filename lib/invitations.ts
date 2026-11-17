@@ -195,7 +195,7 @@ export async function acceptInvitation(
       .limit(1);
     if (!available) return invalidInvitation;
 
-    // Atomisk upsert: samtidige forespørgsler deler samme tæller i Neon.
+    // Atomisk upsert: samtidige forespørgsler deler samme tæller i databasen.
     // Tælleren gemmes særskilt, så et mislykket oprettelsesforsøg stadig tæller.
     // Et udløbet tidsvindue genbruges; ukendte koder opretter ingen rækker.
     const attempt = await db.execute<{ invitation_id: string }>(sql`
@@ -226,7 +226,7 @@ export async function acceptInvitation(
     const userId = randomUUID();
     const accountId = randomUUID();
 
-    // Én SQL-sætning er atomisk, også med neon-http. UPDATE låser invitationen
+    // Én SQL-sætning er atomisk. UPDATE låser invitationen
     // og kontrollerer used_at igen, hvis et andet forsøg allerede har brugt den.
     // RETURNING forbinder trinene: ingen gyldig invitation betyder ingen bruger
     // eller konto. En fejl i et INSERT ruller også UPDATE tilbage.

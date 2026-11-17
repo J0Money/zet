@@ -1,7 +1,6 @@
 // Lægger en øvelse (kilden) ind i en anden (målet). Alt, der peger på kilden,
 // flyttes til målet, og kilden slettes. Trinene skal køres i rækkefølge i ÉN
-// transaktion (Neons ikke-interaktive batch, som i lib/account-deletion.ts):
-// alle lykkes, eller ingen gør. Delte Community-opslag ændres ikke; kildens
+// transaktion (som i lib/account-deletion.ts): alle lykkes, eller ingen gør. Delte Community-opslag ændres ikke; kildens
 // gamle navn gemmes som alias, så det stadig kan genkendes.
 
 export type MergePair = { sourceId: string; sourceName: string; targetId: string; targetName: string };

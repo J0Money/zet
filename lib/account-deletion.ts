@@ -1,17 +1,15 @@
 import "server-only";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { verifyPassword } from "better-auth/crypto";
-import { db } from "@/lib/db";
+import { db, sqlClient, statement } from "@/lib/db";
 import { account, user } from "@/lib/db/schema";
 import { ownedAvatarKey } from "@/lib/avatar-image";
 import { avatarStorageConfigured, deleteAvatarObject, deleteAvatarObjectsFor } from "@/lib/avatar-storage";
 import { countRateLimitAttempt } from "@/lib/rate-limit";
 
 // Kontosletning (punkt 12 i docs/privacy-readiness.md). Brugeren bekræfter med
-// adgangskoden, og alt, der hører til brugeren, slettes i ÉN databasetransaktion.
-// Neons HTTP-driver har ingen interaktive transaktioner, så sletningen er en
-// ikke-interaktiv batch (BEGIN ... COMMIT): alle trin lykkes, eller ingen gør.
-// Profilbilledet ligger uden for databasen og slettes bagefter.
+// adgangskoden, og alt, der hører til brugeren, slettes i ÉN databasetransaktion:
+// alle trin lykkes, eller ingen gør. Profilbilledet ligger uden for databasen og slettes bagefter.
 
 export type DeleteAccountResult =
   | { success: true }
@@ -43,7 +41,7 @@ async function countAttempt(userId: string): Promise<number> {
 // trins sletninger, og det bruges bevidst (se øvelser nedenfor).
 // Eksporteret, så integrationstesten kan køre vagten i en transaktion, der altid rulles tilbage.
 export function buildDeletionStatements(userId: string) {
-  const q = (text: string, params: unknown[] = [userId]) => db.$client.query(text, params);
+  const q = (text: string, params: unknown[] = [userId]) => statement(text, params);
   return [
     q("SET LOCAL lock_timeout = '5s'", []),
     // Gemmer bruger-id i transaktionen, så vagten nedenfor kan bruge det uden at skrive id'et ind i SQL.
@@ -104,7 +102,7 @@ export async function deleteAccount(userId: string, password: unknown): Promise<
 
     let results: unknown[];
     try {
-      results = await db.$client.transaction(buildDeletionStatements(userId));
+      results = await sqlClient.transaction(buildDeletionStatements(userId));
     } catch (error) {
       if (error instanceof Error && error.message.includes("ZET_LAST_ADMIN")) return fail("last_admin");
       console.error("Kontosletning mislykkedes og er rullet tilbage."); // Bevidst uden fejlindhold og id'er.

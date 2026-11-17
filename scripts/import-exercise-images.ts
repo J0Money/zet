@@ -5,7 +5,7 @@
 // 12. november 2026. Ændringen (skalering, hvid baggrund) deles under samme
 // licens som originalen (CC BY-SA), og licens og ophav vises i appen.
 import { config } from "dotenv";
-import { neon } from "@neondatabase/serverless";
+import { createSqlClient } from "../lib/db/client";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 config({ path: ".env.local", quiet: true });
@@ -50,7 +50,8 @@ const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").re
 
 async function main() {
   const apply = process.argv.includes("--apply");
-  const sql = neon(process.env.DATABASE_URL!);
+  const client = createSqlClient(process.env.DATABASE_URL!);
+  const sql = client.sql;
   const shared = await sql`select distinct coalesce(group_name, name) as base from exercise
     where type = 'strength' and (user_id is null or is_shared)`;
   const known = new Set(shared.map((row) => row.base as string));
@@ -82,6 +83,7 @@ async function main() {
     console.log(`Gemt: ${pick.base} (${Math.round(image.length / 1024)} KB)`);
   }
   console.log(apply ? `Færdig: ${PICKS.length} billeder.` : `Prøvekørsel: ${PICKS.length} billeder. Kør med --apply for at gemme.`);
+  await client.pool.end();
 }
 
 main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exit(1); });

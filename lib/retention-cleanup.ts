@@ -1,5 +1,5 @@
 import "server-only";
-import { db } from "./db";
+import { sqlClient } from "./db";
 
 // FORSLAG TIL FRISTER, IKKE VEDTAGET AF JOACHIM. Tallene er skøn og skal
 // godkendes (eller ændres) før de nævnes i privatlivsteksten.
@@ -78,13 +78,13 @@ const CLEANUP_SQL = `
 `;
 
 export async function runRetentionCleanup(): Promise<RetentionCleanupResult> {
-  const rows = (await db.$client.query(CLEANUP_SQL, [
+  const rows = await sqlClient.query<Record<string, number>>(CLEANUP_SQL, [
     EXPIRED_SESSION_GRACE_DAYS,
     EXPIRED_VERIFICATION_GRACE_DAYS,
     FINISHED_INVITATION_RETENTION_DAYS,
     RATE_LIMIT_RETENTION_DAYS,
     LOG_SUBMISSION_RETENTION_DAYS,
-  ])) as Record<string, number>[];
+  ]);
   const row = rows[0];
   return {
     sessions: Number(row.sessions),

@@ -14,9 +14,8 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: { user, session, account, verification, rateLimit },
-    // neon-http understøtter ikke de interaktive transaktioner, adapteren
-    // ellers bruger til handlinger med flere trin, fx bruger og konto ved
-    // tilmelding. Derfor slås adapterens transaktioner fra.
+    // Tilmelding sker ikke gennem Better Auth (den er slået fra), men gennem
+    // invitationerne i lib/invitations.ts, så adapteren behøver ikke transaktioner.
     transaction: false,
   }),
   rateLimit: {

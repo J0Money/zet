@@ -3,12 +3,13 @@
 // Uden --apply vises kun, hvad der ville ske. Med --apply køres alle par i én
 // transaktion, og navnene fra visningen kontrolleres igen inde i transaktionen.
 import { config } from "dotenv";
-import { neon } from "@neondatabase/serverless";
+import { createSqlClient, statement } from "../lib/db/client";
 import { buildMergeStatements, type MergePair } from "../lib/exercise-merge";
 config({ path: ".env.local", quiet: true });
+const client = createSqlClient(process.env.DATABASE_URL!);
+const sql = client.sql;
 
 async function main() {
-  const sql = neon(process.env.DATABASE_URL!);
   const args = process.argv.slice(2).filter((arg) => arg !== "--apply");
   const ids = args.map((arg) => arg.split(":"));
   if (!ids.length || ids.some((pair) => pair.length !== 2)) throw new Error("Angiv par som kilde-id:mål-id.");
@@ -27,17 +28,18 @@ async function main() {
     if (source.type !== target.type) throw new Error(`"${source.name}" og "${target.name}" har ikke samme type.`);
     console.log(`"${source.name}" (sæt ${source.sets}, cardio ${source.cardio}, programmer ${source.programs}, noter ${source.notes})`
       + ` -> "${target.name}" (sæt ${target.sets}, cardio ${target.cardio}, programmer ${target.programs}, noter ${target.notes})`);
-    pairs.push({ sourceId, sourceName: source.name, targetId, targetName: target.name });
+    pairs.push({ sourceId, sourceName: String(source.name), targetId, targetName: String(target.name) });
   }
 
   if (!process.argv.includes("--apply")) {
     console.log(`Prøvekørsel: ${pairs.length} par. Intet er ændret.`);
     return;
   }
-  const statements = pairs.flatMap((pair) => buildMergeStatements((text, params) => sql.query(text, params), pair));
-  await sql.transaction(statements);
+  await client.transaction(pairs.flatMap((pair) => buildMergeStatements(statement, pair)));
   const left = await sql`select count(*)::int as n from exercise where id = any(${pairs.map((pair) => pair.sourceId)}::uuid[])`;
   if (left[0].n !== 0) throw new Error("Verifikation mislykkedes.");
   console.log(`Lagt sammen og verificeret: ${pairs.length} par.`);
 }
-main().catch((error) => { console.error(error instanceof Error ? error.message : "Sammenlægningen mislykkedes."); process.exitCode = 1; });
+main()
+  .catch((error) => { console.error(error instanceof Error ? error.message : "Sammenlægningen mislykkedes."); process.exitCode = 1; })
+  .finally(() => client.pool.end());

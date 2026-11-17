@@ -1,7 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { db } from "./db";
+import { db, sqlClient } from "./db";
 import { getWorkoutById } from "./workout-store";
 import { WorkoutEditError, validateWorkoutEdit, type WorkoutEdit } from "./workout-edit-input";
 import { equipmentName } from "./exercise-names";
@@ -75,7 +75,6 @@ export async function saveWorkoutEdit(userId: string, id: string, version: strin
       on conflict (id) do update set exercise_id = excluded.exercise_id, distance_km = excluded.distance_km, duration_sec = excluded.duration_sec where workout_cardio.workout_id = excluded.workout_id returning id)
     select id from changed`;
   const query = new PgDialect().sqlToQuery(statement);
-  // Neon's non-interactive transaction API supports serializable isolation.
-  const [result] = await db.$client.transaction([db.$client.query(query.sql, query.params)], { isolationLevel: "Serializable" });
-  if ((Array.isArray(result) ? result.length : result.rows.length) !== 1) throw new WorkoutEditError("Træningen er ændret siden du åbnede den, eller en øvelse er ikke tilgængelig. Genindlæs og prøv igen.");
+  const [result] = await sqlClient.transaction([{ text: query.sql, params: query.params }], { isolationLevel: "Serializable" });
+  if (result.length !== 1) throw new WorkoutEditError("Træningen er ændret siden du åbnede den, eller en øvelse er ikke tilgængelig. Genindlæs og prøv igen.");
 }

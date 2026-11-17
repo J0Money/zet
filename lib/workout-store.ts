@@ -16,9 +16,7 @@ import type { CardioEntry, Entry, Equipment, Exercise, ExerciseType, MuscleGroup
 // Synlige øvelser: indbyggede (user_id null), brugerens egne, og andre
 // brugeres øvelser, der er delt (is_shared), se CLAUDE.md's datamodel. En øvelse kan have flere muskelgrupper, derfor en
 // left join: json_agg samler dem i én liste pr. øvelse, og filter udelader
-// null, når en øvelse (endnu) ikke har nogen tags. array_agg ville virke i
-// ren SQL, men neon-http-driveren parser ikke Postgres' array-tekstformat
-// til et JS-array, json_agg giver json, som driveren parser korrekt.
+// null, når en øvelse (endnu) ikke har nogen tags.
 export async function getExercises(userId: string): Promise<Exercise[]> {
   const rows = await db
     .select({
@@ -275,8 +273,8 @@ export async function addStrengthEntry(
   return { kind: "strength", ...row };
 }
 
-// Første del af ét samlet SQL-statement til gem fra log-siden (neon-http har
-// ingen interaktive transaktioner, men ét statement er altid atomisk):
+// Første del af ét samlet SQL-statement til gem fra log-siden (ét statement
+// er altid atomisk):
 // "claimed" indsætter engangs-id'et og returnerer kun en række, hvis id'et er
 // nyt. Selve indsættelsen bagefter sker kun, når "claimed" har en række, så et
 // gentaget tryk på Gem (samme id) gemmer intet. To samtidige forsøg med samme

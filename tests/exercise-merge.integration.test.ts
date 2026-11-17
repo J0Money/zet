@@ -5,12 +5,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { config } from "dotenv";
-import { neon } from "@neondatabase/serverless";
+import { createSqlClient, statement } from "../lib/db/client";
 import { buildMergeStatements } from "../lib/exercise-merge";
 
 config({ path: ".env.local", quiet: true });
 const enabled = process.env.ZET_RUN_MERGE_TESTS === "1";
-const sql = enabled ? neon(process.env.DATABASE_URL!) : null;
+const client = enabled ? createSqlClient(process.env.DATABASE_URL!) : null;
+const sql = client?.sql ?? null;
 const run = randomUUID().slice(0, 8);
 const users = [randomUUID(), randomUUID()];
 const source = randomUUID();
@@ -18,7 +19,7 @@ const target = randomUUID();
 const sourceName = `Zz Mergetest Curls ${run} (Machine)`;
 const targetName = `Zz mergetest curl ${run} (Machine)`;
 const merge = (pair = { sourceId: source, sourceName, targetId: target, targetName }) =>
-  sql!.transaction(buildMergeStatements((text, params) => sql!.query(text, params), pair));
+  client!.transaction(buildMergeStatements(statement, pair));
 
 after(async () => {
   if (!sql) return;
@@ -27,6 +28,7 @@ after(async () => {
   await sql`delete from training_program where user_id = any(${users}::uuid[])`;
   await sql`delete from exercise_alias where alias like ${`Zz Mergetest%${run}`}`;
   await sql`delete from "user" where id = any(${users}::uuid[])`;
+  await client!.pool.end();
 });
 
 test("Sammenlægning flytter alt til målet og sletter kilden", { skip: !enabled }, async () => {
