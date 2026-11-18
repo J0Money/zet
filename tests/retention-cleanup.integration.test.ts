@@ -19,8 +19,8 @@ test("Oprydning sletter kun udløbne rækker og kan køres igen", { skip: proces
   const days = (d: number) => new Date(now + d * 86400000);
   const owner = randomUUID();
   const tag = randomUUID();
-  const sessionIds = { expired: randomUUID(), live: randomUUID() };
-  const verificationIds = { expired: randomUUID(), live: randomUUID(), expiredRequest: randomUUID() };
+  const sessionIds = { expired: randomUUID(), recentlyExpired: randomUUID(), live: randomUUID() };
+  const verificationIds = { expired: randomUUID(), recentlyExpired: randomUUID(), live: randomUUID(), expiredRequest: randomUUID() };
   const inviteIds = { expired31: randomUUID(), expired1: randomUUID(), used31: randomUUID(), revoked31: randomUUID(), pending: randomUUID(), usedRecent: randomUUID() };
   const rateKeys = { old: `test-${tag}-old`, fresh: `test-${tag}-fresh` };
   const submissions = { old: randomUUID(), recent: randomUUID() };
@@ -39,12 +39,14 @@ test("Oprydning sletter kun udløbne rækker og kan køres igen", { skip: proces
     await db.insert(workout).values({ id: workoutId, user_id: owner, date: "2026-10-29" });
 
     await db.insert(session).values([
-      { id: sessionIds.expired, token: `t-${tag}-a`, userId: owner, expiresAt: minutes(-1) },
+      { id: sessionIds.expired, token: `t-${tag}-a`, userId: owner, expiresAt: days(-8) },
+      { id: sessionIds.recentlyExpired, token: `t-${tag}-c`, userId: owner, expiresAt: days(-6) },
       { id: sessionIds.live, token: `t-${tag}-b`, userId: owner, expiresAt: minutes(60) },
     ]);
     await db.insert(verification).values([
-      { id: verificationIds.expired, identifier: `test-${tag}`, value: "x", expiresAt: minutes(-1) },
-      { id: verificationIds.expiredRequest, identifier: "reset-request", value: owner, expiresAt: minutes(-1) },
+      { id: verificationIds.expired, identifier: `test-${tag}`, value: "x", expiresAt: days(-8) },
+      { id: verificationIds.recentlyExpired, identifier: `test-${tag}`, value: "x", expiresAt: days(-6) },
+      { id: verificationIds.expiredRequest, identifier: "reset-request", value: owner, expiresAt: days(-8) },
       { id: verificationIds.live, identifier: `test-${tag}`, value: "x", expiresAt: minutes(60) },
     ]);
     const inv = (id: string, extra: Partial<typeof invitation.$inferInsert>) => ({
@@ -76,9 +78,9 @@ test("Oprydning sletter kun udløbne rækker og kan køres igen", { skip: proces
 
     // Udløbne rækker er slettet, levende og nyere er urørte.
     assert.equal(await count(session, [sessionIds.expired]), 0);
-    assert.equal(await count(session, [sessionIds.live]), 1);
+    assert.equal(await count(session, [sessionIds.live, sessionIds.recentlyExpired]), 2);
     assert.equal(await count(verification, [verificationIds.expired, verificationIds.expiredRequest]), 0);
-    assert.equal(await count(verification, [verificationIds.live]), 1);
+    assert.equal(await count(verification, [verificationIds.live, verificationIds.recentlyExpired]), 2);
     assert.equal(await count(invitation, [inviteIds.expired31, inviteIds.used31, inviteIds.revoked31]), 0);
     assert.equal(await count(invitation, [inviteIds.expired1, inviteIds.pending, inviteIds.usedRecent]), 3);
     // invitation_attempt følger med via cascade.
@@ -97,7 +99,7 @@ test("Oprydning sletter kun udløbne rækker og kan køres igen", { skip: proces
     // Anden kørsel finder intet mere at slette.
     const second = await cleanup.runRetentionCleanup();
     assert.deepEqual(second, { sessions: 0, verifications: 0, invitations: 0, rateLimits: 0, logSubmissions: 0 });
-    assert.equal(await count(session, [sessionIds.live]), 1);
+    assert.equal(await count(session, [sessionIds.live, sessionIds.recentlyExpired]), 2);
     assert.equal(await count(invitation, [inviteIds.pending]), 1);
   } finally {
     await db.delete(rateLimit).where(like(rateLimit.key, `test-${tag}-%`));

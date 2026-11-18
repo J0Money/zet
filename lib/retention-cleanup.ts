@@ -1,15 +1,17 @@
 import "server-only";
 import { sqlClient } from "./db";
 
-// FORSLAG TIL FRISTER, IKKE VEDTAGET AF JOACHIM. Tallene er skøn og skal
-// godkendes (eller ændres) før de nævnes i privatlivsteksten.
+// Fristerne er vedtaget af Joachim 18. november 2026 og skal stå i
+// privatlivsteksten. Oprydningen kører én gang i døgnet, så en række kan
+// leve op til et døgn længere end fristen.
 //
-// Udløbne sessioner (IP og user agent): slettes straks. En udløbet session kan
-// ikke bruges til noget, og logs over tidligere logins har ZET ikke brug for.
-export const EXPIRED_SESSION_GRACE_DAYS = 0;
-// Udløbne rækker i verification (nulstillingslinks og anmodninger): slettes
-// straks efter udløb. Et udløbet link er ugyldigt og skal ikke gemmes.
-export const EXPIRED_VERIFICATION_GRACE_DAYS = 0;
+// Udløbne sessioner (IP og user agent): slettes 7 dage efter udløb, så der er
+// tid til at undersøge mistænkelige logins bagefter.
+export const EXPIRED_SESSION_GRACE_DAYS = 7;
+// Udløbne rækker i verification (nulstillingslinks og anmodninger): slettes 7
+// dage efter udløb, samme frist som sessioner. Udløbne anmodninger fjernes
+// også, når admin åbner invitationssiden (lib/password-reset.ts).
+export const EXPIRED_VERIFICATION_GRACE_DAYS = 7;
 // Invitationer (indeholder en e-mailadresse): slettes 30 dage efter den
 // tidligste af udløb, brug og tilbagekaldelse. Kort nok til at adressen ikke
 // ligger i månedsvis, lang nok til at admin kan se, hvad der skete med en
