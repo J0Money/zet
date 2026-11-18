@@ -18,6 +18,10 @@ export type SqlClient = {
 
 export function createSqlClient(connectionString: string): SqlClient {
   const pool = new Pool({ connectionString, max: 10 });
+  // En ledig forbindelse kan blive lukket af serveren, fx når databasen genstarter.
+  // Uden en lytter vil Node se det som en uhåndteret fejl og stoppe hele appen.
+  // Puljen smider selv forbindelsen væk, så her logges kun beskeden (aldrig adressen).
+  pool.on("error", (error) => console.error("Databaseforbindelse lukket:", error.message));
   const query = async (text: string, params: unknown[] = []) => (await pool.query(text, params)).rows;
   return {
     pool,
@@ -27,6 +31,10 @@ export function createSqlClient(connectionString: string): SqlClient {
     },
     async transaction(statements, options) {
       const client = await pool.connect();
+      // Mens forbindelsen er lånt ud, sendes fejl til den og ikke til puljen.
+      // Lytteren forhindrer et nedbrud; selve fejlen kommer frem via den ventende forespørgsel.
+      const onClientError = (error: Error) => console.error("Databaseforbindelse lukket under transaktion:", error.message);
+      client.on("error", onClientError);
       try {
         await client.query(options?.isolationLevel === "Serializable" ? "BEGIN ISOLATION LEVEL SERIALIZABLE" : "BEGIN");
         const results: unknown[][] = [];
@@ -43,6 +51,8 @@ export function createSqlClient(connectionString: string): SqlClient {
           client.release(rollbackError as Error);
         }
         throw error;
+      } finally {
+        client.off("error", onClientError);
       }
     },
   };
