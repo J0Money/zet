@@ -6,6 +6,7 @@ import { account, user } from "@/lib/db/schema";
 import { ownedAvatarKey } from "@/lib/avatar-image";
 import { avatarStorageConfigured, deleteAvatarObject, deleteAvatarObjectsFor } from "@/lib/avatar-storage";
 import { countRateLimitAttempt } from "@/lib/rate-limit";
+import { deletionLogConfigured, deletionLogRequired, forgetDeletion, recordDeletion } from "@/lib/deletion-log";
 
 // Kontosletning (punkt 12 i docs/privacy-readiness.md). Brugeren bekræfter med
 // adgangskoden, og alt, der hører til brugeren, slettes i ÉN databasetransaktion:
@@ -100,24 +101,50 @@ export async function deleteAccount(userId: string, password: unknown): Promise<
     if (!found.hash) return fail("no_password");
     if (!await verifyPassword({ hash: found.hash, password })) return fail("wrong_password");
 
-    let results: unknown[];
-    try {
-      results = await sqlClient.transaction(buildDeletionStatements(userId));
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("ZET_LAST_ADMIN")) return fail("last_admin");
-      console.error("Kontosletning mislykkedes og er rullet tilbage."); // Bevidst uden fejlindhold og id'er.
+    // Sletningen skrives på slettelisten FØR databasen, så en konto aldrig kan
+    // slettes uden at stå på listen. Lykkes det ikke, slettes intet.
+    if (deletionLogConfigured()) {
+      try {
+        await recordDeletion(userId);
+      } catch {
+        console.error("Kontosletning stoppet: slettelisten kunne ikke opdateres.");
+        return fail("failed");
+      }
+    } else if (deletionLogRequired()) {
+      console.error("Kontosletning stoppet: slettelisten er ikke sat op.");
       return fail("failed");
     }
-    const deleted = results[results.length - 1] as unknown[];
-    if (!deleted.length) return fail("not_found");
 
-    // Efter databasen: billedet kan ikke være i transaktionen. En fejl her fejler ikke sletningen.
-    await removeAvatars(userId, found.image);
-    return { success: true };
+    const result = await deleteAccountData(userId, found.image);
+    // Kontoen blev ikke slettet, så den skal heller ikke stå på listen. Ved "not_found" er
+    // den slettet af et samtidigt kald, som har skrevet den samme fil, så den bliver stående.
+    if (!result.success && result.code !== "not_found" && deletionLogConfigured()) await forgetDeletion(userId).catch(() => {
+      console.warn("Slettelisten har en konto, der ikke blev slettet.");
+    });
+    return result;
   } catch {
     console.error("Kontosletning kunne ikke gennemføres.");
     return fail("failed");
   }
+}
+
+// Selve sletningen uden adgangskode. Bruges af deleteAccount og af
+// scripts/reapply-deletions.ts efter genindlæsning af en backup.
+export async function deleteAccountData(userId: string, image: string | null): Promise<DeleteAccountResult> {
+  let results: unknown[];
+  try {
+    results = await sqlClient.transaction(buildDeletionStatements(userId));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("ZET_LAST_ADMIN")) return fail("last_admin");
+    console.error("Kontosletning mislykkedes og er rullet tilbage."); // Bevidst uden fejlindhold og id'er.
+    return fail("failed");
+  }
+  const deleted = results[results.length - 1] as unknown[];
+  if (!deleted.length) return fail("not_found");
+
+  // Efter databasen: billedet kan ikke være i transaktionen. En fejl her fejler ikke sletningen.
+  await removeAvatars(userId, image);
+  return { success: true };
 }
 
 async function removeAvatars(userId: string, image: string | null) {

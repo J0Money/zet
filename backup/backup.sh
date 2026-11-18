@@ -32,3 +32,16 @@ while read -r key; do
   aws s3 rm "s3://$BACKUP_BUCKET/$key" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
   echo "Slettet gammel backup: $key"
 done
+
+# Slettelisten (lib/deletion-log.ts): én tom fil pr. slettet konto. Den skal kun dække
+# perioden, som backups dækker, så filer ældre end 15 dage slettes. Datoerne sammenlignes
+# som tekst (ISO-format), derfor ingen tal-sammenligning i --query.
+cutoff=$(date -u -d "@$(( $(date +%s) - 15 * 86400 ))" +%Y-%m-%dT%H:%M:%S)
+removed=0
+for key in $(aws s3api list-objects-v2 --bucket "$BACKUP_BUCKET" --prefix deletions/ --endpoint-url "$BACKUP_S3_ENDPOINT" \
+  --query 'Contents[].[Key,LastModified]' --output text | awk -v c="$cutoff" '$1 ~ /^deletions\// && $2 < c { print $1 }'); do
+  aws s3 rm "s3://$BACKUP_BUCKET/$key" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
+  removed=$((removed + 1))
+done
+# Kun antallet logges, ikke bruger-id'erne.
+echo "Slettelisten: $removed poster ældre end 15 dage fjernet."
