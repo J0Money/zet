@@ -45,7 +45,7 @@ test("Login med session og fælles forsøgstæller", {
       const current = await auth.api.getSession({ headers: new Headers({ cookie: cookieHeader }) });
       assert.equal(current?.user.id, id);
     });
-    await t.test("Det sjette forsøg afvises, og tælleren ligger i Neon", async () => {
+    await t.test("Det sjette forsøg afvises, og tælleren ligger i databasen", async () => {
       await loginWithPassword(email, "forkert-adgangskode", requestHeaders);
       await loginWithPassword(email, "forkert-adgangskode", requestHeaders);
       const result = await loginWithPassword(email, password, requestHeaders);

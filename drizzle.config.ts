@@ -5,10 +5,9 @@ import { config } from "dotenv";
 // loaded automatically the way it is during `next dev`/`next build`.
 config({ path: ".env.local" });
 
-// Migrations run DDL over a direct connection, not the pooled one the app
-// uses at runtime (lib/db/index.ts). Neon recommends this for drizzle-kit.
-if (!process.env.DIRECT_DATABASE_URL) {
-  throw new Error("DIRECT_DATABASE_URL is not set. Check .env.local.");
+// Samme forbindelse som appen. Migrationer køres manuelt én ad gangen, aldrig med `drizzle-kit migrate`.
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set. Check .env.local.");
 }
 
 export default defineConfig({
@@ -16,6 +15,6 @@ export default defineConfig({
   schema: "./lib/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DIRECT_DATABASE_URL,
+    url: process.env.DATABASE_URL,
   },
 });

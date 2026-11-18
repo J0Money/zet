@@ -8,7 +8,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 // Testen skriver midlertidige data i den valgte database. Den skal tilvælges
 // eksplicit og kører aldrig seed eller migrationer. Alle egne rækker ryddes op.
 test(
-  "Invitationsforløbet mod Neon",
+  "Invitationsforløbet mod databasen",
   { skip: process.env.ZET_RUN_INVITATION_TESTS !== "1" },
   async (t) => {
     config({ path: ".env.local", quiet: true });

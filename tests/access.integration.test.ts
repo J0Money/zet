@@ -8,7 +8,7 @@ import { eq, inArray } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { parseSetCookieHeader } from "better-auth/cookies";
 
-// Kræver den lokale udviklingsserver og udtrykkeligt tilvalg af Neon-testdata.
+// Kræver den lokale udviklingsserver og udtrykkeligt tilvalg af testdata i databasen.
 test("Sessionsbeskyttelse og dataadskillelse mellem to brugere", {
   skip: process.env.ZET_RUN_ACCESS_TESTS !== "1",
 }, async (t) => {

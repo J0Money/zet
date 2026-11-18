@@ -12,9 +12,10 @@ Mobilvenlig webapp til at registrere styrke- og cardiotræning med et personligt
 ## Teknologier
 - [Next.js](https://nextjs.org) (App Router) + React + TypeScript
 - Tailwind CSS
-- PostgreSQL via [Neon](https://neon.tech) + [Drizzle ORM](https://orm.drizzle.team)
+- PostgreSQL (node-postgres) + [Drizzle ORM](https://orm.drizzle.team)
 - [Better Auth](https://www.better-auth.com) til autentificering
-- Vercel Blob til billedupload
+- S3-kompatibel bucket til profilbilleder og øvelsesbilleder
+- Hosting på [Railway](https://railway.com) med natlig databasebackup (`backup/`)
 - Web Push til notifikationer
 
 ## Kør lokalt
@@ -22,7 +23,7 @@ Mobilvenlig webapp til at registrere styrke- og cardiotræning med et personligt
 npm install
 ```
 
-Opret `.env.local` med mindst `DATABASE_URL` (pooled Neon-connection) og `DIRECT_DATABASE_URL` (direct connection, bruges af migrationer).
+Opret `.env.local` med mindst `DATABASE_URL` (en PostgreSQL-forbindelse).
 
 ```bash
 npm run db:seed
