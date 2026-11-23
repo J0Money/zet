@@ -174,9 +174,10 @@ export function SignupForm({
         </button>
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
           Før du opretter en konto, kan du læse om, hvordan ZET bruger dine oplysninger, under{" "}
-          <Link href="/privacy" className="font-medium text-indigo-600 underline hover:text-indigo-800 dark:text-indigo-400">
+          {/* Ny fane, så det udfyldte i formularen ikke går tabt. */}
+          <a href="/privacy" target="_blank" rel="noopener" className="font-medium text-indigo-600 underline hover:text-indigo-800 dark:text-indigo-400">
             Privatliv
-          </Link>
+          </a>
           .
         </p>
       </fieldset>
