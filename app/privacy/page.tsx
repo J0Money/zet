@@ -219,7 +219,7 @@ export default function PrivacyPage() {
             oprettet, og som andre har brugt, beholdes uden tilknytning til dig, så andres træningshistorik ikke går i
             stykker.
           </p>
-          {/* ÅBENT: Kontroller, om lageret beholder slettede kopier. Afventer Railways svar. */}
+          {/* Railways svar 23. november 2026: station.railway.com/questions/storage-buckets-are-deleted-objects-kep-33f64ed4 */}
           <p>
             Hver nat tages en sikkerhedskopi af hele databasen, så data kan genskabes efter fejl. De 14 nyeste kopier
             gemmes, svarende til cirka 14 dage, og ældre kopier slettes automatisk. Sletter du din konto, kan dine
@@ -227,6 +227,10 @@ export default function PrivacyPage() {
             genskabe ZET efter fejl. For at en slettet konto ikke kommer tilbage, hvis en kopi en dag skal genindlæses,
             gemmer vi kontoens tekniske id (et tilfældigt nummer, ikke navn eller e-mail) og tidspunktet for sletningen
             i 15 dage. Genindlæser vi en kopi, sletter vi kontoen igen ud fra den liste.
+          </p>
+          <p>
+            Når ZET sletter et profilbillede eller en sikkerhedskopi, fjernes det med det samme fra lageret. Railway
+            gemmer ingen ekstra kopier af lageret og kan ikke gendanne slettede filer.
           </p>
           <p>
             Andre oplysninger slettes automatisk efter faste frister. Oprydningen kører én gang i døgnet, så en
