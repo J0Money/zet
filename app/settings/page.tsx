@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { ShieldCheck } from "@phosphor-icons/react/dist/ssr";
+import { LockSimple, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
 import { LogoutButton } from "@/app/components/logout-button";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { isCurrentUserAdmin } from "@/lib/admin";
@@ -67,6 +67,16 @@ export default async function SettingsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="zet-sectionTitle">Konto</h2>
+        <Link
+          href="/privacy"
+          className="zet-panel flex items-center justify-between gap-3 transition-colors hover:border-indigo-200 dark:hover:border-indigo-800"
+        >
+          <span className="flex items-center gap-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <LockSimple aria-hidden="true" size={20} />
+            Privatliv
+          </span>
+          <span aria-hidden="true" className="text-zinc-400 dark:text-zinc-500">→</span>
+        </Link>
         <LogoutButton />
       </section>
 

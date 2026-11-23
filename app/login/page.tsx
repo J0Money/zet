@@ -36,6 +36,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </Link>
       <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">Har du ikke en konto? Åbn dit personlige invitationslink for at oprette en.</p>
       <p className="mt-10 text-center text-sm italic leading-6 text-zinc-400">&quot;{quote}&quot;</p>
+      <p className="mt-6 text-center text-xs">
+        <Link href="/privacy" className="inline-flex min-h-11 items-center text-zinc-500 underline hover:text-indigo-600 dark:text-zinc-400">
+          Privatliv
+        </Link>
+      </p>
     </div>
   );
 }
