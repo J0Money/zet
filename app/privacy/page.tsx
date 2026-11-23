@@ -177,7 +177,6 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        {/* ÅBENT: Neon (tidligere database) har stadig data, indtil Neon-projektet er slettet (ca. 2. december 2026); udgiv først teksten derefter. Vercel og Upstash er slettet 18. november 2026. */}
         <Section title="Leverandører og behandling uden for EU/EØS">
           <p>
             ZET bruger disse leverandører. De behandler kun oplysninger efter vores aftaler med dem
