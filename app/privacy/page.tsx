@@ -192,11 +192,13 @@ export default function PrivacyPage() {
               behandler dem efter sin egen privatlivspolitik. Overførsel til USA sker under EU-U.S. Data Privacy
               Framework eller EU&apos;s standardkontraktbestemmelser.
             </li>
-            {/* ÅBENT: Kontroller, om Tigris står på Railways liste over underdatabehandlere. Spørgsmål til Railway er ikke sendt endnu. */}
+            {/* Tigris Data står på trust.railway.com/item/subprocessors (tjekket 23. november 2026). */}
             <li>
               <strong className={strongClass}>Profilbilleder og sikkerhedskopier</strong> gemmes i Railways lager
-              (Railway Buckets, drevet af Tigris) i EU-regionen i Amsterdam. Billeder og sikkerhedskopier ligger i hver
-              sit lager.
+              (Railway Buckets) i EU-regionen i Amsterdam. Billeder og sikkerhedskopier ligger i hver sit lager.
+              Lageret drives af Tigris Data, som er Railways underdatabehandler og derfor er omfattet af Railways
+              databehandleraftale. Tigris oplyser USA, EU og Singapore som steder, hvor de behandler data, og Railway
+              lover ikke, at alt kun behandles i EU.
             </li>
             <li>
               <strong className={strongClass}>Proton Mail</strong> (Proton AG, Schweiz) bruges til ZETs kontaktmail.
