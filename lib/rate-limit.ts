@@ -16,3 +16,16 @@ export async function countRateLimitAttempt(key: string, windowMs: number): Prom
   );
   return Number(rows[0].count);
 }
+
+// Læser tælleren uden at tælle op. 0, hvis nøglen ikke findes, eller vinduet er udløbet.
+export async function currentRateLimitCount(key: string, windowMs: number): Promise<number> {
+  const rows = await sqlClient.query<{ count: number }>(
+    `SELECT count FROM rate_limit WHERE key = $1 AND last_request >= $2::bigint - $3::bigint`,
+    [key, Date.now(), windowMs],
+  );
+  return rows.length ? Number(rows[0].count) : 0;
+}
+
+export async function clearRateLimit(key: string): Promise<void> {
+  await sqlClient.query(`DELETE FROM rate_limit WHERE key = $1`, [key]);
+}
