@@ -34,15 +34,14 @@ export function StrengthEntryRow({ entry, label }: { entry: StrengthEntry; label
           <input type="hidden" name="id" value={entry.id} />
           <span className="w-14 shrink-0 text-sm text-zinc-500 dark:text-zinc-400">{label}</span>
           <input
-            name="reps" type="number" inputMode="numeric" min={1} step={1} required
-            defaultValue={entry.reps} aria-label="Reps" className={inputClass}
-          />
-          <span className="text-xs text-zinc-400">×</span>
-          <input
             name="weightKg" type="number" inputMode="decimal" min={0} step={0.5} required
             defaultValue={entry.weight_kg} aria-label="Vægt (kg)" className={inputClass}
           />
-          <span className="text-xs text-zinc-400">kg</span>
+          <span className="text-xs text-zinc-400">kg ×</span>
+          <input
+            name="reps" type="number" inputMode="numeric" min={1} step={1} required
+            defaultValue={entry.reps} aria-label="Reps" className={inputClass}
+          />
           <button
             type="submit" disabled={isPending}
             className="min-h-8 rounded-lg bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
